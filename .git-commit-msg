@@ -1,6 +1,0 @@
-refactor: transition MedMod to OpenClinic public release
-
-- Renamed application, project files, and targets to OpenClinic
-- Erased internal legacy roadmaps and planning docs
-- Established standard OSS hygiene (.gitignore, CONTRIBUTING.md, SECURITY.md)
-- Added strict AI instructions to maintain public doc cleanliness
