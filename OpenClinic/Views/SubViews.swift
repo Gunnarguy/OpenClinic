@@ -219,14 +219,13 @@ struct AgendaView: View {
                                 .font(.subheadline.weight(.medium))
                                 .clinicalRowSummaryText()
                         }
-                        .layoutPriority(1)
                         Spacer()
                         Text(nextUp.appointment.scheduledTime, format: .dateTime.hour().minute())
                             .font(.caption.monospacedDigit())
                             .foregroundStyle(.secondary)
                             .clinicalFinePrintMonospaced()
                             .lineLimit(1)
-                            .fixedSize(horizontal: true, vertical: false)
+                            .minimumScaleFactor(0.85)
                         Text(Self.workflowPillLabel(for: nextUp.appointment.resolvedStatus))
                             .clinicalPillText(weight: .medium)
                             .padding(.horizontal, 6)
@@ -415,42 +414,58 @@ private struct AgendaRow: View {
     let patient: PatientProfile
     let appointment: Appointment
 
+    #if os(iOS)
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    #endif
+
     private var activeMedCount: Int {
         (patient.medications ?? []).filter { ($0.status ?? "Active") == "Active" }.count
     }
 
     var body: some View {
-        HStack(spacing: 12) {
+        #if os(iOS)
+        let isCompact = horizontalSizeClass == .compact
+        #else
+        let isCompact = false
+        #endif
+
+        let timeFont = Font.system(size: isCompact ? 12 : 14, weight: .semibold)
+        let timeWidth: CGFloat = isCompact ? 64 : 76
+        let spacing: CGFloat = isCompact ? 8 : 12
+
+        HStack(spacing: spacing) {
             // Time column
             VStack(spacing: 2) {
                 Text(appointment.scheduledTime, format: .dateTime.hour().minute())
-                    .font(.subheadline.monospacedDigit().weight(.semibold))
+                    .font(timeFont)
                     .foregroundColor(.primary)
                     .lineLimit(1)
-                    .fixedSize(horizontal: true, vertical: false)
+                    .minimumScaleFactor(0.8)
                 if let dur = appointment.durationMinutes {
                     Text("\(dur)m")
                         .font(.caption2)
                         .foregroundStyle(.tertiary)
                 }
             }
-            .frame(width: 76, alignment: .trailing)
+            .frame(width: timeWidth, alignment: .trailing)
 
             // Vertical accent bar matching workflow status
             VisualAccentLine(color: AgendaView.workflowColor(for: appointment.resolvedStatus), height: 42)
 
             // Patient initials avatar
-            Circle()
-                .fill(LinearGradient(
-                    colors: [Color.clinicalIndigo.opacity(0.2), Color.clinicalTeal.opacity(0.1)],
-                    startPoint: .topLeading, endPoint: .bottomTrailing
-                ))
-                .frame(width: 34, height: 34)
-                .overlay(
-                    Text("\(String(patient.firstName.prefix(1)))\(String(patient.lastName.prefix(1)))")
-                        .font(.system(size: 12, weight: .bold, design: .rounded))
-                        .foregroundColor(.clinicalIndigo)
-                )
+            if !isCompact {
+                Circle()
+                    .fill(LinearGradient(
+                        colors: [Color.clinicalIndigo.opacity(0.2), Color.clinicalTeal.opacity(0.1)],
+                        startPoint: .topLeading, endPoint: .bottomTrailing
+                    ))
+                    .frame(width: 34, height: 34)
+                    .overlay(
+                        Text("\(String(patient.firstName.prefix(1)))\(String(patient.lastName.prefix(1)))")
+                            .font(.system(size: 12, weight: .bold, design: .rounded))
+                            .foregroundColor(.clinicalIndigo)
+                    )
+            }
 
             // Patient details
             VStack(alignment: .leading, spacing: 3) {
@@ -464,7 +479,7 @@ private struct AgendaRow: View {
                     .clinicalFinePrint()
                     .clinicalRowSummaryText()
                 
-                HStack(spacing: 6) {
+                FlowLayout(spacing: 4) {
                     if let type = appointment.encounterType {
                         Text(type)
                             .clinicalPillText(weight: .bold)
@@ -491,7 +506,6 @@ private struct AgendaRow: View {
                     ClinicalSourceBadge(descriptor: appointment.sourceDescriptor)
                 }
             }
-            .layoutPriority(1)
 
             Spacer()
 
