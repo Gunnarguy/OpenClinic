@@ -13,6 +13,17 @@ struct EHRMainShellView: View {
         case agenda, patient, intelligence, inbox, settings
     }
 
+    init() {
+        #if os(iOS)
+        let appearance = UITabBarAppearance()
+        appearance.configureWithDefaultBackground()
+        appearance.backgroundColor = UIColor.systemBackground.withAlphaComponent(0.35)
+        appearance.backgroundEffect = UIBlurEffect(style: .systemChromeMaterial)
+        UITabBar.appearance().standardAppearance = appearance
+        UITabBar.appearance().scrollEdgeAppearance = appearance
+        #endif
+    }
+
     var body: some View {
         TabView(selection: $activeTab) {
             AgendaView()
@@ -64,6 +75,6 @@ struct EHRMainShellView: View {
         #if os(iOS)
         .tabBarMinimizeBehavior(.onScrollDown)
         #endif
-        .tint(.purple)
+        .tint(.clinicalIndigo)
     }
 }

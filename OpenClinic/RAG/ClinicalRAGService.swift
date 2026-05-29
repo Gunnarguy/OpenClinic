@@ -55,7 +55,7 @@ final class ClinicalRAGService: ObservableObject {
             embeddingService: embeddingService,
             vectorStore: vectorStore
         )
-        verificationGates = ClinicalVerificationGates(embeddingService: embeddingService)
+        verificationGates = ClinicalVerificationGates(embeddingService: embeddingService, vectorStore: vectorStore)
         AppLogger.ai.info("🚀 ClinicalRAGService initialized — embedding: \(self.embeddingService.providerName)")
 
         // Load persisted vectors from disk
@@ -176,12 +176,12 @@ final class ClinicalRAGService: ObservableObject {
         let (context, usedChunks) = await ragEngine.processChunks(query: text, candidates: candidates)
         addStep(.mmrDiversity, "\(usedChunks.count) chunks selected", "MMR \u{03BB}=0.7 diversity + token budget + Lost-in-Middle reorder", icon: "square.grid.3x3")
 
-        addStep(.verification, "Running 7 verification gates", "Retrieval \u{00B7} Evidence \u{00B7} Numeric \u{00B7} Contradiction \u{00B7} Semantic \u{00B7} Faithfulness \u{00B7} Quality", icon: "checkmark.shield")
+        addStep(.verification, "Running 9 verification gates", "Retrieval \u{00B7} Evidence \u{00B7} Numeric \u{00B7} Contradiction \u{00B7} Semantic \u{00B7} Faithfulness \u{00B7} Quality \u{00B7} Completeness \u{00B7} Isolation", icon: "checkmark.shield")
         let verification = await verificationGates.verify(query: text, responseText: context, retrievedChunks: usedChunks)
 
         let passedCount = verification.gateResults.values.filter { $0 }.count
         let gateDetail = verification.gateResults.sorted(by: { $0.key < $1.key }).map { "\($0.value ? "\u{2713}" : "\u{2717}") \(formatGateName($0.key))" }.joined(separator: " \u{00B7} ")
-        addStep(.verification, "\(passedCount)/7 gates \u{2014} \(verification.confidence.rawValue.capitalized)", gateDetail, icon: verification.confidence == .high ? "checkmark.shield.fill" : "exclamationmark.shield")
+        addStep(.verification, "\(passedCount)/\(verification.gateResults.count) gates \u{2014} \(verification.confidence.rawValue.capitalized)", gateDetail, icon: verification.confidence == .high ? "checkmark.shield.fill" : "exclamationmark.shield")
 
         let totalMs = (CFAbsoluteTimeGetCurrent() - startTime) * 1000
         addStep(.complete, "Pipeline complete", String(format: "%.0fms", totalMs), icon: "checkmark.circle.fill")
@@ -246,7 +246,7 @@ final class ClinicalRAGService: ObservableObject {
         addStep(.mmrDiversity, "\(usedChunks.count) chunks selected", "MMR diversity + token budget + Lost-in-Middle reorder", icon: "square.grid.3x3")
 
         // Verify
-        addStep(.verification, "Running 7 verification gates", "Full clinical verification pipeline", icon: "checkmark.shield")
+        addStep(.verification, "Running 9 verification gates", "Full clinical verification pipeline", icon: "checkmark.shield")
         let verification = await verificationGates.verify(
             query: text,
             responseText: context,
@@ -255,7 +255,7 @@ final class ClinicalRAGService: ObservableObject {
 
         let passedCount = verification.gateResults.values.filter { $0 }.count
         let gateDetail = verification.gateResults.sorted(by: { $0.key < $1.key }).map { "\($0.value ? "✓" : "✗") \(formatGateName($0.key))" }.joined(separator: " · ")
-        addStep(.verification, "\(passedCount)/7 gates — \(verification.confidence.rawValue.capitalized)", gateDetail, icon: verification.confidence == .high ? "checkmark.shield.fill" : "exclamationmark.shield")
+        addStep(.verification, "\(passedCount)/\(verification.gateResults.count) gates — \(verification.confidence.rawValue.capitalized)", gateDetail, icon: verification.confidence == .high ? "checkmark.shield.fill" : "exclamationmark.shield")
 
         let totalMs = (CFAbsoluteTimeGetCurrent() - startTime) * 1000
         addStep(.complete, "Deep Think complete", String(format: "%d passes, %.0fms total", passes, totalMs), icon: "checkmark.circle.fill")

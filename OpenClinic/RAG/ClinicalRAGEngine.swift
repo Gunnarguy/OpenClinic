@@ -83,8 +83,11 @@ final class ClinicalRAGEngine: @unchecked Sendable {
         // Step 1: Rerank candidates (cross-encoder or heuristic)
         let reranked = await rerank(query: query, candidates: candidates)
 
+        // Step 1.5: Jaccard word-overlap deduplication (drop highly redundant chunks)
+        let deduped = deduplicateChunks(chunks: reranked)
+
         // Step 2: MMR diversity selection
-        let diverse = await mmrSelect(candidates: reranked, maxChunks: maxChunks)
+        let diverse = await mmrSelect(candidates: deduped, maxChunks: maxChunks)
 
         // Step 3: Token budget enforcement
         let budgeted = enforceTokenBudget(chunks: diverse)
@@ -261,13 +264,91 @@ final class ClinicalRAGEngine: @unchecked Sendable {
         var usedTokens = abbreviationGlossary.split(separator: " ").count + 20  // Glossary overhead
 
         for chunk in chunks {
-            let chunkTokens = embeddingService.countTokens(chunk.chunk.embeddableText)
-            if usedTokens + chunkTokens > contextTokenBudget { break }
-            usedTokens += chunkTokens
-            result.append(chunk)
+            let chunkText = chunk.chunk.embeddableText
+            let chunkTokens = embeddingService.countTokens(chunkText)
+
+            if usedTokens + chunkTokens <= contextTokenBudget {
+                usedTokens += chunkTokens
+                result.append(chunk)
+            } else {
+                // Try to fit a truncated version if we can fit at least 50 tokens
+                let remainingBudget = contextTokenBudget - usedTokens
+                if remainingBudget >= 50 {
+                    let rawContent = chunk.chunk.content
+                    let wordsInContent = rawContent.components(separatedBy: .whitespacesAndNewlines).filter { !$0.isEmpty }.count
+                    let avgTokenPerWord = Double(chunkTokens) / Double(max(1, wordsInContent))
+                    let maxAllowedWords = Int(Double(remainingBudget) / max(0.8, avgTokenPerWord))
+
+                    if maxAllowedWords > 10 {
+                        let truncatedContent = truncateAtSentence(rawContent, maxWords: maxAllowedWords)
+                        let newChunk = ClinicalChunk(
+                            id: chunk.chunk.id,
+                            patientId: chunk.chunk.patientId,
+                            content: truncatedContent,
+                            contextualPrefix: chunk.chunk.contextualPrefix,
+                            metadata: chunk.chunk.metadata
+                        )
+                        let updated = RetrievedChunk(
+                            chunk: newChunk,
+                            score: chunk.score,
+                            vectorRank: chunk.vectorRank,
+                            keywordRank: chunk.keywordRank
+                        )
+                        result.append(updated)
+                        usedTokens += remainingBudget
+                    }
+                }
+                break
+            }
         }
 
         return result
+    }
+
+    /// Truncate text at a sentence boundary, keeping complete sentences.
+    private func truncateAtSentence(_ text: String, maxWords: Int) -> String {
+        let words = text.components(separatedBy: .whitespacesAndNewlines).filter { !$0.isEmpty }
+        guard words.count > maxWords else { return text }
+
+        let truncatedWords = Array(words.prefix(maxWords))
+        let truncatedText = truncatedWords.joined(separator: " ")
+
+        let sentenceEnders: [Character] = [".", "!", "?", ";"]
+        let searchRangeStart = Int(Double(truncatedText.count) * 0.7)
+        if let lastEndIndex = truncatedText.suffix(truncatedText.count - searchRangeStart).lastIndex(where: { sentenceEnders.contains($0) }) {
+            let endIdx = truncatedText.index(after: lastEndIndex)
+            return String(truncatedText[..<endIdx])
+        }
+
+        return truncatedText + "…"
+    }
+
+    /// Dedup chunks using Jaccard word overlap to avoid duplicate boilerplate in LLM context.
+    private func deduplicateChunks(chunks: [RetrievedChunk]) -> [RetrievedChunk] {
+        var uniqueChunks: [RetrievedChunk] = []
+        var usedWordSets: [Set<String>] = []
+
+        for chunk in chunks {
+            let content = chunk.chunk.content.lowercased()
+            let words = Set(content.components(separatedBy: CharacterSet.alphanumerics.inverted)
+                .filter { $0.count >= 3 })
+
+            if words.count >= 5 {
+                let isDuplicate = usedWordSets.contains { existingWords in
+                    let intersection = words.intersection(existingWords)
+                    let union = words.union(existingWords)
+                    guard !union.isEmpty else { return false }
+                    let jaccard = Double(intersection.count) / Double(union.count)
+                    return jaccard >= 0.75
+                }
+                if isDuplicate {
+                    continue
+                }
+            }
+            uniqueChunks.append(chunk)
+            usedWordSets.append(words)
+        }
+        return uniqueChunks
     }
 
     // MARK: - Lost-in-Middle Mitigation

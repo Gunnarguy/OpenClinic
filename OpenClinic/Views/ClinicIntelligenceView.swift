@@ -93,8 +93,7 @@ struct ClinicIntelligenceView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                Color(.systemGroupedBackground)
-                    .ignoresSafeArea()
+                ClinicGlowBackground()
 
                 VStack(spacing: 0) {
                 // Context bar: engine status + RAG + Deep Think + patient picker
@@ -164,6 +163,13 @@ struct ClinicIntelligenceView: View {
                 .padding(.top, 8)
                 .frame(maxWidth: contentMaxWidth)
 
+                 if let patient = selectedPatient {
+                     PatientDemographicsBanner(profile: patient)
+                         .padding(.horizontal)
+                         .padding(.top, 6)
+                         .frame(maxWidth: contentMaxWidth)
+                 }
+
                 // Quick prompts
                 GeometryReader { geometry in
                     let cardMaxWidth = min(max(geometry.size.width * 0.6, 160), 210)
@@ -181,12 +187,17 @@ struct ClinicIntelligenceView: View {
                                         .lineLimit(3)
                                         .fixedSize(horizontal: false, vertical: true)
                                         .frame(maxWidth: cardMaxWidth, alignment: .leading)
-                                        .padding(.horizontal, 10)
-                                        .padding(.vertical, 9)
-                                        .background(.purple.opacity(0.1), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                                        .padding(.horizontal, 12)
+                                        .padding(.vertical, 10)
+                                        .background(.ultraThinMaterial)
+                                        .cornerRadius(12)
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 12)
+                                                .strokeBorder(Color.clinicalIndigo.opacity(0.12), lineWidth: 1)
+                                        )
                                 }
                                 .buttonStyle(.plain)
-                                .foregroundStyle(.purple)
+                                .foregroundStyle(Color.clinicalIndigo)
                             }
                         }
                         .padding(.horizontal)
@@ -376,7 +387,10 @@ private struct UserBubble: View {
                 .lineSpacing(2)
                 .padding(.horizontal, 14)
                 .padding(.vertical, 10)
-                .background(Color.purple)
+                .background(LinearGradient(
+                    colors: [Color.clinicalIndigo, Color.clinicalIndigo.opacity(0.85)],
+                    startPoint: .topLeading, endPoint: .bottomTrailing
+                ))
                 .foregroundColor(.white)
                 .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                 .textSelection(.enabled)
@@ -528,10 +542,8 @@ private struct AIResponseView: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
-            RoundedRectangle(cornerRadius: 2)
-                .fill(Color.purple)
-                .frame(width: 3)
-                .padding(.vertical, 6)
+            VisualAccentLine(color: Color.clinicalIndigo, width: 3, height: 44)
+                .padding(.top, 4)
 
             VStack(alignment: .leading, spacing: 12) {
                 if let sourceDescriptor = message.sourceDescriptor {
@@ -548,11 +560,11 @@ private struct AIResponseView: View {
                 ChatFormattedText(text: message.text)
                     .padding(.horizontal, 14)
                     .padding(.vertical, 12)
-                    .background(Color(.secondarySystemBackground))
+                    .background(.ultraThinMaterial)
                     .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                     .overlay(
                         RoundedRectangle(cornerRadius: 16, style: .continuous)
-                            .strokeBorder(.quaternary, lineWidth: 0.5)
+                            .strokeBorder(Color.primary.opacity(0.06), lineWidth: 0.5)
                     )
 
                 if let meta = message.metadata {
@@ -648,12 +660,12 @@ private struct AIResponseView: View {
                         .foregroundStyle(.secondary)
                 }
             }
-            .foregroundStyle(.purple)
+            .foregroundStyle(Color.clinicalIndigo)
         }
         .font(.caption2)
         .padding(.horizontal, 9)
         .padding(.vertical, 7)
-        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .glassmorphicCard(cornerRadius: 12, borderColor: Color.primary.opacity(0.04), shadowRadius: 2)
     }
 
     private func confidenceIcon(_ tier: ConfidenceTier) -> String {
@@ -801,6 +813,8 @@ private struct GatesGridView: View {
         ("semanticGrounding", "Semantic Grounding", "brain"),
         ("quoteFaithfulness", "Quote Faithfulness", "quote.bubble"),
         ("generationQuality", "Generation Quality", "text.badge.checkmark"),
+        ("answerCompleteness", "Answer Completeness", "list.bullet.rectangle"),
+        ("patientIsolation", "Patient Isolation", "person.and.arrow.left.and.arrow.right"),
     ]
 
     var body: some View {
@@ -810,7 +824,7 @@ private struct GatesGridView: View {
                     .font(.caption2.bold())
                     .clinicalFinePrint(weight: .bold)
                 Spacer()
-                Text("\(verification.gateResults.values.filter { $0 }.count)/7 passed")
+                Text("\(verification.gateResults.values.filter { $0 }.count)/\(verification.gateResults.count) passed")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
                     .clinicalFinePrint()

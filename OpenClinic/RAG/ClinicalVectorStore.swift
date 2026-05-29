@@ -94,6 +94,11 @@ actor ClinicalVectorStore {
         entries[chunkId]?.embedding
     }
 
+    /// Retrieve a stored chunk by its ID.
+    func getChunk(id: UUID) -> ClinicalChunk? {
+        entries[id]?.chunk
+    }
+
     // MARK: - Delete
 
     /// Remove all chunks for a patient.

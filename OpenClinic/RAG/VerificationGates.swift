@@ -2,7 +2,7 @@
 //  VerificationGates.swift
 //  OpenClinic
 //
-//  7 clinical verification gates adapted from OpenIntelligence.
+//  9 clinical verification gates adapted from OpenIntelligence.
 //  Validates RAG responses for safety, faithfulness, and quality
 //  before presenting to the clinician.
 //
@@ -13,15 +13,17 @@ import os
 
 // MARK: - Clinical Verification Gates
 
-/// Runs 7 verification passes on RAG-generated context to produce a confidence score.
+/// Runs 9 verification passes on RAG-generated context to produce a confidence score.
 final class ClinicalVerificationGates: @unchecked Sendable {
     private let embeddingService: ClinicalEmbeddingService
+    private let vectorStore: ClinicalVectorStore
 
-    init(embeddingService: ClinicalEmbeddingService) {
+    init(embeddingService: ClinicalEmbeddingService, vectorStore: ClinicalVectorStore) {
         self.embeddingService = embeddingService
+        self.vectorStore = vectorStore
     }
 
-    /// Run all 7 gates and produce a consolidated result.
+    /// Run all 9 gates and produce a consolidated result.
     func verify(
         query: String,
         responseText: String,
@@ -50,7 +52,7 @@ final class ClinicalVerificationGates: @unchecked Sendable {
         gateResults["contradictionSweep"] = passD
         warnings.append(contentsOf: warnD)
 
-        // Gate E: Semantic Grounding
+        // Gate E: Semantic Grounding (Uses stored embeddings to accelerate check)
         let (passE, warnE) = await gateSemanticGrounding(response: responseText, chunks: retrievedChunks)
         gateResults["semanticGrounding"] = passE
         warnings.append(contentsOf: warnE)
@@ -60,23 +62,35 @@ final class ClinicalVerificationGates: @unchecked Sendable {
         gateResults["quoteFaithfulness"] = passF
         warnings.append(contentsOf: warnF)
 
-        // Gate G: Generation Quality
+        // Gate G: Generation Quality (Bigram Entropy + Trigram Dominance)
         let (passG, warnG) = gateGenerationQuality(response: responseText)
         gateResults["generationQuality"] = passG
         warnings.append(contentsOf: warnG)
+
+        // Gate H: Answer Completeness
+        let (passH, warnH) = gateAnswerCompleteness(response: responseText, query: query, chunks: retrievedChunks)
+        gateResults["answerCompleteness"] = passH
+        warnings.append(contentsOf: warnH)
+
+        // Gate I: Patient Isolation (Crucial HIPAA / Patient safety check)
+        let (passI, warnI) = gatePatientIsolation(chunks: retrievedChunks)
+        gateResults["patientIsolation"] = passI
+        warnings.append(contentsOf: warnI)
 
         // Compute overall score and confidence tier
         let passedCount = gateResults.values.filter { $0 }.count
         let overallScore = Double(passedCount) / Double(gateResults.count)
 
         let confidence: ConfidenceTier
-        switch passedCount {
-        case 6...7: confidence = .high
-        case 4...5: confidence = .medium
-        default: confidence = .low
+        if overallScore >= 0.85 {
+            confidence = .high
+        } else if overallScore >= 0.55 {
+            confidence = .medium
+        } else {
+            confidence = .low
         }
 
-        AppLogger.ai.info("🔒 Verification: \(passedCount)/7 gates passed → \(confidence.rawValue)")
+        AppLogger.ai.info("🔒 Verification: \(passedCount)/9 gates passed → \(confidence.rawValue)")
 
         return VerificationResult(
             confidence: confidence,
@@ -140,7 +154,6 @@ final class ClinicalVerificationGates: @unchecked Sendable {
 
     /// Check for conflicting facts across retrieved chunks.
     private func gateContradictionSweep(chunks: [RetrievedChunk]) -> (Bool, [String]) {
-        // Simple heuristic: look for opposing status words in same-patient, same-category chunks
         var warnings: [String] = []
 
         let byPatientCategory = Dictionary(grouping: chunks) {
@@ -149,7 +162,6 @@ final class ClinicalVerificationGates: @unchecked Sendable {
 
         for (key, group) in byPatientCategory where group.count > 1 {
             let texts = group.map { $0.chunk.content.lowercased() }
-            // Check for opposing pairs
             let opposites = [("active", "discontinued"), ("improving", "worsening"), ("resolved", "persistent")]
             for (a, b) in opposites {
                 let hasA = texts.contains { $0.contains(a) }
@@ -171,8 +183,20 @@ final class ClinicalVerificationGates: @unchecked Sendable {
 
         do {
             let responseEmb = try await embeddingService.embed(text: response)
-            let chunkTexts = chunks.map { $0.chunk.embeddableText }
-            let chunkEmbs = try await embeddingService.embedBatch(texts: chunkTexts)
+
+            // Fast path: Try fetching cached embeddings from the vectorStore actor first
+            var chunkEmbs: [[Float]] = []
+            for r in chunks {
+                if let emb = await vectorStore.embedding(for: r.chunk.id) {
+                    chunkEmbs.append(emb)
+                }
+            }
+
+            // Fallback: Embed text chunks if not found in vector store
+            if chunkEmbs.isEmpty {
+                let chunkTexts = chunks.map { $0.chunk.embeddableText }
+                chunkEmbs = try await embeddingService.embedBatch(texts: chunkTexts)
+            }
 
             // Compute centroid of chunk embeddings
             let dim = responseEmb.count
@@ -181,14 +205,14 @@ final class ClinicalVerificationGates: @unchecked Sendable {
                 let useDim = min(dim, emb.count)
                 vDSP_vadd(centroid, 1, emb, 1, &centroid, 1, vDSP_Length(useDim))
             }
-            var divisor = Float(chunkEmbs.count)
+            var divisor = Float(max(1, chunkEmbs.count))
             vDSP_vsdiv(centroid, 1, &divisor, &centroid, 1, vDSP_Length(dim))
 
             // Cosine similarity between response and centroid
             var similarity: Float = 0
             vDSP_dotpr(responseEmb, 1, centroid, 1, &similarity, vDSP_Length(dim))
 
-            if similarity < 0.3 {
+            if similarity < 0.4 {
                 return (false, ["Response poorly grounded (similarity: \(String(format: "%.2f", similarity)))"])
             }
             return (true, [])
@@ -204,18 +228,15 @@ final class ClinicalVerificationGates: @unchecked Sendable {
         let medChunks = chunks.filter { $0.chunk.metadata.sourceType == .medication }
         guard !medChunks.isEmpty else { return (true, []) }
 
-        // Extract medication names from chunks
         let chunkMedNames = Set(medChunks.flatMap { chunk in
             chunk.chunk.content.components(separatedBy: CharacterSet.newlines)
                 .compactMap { line -> String? in
                     let trimmed = line.trimmingCharacters(in: .whitespaces)
                     guard !trimmed.isEmpty else { return nil }
-                    // First word of each line is likely a med name
                     return trimmed.components(separatedBy: " ").first?.lowercased()
                 }
         })
 
-        // Check if response mentions medications not in the source
         let responseWords = Set(response.lowercased().components(separatedBy: CharacterSet.alphanumerics.inverted))
         let commonMedSuffixes = ["mab", "nib", "olol", "pril", "sartan", "statin", "mycin", "cillin", "azole"]
 
@@ -232,27 +253,148 @@ final class ClinicalVerificationGates: @unchecked Sendable {
 
     // MARK: - Gate G: Generation Quality
 
-    /// Response should be non-trivial and not repetitive.
+    /// Response should be non-trivial and not repetitive (using Shannon entropy and dominance check).
     private func gateGenerationQuality(response: String) -> (Bool, [String]) {
         var warnings: [String] = []
 
-        // Check minimum length
-        let wordCount = response.split(separator: " ").count
-        if wordCount < 10 {
-            warnings.append("Response too short (\(wordCount) words)")
+        let words = response.lowercased()
+            .components(separatedBy: CharacterSet.alphanumerics.inverted)
+            .filter { $0.count >= 2 }
+
+        // Short responses pass trivially
+        guard words.count >= 20 else {
+            if words.count < 6 {
+                warnings.append("Response is extremely terse (\(words.count) words)")
+                return (false, warnings)
+            }
+            return (true, [])
         }
 
-        // Check for excessive repetition
-        let sentences = response.components(separatedBy: ". ")
-        if sentences.count > 2 {
-            let uniqueSentences = Set(sentences.map { $0.lowercased().trimmingCharacters(in: .whitespaces) })
-            let uniqueRatio = Double(uniqueSentences.count) / Double(sentences.count)
-            if uniqueRatio < 0.5 {
-                warnings.append("Repetitive response (uniqueness: \(Int(uniqueRatio * 100))%)")
+        // Sub-check 1: Bigram Entropy (Repetition detector)
+        var bigramCounts: [String: Int] = [:]
+        var totalBigrams = 0
+        for i in 0..<(words.count - 1) {
+            let bigram = "\(words[i]) \(words[i + 1])"
+            bigramCounts[bigram, default: 0] += 1
+            totalBigrams += 1
+        }
+
+        if totalBigrams > 0 {
+            var entropy: Double = 0.0
+            let total = Double(totalBigrams)
+            for (_, count) in bigramCounts {
+                let p = Double(count) / total
+                entropy -= p * log2(p)
+            }
+            
+            let threshold: Double = words.count < 50 ? 1.5 : 2.0
+            if entropy < threshold {
+                warnings.append("Low bigram entropy (\(String(format: "%.2f", entropy)) bits) — content is highly repetitive")
+            }
+        }
+
+        // Sub-check 2: Unique Word Ratio
+        let uniqueRatio = Double(Set(words).count) / Double(words.count)
+        if uniqueRatio < 0.35 {
+            warnings.append("Low vocabulary diversity (\(Int(uniqueRatio * 100))% unique words)")
+        }
+
+        // Sub-check 3: Trigram Dominance (Looping detector)
+        if words.count >= 15 {
+            var trigramCounts: [String: Int] = [:]
+            for i in 0..<(words.count - 2) {
+                let trigram = "\(words[i]) \(words[i + 1]) \(words[i + 2])"
+                trigramCounts[trigram, default: 0] += 1
+            }
+            let totalTrigrams = words.count - 2
+            if let topCount = trigramCounts.values.max(),
+               topCount >= 4,
+               Double(topCount) / Double(totalTrigrams) > 0.20 {
+                warnings.append("Trigram loops detected (dominant trigram matches \(topCount)/\(totalTrigrams) positions)")
             }
         }
 
         return (warnings.isEmpty, warnings)
+    }
+
+    // MARK: - Gate H: Answer Completeness
+
+    /// Verify that the response sufficiently addresses queries requiring multi-hop reasoning or comparisons.
+    private func gateAnswerCompleteness(response: String, query: String, chunks: [RetrievedChunk]) -> (Bool, [String]) {
+        var warnings: [String] = []
+        let queryLower = query.lowercased()
+        let responseLower = response.lowercased()
+
+        // Check 1: Multi-source / Multi-hop queries
+        let isMultiSourceQuery = queryLower.contains(" and ") || queryLower.contains("then") || queryLower.contains("after")
+        let distinctCategories = Set(chunks.map { $0.chunk.metadata.clinicalCategory })
+        
+        if isMultiSourceQuery && distinctCategories.count >= 2 {
+            var matchedCategories = 0
+            for category in distinctCategories {
+                let categoryTerms = chunks.filter { $0.chunk.metadata.clinicalCategory == category }
+                    .flatMap { extractClinicalTerms(from: $0.chunk.content) }
+                let hasCoverage = categoryTerms.prefix(5).contains { responseLower.contains($0) }
+                if hasCoverage {
+                    matchedCategories += 1
+                }
+            }
+            
+            if matchedCategories < 2 {
+                warnings.append("Under-supported clinical synthesis: query involves multiple clinical areas but response lacks balanced details")
+            }
+        }
+
+        // Check 2: Comparison queries
+        let isComparison = queryLower.contains("compare") || queryLower.contains("difference") || queryLower.contains(" versus ") || queryLower.contains(" vs ")
+        if isComparison {
+            let patientNames = Set(chunks.map { $0.chunk.metadata.patientName.lowercased() })
+            let coveredPatients = patientNames.filter { responseLower.contains($0) }.count
+            
+            if patientNames.count >= 2 && coveredPatients < 2 {
+                warnings.append("Incomplete comparison: response fails to mention all subject patients (\(coveredPatients)/\(patientNames.count) covered)")
+            }
+            
+            let categories = Set(chunks.map { $0.chunk.metadata.clinicalCategory.rawValue.lowercased() })
+            let coveredCategories = categories.filter { responseLower.contains($0) }.count
+            if categories.count >= 2 && coveredCategories < 2 {
+                let comparisonKeywords = ["allergy", "medication", "appointment", "record", "plan"]
+                let activeKeywords = comparisonKeywords.filter { queryLower.contains($0) }
+                let coveredKeywords = activeKeywords.filter { responseLower.contains($0) }.count
+                if activeKeywords.count >= 2 && coveredKeywords < 2 {
+                    warnings.append("Incomplete comparison: response did not detail all compared items")
+                }
+            }
+        }
+
+        // Check 3: Enumerations / List requests
+        let looksEnumerative = queryLower.contains("list") || queryLower.contains("all") || queryLower.contains("what are")
+        if looksEnumerative {
+            let wordCount = response.split(separator: " ").count
+            let containsListFormat = response.contains("- ") || response.contains("•") || response.contains("\n")
+            if wordCount < 20 && !containsListFormat {
+                warnings.append("Terse response: list query requested, but response is not structured or descriptive")
+            }
+        }
+
+        return (warnings.isEmpty, warnings)
+    }
+
+    // MARK: - Gate I: Patient Isolation
+
+    /// HIPAA and Clinical Safety check: Ensure no cross-patient data synthesis occurs.
+    private func gatePatientIsolation(chunks: [RetrievedChunk]) -> (Bool, [String]) {
+        var warnings: [String] = []
+
+        let patientIds = Set(chunks.map { $0.chunk.patientId })
+        let patientNames = Set(chunks.map { $0.chunk.metadata.patientName })
+
+        if patientIds.count > 1 {
+            warnings.append("CRITICAL: Cross-patient data mixture! Found records belonging to multiple patients: \(patientNames.joined(separator: ", "))")
+            return (false, warnings)
+        }
+
+        return (true, [])
     }
 
     // MARK: - Helpers

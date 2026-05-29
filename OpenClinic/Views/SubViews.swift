@@ -274,6 +274,8 @@ struct AgendaView: View {
                 }
                 #if os(iOS)
                 .listStyle(.insetGrouped)
+                .scrollContentBackground(.hidden)
+                .background(ClinicGlowBackground())
                 #endif
             }
             .navigationTitle("Today's Schedule")
@@ -363,24 +365,20 @@ private struct AgendaMetricTile: View {
     let color: Color
 
     var body: some View {
-        VStack(spacing: 5) {
+        VStack(spacing: 6) {
             Image(systemName: icon)
-                .font(.caption)
+                .font(.system(size: 14, weight: .bold))
                 .foregroundStyle(color)
             Text(value)
-                .font(.title3.bold().monospacedDigit())
+                .font(.system(size: 20, weight: .bold, design: .rounded))
             Text(label)
-                .font(.system(size: 9))
+                .font(.system(size: 9, weight: .semibold))
                 .foregroundStyle(.secondary)
                 .clinicalMicroLabel()
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 10)
-        .background(
-            RoundedRectangle(cornerRadius: 10)
-                .fill(Color(.tertiarySystemGroupedBackground))
-                .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(color.opacity(0.12), lineWidth: 1))
-        )
+        .padding(.vertical, 12)
+        .glassmorphicCard(cornerRadius: 12, borderColor: color.opacity(0.15), shadowRadius: 3)
     }
 }
 
@@ -398,7 +396,7 @@ private struct AgendaRow: View {
             // Time column
             VStack(spacing: 2) {
                 Text(appointment.scheduledTime, format: .dateTime.hour().minute())
-                    .font(.subheadline.monospacedDigit().weight(.medium))
+                    .font(.subheadline.monospacedDigit().weight(.semibold))
                     .lineLimit(1)
                     .fixedSize(horizontal: true, vertical: false)
                 if let dur = appointment.durationMinutes {
@@ -409,27 +407,41 @@ private struct AgendaRow: View {
             }
             .frame(width: 66, alignment: .trailing)
 
-            // Vertical accent bar
-            RoundedRectangle(cornerRadius: 2)
-                .fill(AgendaView.workflowColor(for: appointment.status))
-                .frame(width: 3, height: 44)
+            // Vertical accent bar from Design System
+            VisualAccentLine(color: AgendaView.workflowColor(for: appointment.status), height: 46)
+
+            // Patient initials avatar with dynamic gradient
+            Circle()
+                .fill(LinearGradient(
+                    colors: [Color.clinicalIndigo.opacity(0.2), Color.clinicalTeal.opacity(0.1)],
+                    startPoint: .topLeading, endPoint: .bottomTrailing
+                ))
+                .frame(width: 32, height: 32)
+                .overlay(
+                    Text("\(String(patient.firstName.prefix(1)))\(String(patient.lastName.prefix(1)))")
+                        .font(.system(size: 11, weight: .bold, design: .rounded))
+                        .foregroundColor(.clinicalIndigo)
+                )
 
             // Patient details
             VStack(alignment: .leading, spacing: 4) {
                 Text("\(patient.firstName) \(patient.lastName)")
-                    .font(.subheadline.weight(.semibold))
+                    .font(.subheadline.weight(.bold))
+                    .foregroundColor(.primary)
+                
                 Text(appointment.reasonForVisit)
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundColor(.secondary)
                     .clinicalFinePrint()
                     .clinicalRowSummaryText()
-                HStack(spacing: 8) {
+                
+                HStack(spacing: 6) {
                     if let type = appointment.encounterType {
                         Text(type)
-                            .clinicalPillText(weight: .medium)
-                            .padding(.horizontal, 4)
-                            .padding(.vertical, 1)
-                            .background(Color(.tertiarySystemFill), in: Capsule())
+                            .clinicalPillText(weight: .bold)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 1.5)
+                            .background(Color.primary.opacity(0.06), in: Capsule())
                             .foregroundStyle(.secondary)
                     }
                     if activeMedCount > 0 {
@@ -440,12 +452,12 @@ private struct AgendaRow: View {
                                 .font(.system(size: 9))
                                 .clinicalMicroLabel()
                         }
-                        .foregroundStyle(.green)
+                        .foregroundStyle(Color.clinicalTeal)
                     }
                     if patient.isSmoker {
                         Image(systemName: "smoke")
                             .font(.system(size: 8))
-                            .foregroundStyle(.orange)
+                            .foregroundStyle(Color.clinicalAmber)
                     }
                     ClinicalSourceBadge(descriptor: appointment.sourceDescriptor)
                 }
@@ -456,14 +468,14 @@ private struct AgendaRow: View {
 
             // Status chip
             Text(AgendaView.workflowPillLabel(for: appointment.status))
-                .clinicalPillText(weight: .medium)
-                .padding(.horizontal, 6)
-                .padding(.vertical, 2)
-                .background(AgendaView.workflowColor(for: appointment.status).opacity(0.15))
+                .clinicalPillText(weight: .semibold)
+                .padding(.horizontal, 7)
+                .padding(.vertical, 3)
+                .background(AgendaView.workflowColor(for: appointment.status).opacity(0.12))
                 .foregroundStyle(AgendaView.workflowColor(for: appointment.status))
                 .clipShape(Capsule())
         }
-        .padding(.vertical, 3)
+        .padding(.vertical, 4)
     }
 }
 
@@ -597,6 +609,8 @@ struct InboxView: View {
                 }
                 #if os(iOS)
                 .listStyle(.insetGrouped)
+                .scrollContentBackground(.hidden)
+                .background(ClinicGlowBackground())
                 #endif
             }
             .navigationTitle("IntraMail")
@@ -679,20 +693,23 @@ private struct InboxMessageRow: View {
         HStack(spacing: 12) {
             // Category icon with colored background
             Image(systemName: message.category.icon)
-                .font(.caption)
+                .font(.system(size: 11, weight: .bold))
                 .foregroundStyle(message.category.color)
-                .frame(width: 30, height: 30)
-                .background(message.category.color.opacity(0.12), in: RoundedRectangle(cornerRadius: 7))
+                .frame(width: 32, height: 32)
+                .background(message.category.color.opacity(0.1), in: RoundedRectangle(cornerRadius: 8))
 
             VStack(alignment: .leading, spacing: 4) {
-                HStack {
-                    if !message.isRead {
-                        Circle()
-                            .fill(.blue)
-                            .frame(width: 7, height: 7)
+                HStack(alignment: .center) {
+                    HStack(spacing: 4) {
+                        if !message.isRead {
+                            Circle()
+                                .fill(Color.clinicalIndigo)
+                                .frame(width: 6, height: 6)
+                        }
+                        Text(message.sender)
+                            .font(message.isRead ? .subheadline : .subheadline.bold())
+                            .foregroundColor(.primary)
                     }
-                    Text(message.sender)
-                        .font(message.isRead ? .subheadline : .subheadline.bold())
                     Spacer()
                     Text(message.date, format: .dateTime.month(.abbreviated).day())
                         .font(.caption2)
@@ -704,16 +721,15 @@ private struct InboxMessageRow: View {
                     .foregroundStyle(.primary)
                     .clinicalFinePrint(weight: .semibold)
                     .clinicalCompactText()
-                HStack(spacing: 6) {
-                    Text(message.preview)
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                        .clinicalFinePrint()
-                        .clinicalRowSummaryText()
-                }
+                
+                Text(message.preview)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .clinicalFinePrint()
+                    .clinicalRowSummaryText()
             }
         }
-        .padding(.vertical, 3)
+        .padding(.vertical, 4)
     }
 }
 

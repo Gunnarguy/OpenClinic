@@ -69,6 +69,8 @@ struct PatientDashboardView: View {
                             }
                         }
                         .listStyle(.insetGrouped)
+                        .scrollContentBackground(.hidden)
+                        .background(ClinicGlowBackground())
                     }
                 }
                 .navigationTitle("Patients")
@@ -98,14 +100,24 @@ private struct PatientListRow: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .top, spacing: 12) {
-                Image(systemName: "person.crop.circle.fill")
-                    .font(.title2)
-                    .foregroundStyle(.purple)
+            HStack(alignment: .center, spacing: 12) {
+                // Patient Initials Avatar with mesh gradient
+                Circle()
+                    .fill(LinearGradient(
+                        colors: [Color.clinicalIndigo.opacity(0.35), Color.clinicalTeal.opacity(0.15)],
+                        startPoint: .topLeading, endPoint: .bottomTrailing
+                    ))
+                    .frame(width: 42, height: 42)
+                    .overlay(
+                        Text("\(String(patient.firstName.prefix(1)))\(String(patient.lastName.prefix(1)))")
+                            .font(.system(size: 14, weight: .bold, design: .rounded))
+                            .foregroundColor(.clinicalIndigo)
+                    )
 
                 VStack(alignment: .leading, spacing: 3) {
                     Text(patient.fullName)
                         .font(.headline)
+                        .foregroundColor(.primary)
                     Text("MRN \(patient.medicalRecordNumber) • \(patient.age)y • \(patient.gender)")
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -114,39 +126,45 @@ private struct PatientListRow: View {
                 Spacer()
 
                 if patient.isSmoker {
-                    Label("Smoker", systemImage: "smoke")
-                        .font(.caption2)
-                        .foregroundStyle(.orange)
+                    Image(systemName: "smoke.fill")
+                        .font(.caption)
+                        .foregroundStyle(Color.clinicalAmber)
                 }
             }
 
-            HStack(spacing: 10) {
-                patientMetric("Problems", value: "\(problemCount)", color: .blue)
-                patientMetric("Rx", value: "\(activeMedCount)", color: .green)
-                patientMetric("Appts", value: "\(patient.appointments?.count ?? 0)", color: .purple)
+            HStack(spacing: 12) {
+                patientMetric("Problems", value: "\(problemCount)", color: .clinicalIndigo)
+                patientMetric("Rx", value: "\(activeMedCount)", color: .clinicalTeal)
+                patientMetric("Appts", value: "\(patient.appointments?.count ?? 0)", color: .clinicalSlate)
             }
+            .padding(.top, 2)
 
-            ClinicalSourceBadge(descriptor: patient.sourceDescriptor)
-
-            if let nextAppointment {
-                Text("Next: \(nextAppointment.scheduledTime.formatted(date: .abbreviated, time: .shortened)) • \(nextAppointment.reasonForVisit)")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .clinicalRowSummaryText(lines: 2)
+            HStack(spacing: 8) {
+                ClinicalSourceBadge(descriptor: patient.sourceDescriptor)
+                
+                if let nextAppointment {
+                    Spacer()
+                    Text("Next: \(nextAppointment.scheduledTime.formatted(date: .abbreviated, time: .shortened))")
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundColor(.secondary)
+                }
             }
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, 6)
     }
 
     private func patientMetric(_ label: String, value: String, color: Color) -> some View {
-        HStack(spacing: 4) {
+        HStack(spacing: 5) {
             Circle()
                 .fill(color)
-                .frame(width: 6, height: 6)
-            Text("\(label) \(value)")
-                .font(.caption2)
+                .frame(width: 5, height: 5)
+            Text("\(label): \(value)")
+                .font(.system(size: 10, weight: .semibold, design: .rounded))
                 .foregroundStyle(.secondary)
         }
+        .padding(.horizontal, 6)
+        .padding(.vertical, 2.5)
+        .background(color.opacity(0.08), in: RoundedRectangle(cornerRadius: 6))
     }
 }
 
@@ -474,9 +492,17 @@ struct PatientChartPageView: View {
     private func patientHeader(_ patient: PatientProfile) -> some View {
         VStack(spacing: 12) {
             HStack(spacing: 14) {
-                Image(systemName: "person.crop.circle.fill")
-                    .font(.system(size: 38))
-                    .foregroundColor(.purple)
+                Circle()
+                    .fill(LinearGradient(
+                        colors: [Color.clinicalIndigo, Color.clinicalTeal.opacity(0.8)],
+                        startPoint: .topLeading, endPoint: .bottomTrailing
+                    ))
+                    .frame(width: 44, height: 44)
+                    .overlay(
+                        Text("\(String(patient.firstName.prefix(1)))\(String(patient.lastName.prefix(1)))")
+                            .font(.system(size: 15, weight: .bold, design: .rounded))
+                            .foregroundColor(.white)
+                    )
 
                 VStack(alignment: .leading, spacing: 4) {
                     Text(patient.fullName)
@@ -833,38 +859,26 @@ struct PatientChartPageView: View {
     }
 
     private var chartPanelBackground: some View {
-        RoundedRectangle(cornerRadius: 10)
-            .fill(Color(.secondarySystemGroupedBackground))
-            .overlay(
-                RoundedRectangle(cornerRadius: 10)
-                    .strokeBorder(Color.primary.opacity(0.06), lineWidth: 1)
-            )
+        Color.clear
+            .glassmorphicCard(cornerRadius: 12)
     }
 
     private var chartMetricBackground: some View {
-        RoundedRectangle(cornerRadius: 10)
-            .fill(Color(.tertiarySystemGroupedBackground))
-            .overlay(
-                RoundedRectangle(cornerRadius: 10)
-                    .strokeBorder(Color.primary.opacity(0.05), lineWidth: 1)
-            )
+        Color.clear
+            .glassmorphicCard(cornerRadius: 12, borderColor: Color.primary.opacity(0.04), shadowRadius: 3)
     }
 
     private var alertPanelBackground: some View {
-        RoundedRectangle(cornerRadius: 10)
-            .fill(Color.red.opacity(0.05))
-            .overlay(
-                RoundedRectangle(cornerRadius: 10)
-                    .strokeBorder(Color.red.opacity(0.10), lineWidth: 1)
-            )
+        Color.clear
+            .glassmorphicCard(cornerRadius: 12, borderColor: Color.criticalRed.opacity(0.15), shadowRadius: 3)
+            .background(Color.criticalRed.opacity(0.03))
+            .cornerRadius(12)
     }
 
     private var warningPanelBackground: some View {
-        RoundedRectangle(cornerRadius: 10)
-            .fill(Color.orange.opacity(0.05))
-            .overlay(
-                RoundedRectangle(cornerRadius: 10)
-                    .strokeBorder(Color.orange.opacity(0.12), lineWidth: 1)
-            )
+        Color.clear
+            .glassmorphicCard(cornerRadius: 12, borderColor: Color.clinicalAmber.opacity(0.15), shadowRadius: 3)
+            .background(Color.clinicalAmber.opacity(0.03))
+            .cornerRadius(12)
     }
 }
