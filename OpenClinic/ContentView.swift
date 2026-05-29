@@ -13,10 +13,9 @@ struct ContentView: View {
                 if patients.isEmpty {
                     AppLogger.data.info("🌱 First launch detected — seeding mock data")
                     addMockData()
-                } else {
-                    AppLogger.data.info("📋 Database already seeded — refreshing supplemental data")
-                    refreshSupplementalDemoData()
                 }
+                AppLogger.data.info("📋 Refreshing supplemental data for today's timeline")
+                refreshSupplementalDemoData()
             }
     }
 
@@ -501,11 +500,238 @@ struct ContentView: View {
         }
 
         let medications = patients.flatMap { $0.medications ?? [] }
-        let records = patients.flatMap { $0.clinicalRecords ?? [] }
         let appointments = patients.flatMap { $0.appointments ?? [] }
 
-        AppLogger.data.info("📊 Demo data totals: \(patients.count) patients, \(medications.count) meds, \(records.count) records, \(appointments.count) appointments")
-        configureDemoData(patients: patients, medications: medications, records: records, appointments: appointments)
+        // ── Closed-Loop Dynamic Clinical Note Generation ──
+        struct ClinicalNoteTemplate {
+            let conditionName: String
+            let affectedAnatomicalZones: [String]
+            let ccHPI: String
+            let examFindings: String
+            let impressionsAndPlan: String
+            let icd10Code: String
+            let visitType: String
+            let severity: String
+            let patientInstructions: String
+            let followUpPlan: String
+            let recommendedOrders: [String]
+            let carePlanSummary: String
+        }
+
+        let noteTemplates: [String: ClinicalNoteTemplate] = [
+            "APT-011": ClinicalNoteTemplate(
+                conditionName: "Psoriasis Vulgaris",
+                affectedAnatomicalZones: ["right_upper_extremity"],
+                ccHPI: "Thomas Randall is a 56-year-old male presenting for scheduled biologic injection for psoriasis. He reports stable skin condition, no new flares, and no side effects since his last injection.",
+                examFindings: "No active psoriatic plaques on trunk or extremities. Injection site (right thigh) clean, no erythema or induration.",
+                impressionsAndPlan: "1. Psoriasis vulgaris — stable. Administered Tremfya 100mg SQ in right thigh. Patient tolerated procedure well. No immediate adverse reaction. Next injection in 8 weeks.",
+                icd10Code: "L40.0",
+                visitType: "Biologic therapy visit",
+                severity: "Stable",
+                patientInstructions: "Monitor injection site for redness. Keep skin well hydrated with thick emollients.",
+                followUpPlan: "Return in 8 weeks for scheduled Tremfya injection.",
+                recommendedOrders: ["Tremfya 100mg subcutaneous refill"],
+                carePlanSummary: "Biologic therapy maintenance for plaque psoriasis."
+            ),
+            "APT-005": ClinicalNoteTemplate(
+                conditionName: "Psoriasis Vulgaris",
+                affectedAnatomicalZones: ["left_upper_extremity", "right_upper_extremity"],
+                ccHPI: "Robert Chen is a 53-year-old male presenting for follow-up of psoriasis vulgaris. He has been on a biologic (Skyrizi) for 6 months. Reports significant clearing of plaques, decreased scaling, and no joint pain. Tolerating treatment well.",
+                examFindings: "Bilateral upper extremities show minimal erythema at previous plaque sites. Plaque burden reduced from 12% BSA to < 1% BSA. No active joint swelling or nail pitting.",
+                impressionsAndPlan: "1. Psoriasis vulgaris — excellent response to Skyrizi. Continue Skyrizi 150mg SQ every 12 weeks. Next dose scheduled at the infusion center. 2. Return in 6 months for routine safety monitoring.",
+                icd10Code: "L40.0",
+                visitType: "Biologic follow-up",
+                severity: "Mild residual plaque",
+                patientInstructions: "Continue Skyrizi maintenance, monitor for joint symptoms, and report any signs of systemic infection.",
+                followUpPlan: "Return in 6 months for checkup and routine safety monitoring labs.",
+                recommendedOrders: ["CBC with differential", "Comprehensive metabolic panel"],
+                carePlanSummary: "Routine safety monitoring during systemic immunomodulatory treatment."
+            ),
+            "APT-001": ClinicalNoteTemplate(
+                conditionName: "History of Melanoma",
+                affectedAnatomicalZones: ["right_upper_extremity"],
+                ccHPI: "Catherine Hartley is a 50-year-old female with a history of melanoma on the right upper extremity, presenting for a routine skin check. She reports no new changing moles, pruritus, or bleeding. She uses daily sun protection.",
+                examFindings: "Full-body skin check reveals a well-healed scar on the right upper extremity (previous melanoma site) with no evidence of local recurrence, satellite lesions, or in-transit metastases. No suspicious atypical nevi or irregular pigmented macules detected elsewhere.",
+                impressionsAndPlan: "1. History of cutaneous melanoma, right upper arm — stable, no recurrence. Continue sun safety precautions (SPF 50+, wide-brimmed hats) and strict daily sun protection. 2. Await next routine check in 6 months.",
+                icd10Code: "Z12.83",
+                visitType: "Melanoma surveillance",
+                severity: "No evidence of disease",
+                patientInstructions: "Perform monthly self-skin exams, report any new or changing lesions immediately, and use SPF 50+ daily.",
+                followUpPlan: "Reassess in 6 months for full-body surveillance exam.",
+                recommendedOrders: ["Baseline total body photography update"],
+                carePlanSummary: "Strict oncology dermatological surveillance."
+            ),
+            "APT-007": ClinicalNoteTemplate(
+                conditionName: "Atopic Dermatitis",
+                affectedAnatomicalZones: ["left_upper_extremity"],
+                ccHPI: "Sarah Johnson is a 51-year-old female presenting with an acute flare of atopic dermatitis on bilateral hands and wrists. Reports intense pruritus, sleep disruption. Flare started 4 days ago after using a new dish soap.",
+                examFindings: "Bilateral hands and wrists show erythematous plaques with mild lichenification, excoriations, and occasional serous crusting. No signs of secondary bacterial infection.",
+                impressionsAndPlan: "1. Atopic dermatitis, bilateral hands — acute flare. Prescribed Triamcinolone 0.1% ointment twice daily for 2 weeks, then transition to Tacrolimus 0.1% ointment PRN. 2. Counsel on gentle skin care, thick emollients, and avoidance of triggers.",
+                icd10Code: "L20.89",
+                visitType: "Acute flare visit",
+                severity: "Moderate-to-severe hands flare",
+                patientInstructions: "Apply Triamcinolone ointment BID to hand lesions. Avoid scented soaps and wear cotton gloves at night over emollients.",
+                followUpPlan: "Follow up in 3 weeks, or sooner if no improvement seen.",
+                recommendedOrders: ["Triamcinolone 0.1% ointment refill"],
+                carePlanSummary: "Barrier repair and active topical flare management."
+            ),
+            "APT-010": ClinicalNoteTemplate(
+                conditionName: "Dysplastic Nevus",
+                affectedAnatomicalZones: ["left_upper_extremity"],
+                ccHPI: "David Williams is a 41-year-old male presenting for an urgent evaluation of a new, rapidly growing dark lesion on his left forearm. He noticed it 3 weeks ago. It is occasionally itchy but denies bleeding.",
+                examFindings: "Left dorsal forearm: 6mm asymmetrical dark brown to black macule with irregular borders and color variegation. No ulceration. Dermoscopy shows atypical network and off-center hyperpigmented focus.",
+                impressionsAndPlan: "1. Suspicious pigmented lesion, left forearm — rule out melanoma. Performed 6mm punch biopsy today under local anesthesia (1% lidocaine with epinephrine). Sent to pathology. 2. Return in 7-10 days for suture removal and results.",
+                icd10Code: "D22.5",
+                visitType: "Urgent diagnostic biopsy",
+                severity: "High atypia / susp. melanoma",
+                patientInstructions: "Keep biopsy site dry for 24 hours, change dressing daily, and call immediately if significant bleeding or infection signs appear.",
+                followUpPlan: "Return in 7 days for suture removal and pathology discussion.",
+                recommendedOrders: ["Dermatopathology specimen review - RUSH"],
+                carePlanSummary: "Urgent diagnostic pathway for suspicious pigmented lesion."
+            ),
+            "APT-003": ClinicalNoteTemplate(
+                conditionName: "Acne Vulgaris",
+                affectedAnatomicalZones: ["left_cheek", "right_cheek", "chin"],
+                ccHPI: "Maria Santos is a 46-year-old female presenting for a follow-up of acne vulgaris. She has been on Doxycycline and Tretinoin. She reports moderate improvement in inflammatory lesions. Mild dryness noted on cheeks, but overall tolerated well.",
+                examFindings: "Face: approximately 4 inflammatory papules on bilateral cheeks, down from 15 at last visit. No nodulocystic lesions. Mild erythema and scaling on cheeks and chin consistent with retinoid use.",
+                impressionsAndPlan: "1. Acne vulgaris — responding well. Continue Tretinoin 0.05% cream at night, reduce Doxycycline to 50mg daily for 4 more weeks then taper off. 2. Recommended oil-free non-comedogenic moisturizer for dryness.",
+                icd10Code: "L70.0",
+                visitType: "Acne checkup",
+                severity: "Improving moderate",
+                patientInstructions: "Continue nightly Tretinoin. Transition Doxycycline to daily dosing. Use oil-free SPF 30+ daily.",
+                followUpPlan: "Follow up in 6 weeks.",
+                recommendedOrders: ["Tretinoin 0.05% cream refill"],
+                carePlanSummary: "Acne vulgaris topical and systemic maintenance."
+            ),
+            "APT-012": ClinicalNoteTemplate(
+                conditionName: "Healthy Skin Exam",
+                affectedAnatomicalZones: [],
+                ccHPI: "Margaret Liu is an 86-year-old female presenting for her annual full-body skin screening. She reports no new, changing, or symptomatic moles. History of extensive sun exposure.",
+                examFindings: "Full-body skin screening performed. Normal age-related changes including seborrheic keratoses and cherry angiomas. No atypical nevi or signs of malignancy.",
+                impressionsAndPlan: "1. Normal full-body skin screening. Reassured patient. Return in 12 months for routine annual screening, or sooner if any changing lesions are noted.",
+                icd10Code: "Z12.83",
+                visitType: "Annual screening",
+                severity: "Routine / benign",
+                patientInstructions: "Maintain standard sun safety and perform monthly self skin exams.",
+                followUpPlan: "Return in 12 months for routine screening.",
+                recommendedOrders: ["None"],
+                carePlanSummary: "Annual full-body skin screening routine."
+            ),
+            "APT-013": ClinicalNoteTemplate(
+                conditionName: "Basal Cell Carcinoma",
+                affectedAnatomicalZones: ["facial_mesh_nose"],
+                ccHPI: "Patricia Okafor is a 73-year-old female presenting for Mohs surgery consultation regarding biopsy-proven basal cell carcinoma of the nasal tip.",
+                examFindings: "Nasal tip shows a 5mm erythematous, pearly papule with telangiectasias and central crusting, consistent with previous biopsy site.",
+                impressionsAndPlan: "1. Basal Cell Carcinoma, nasal tip. Scheduled for Mohs micrographic surgery next Tuesday. Counseled on the procedure, risks, benefits, and expected wound healing.",
+                icd10Code: "C44.311",
+                visitType: "Mohs surgery consult",
+                severity: "Biopsy proven carcinoma",
+                patientInstructions: "Understand Mohs procedure steps. Hold blood thinners only if cleared by primary physician.",
+                followUpPlan: "Mohs surgery scheduled for next Tuesday at 8:00 AM.",
+                recommendedOrders: ["Mohs micrographic surgical packet", "Pre-op clearance check"],
+                carePlanSummary: "Surgical intervention path for cutaneous malignancy."
+            ),
+            "APT-014": ClinicalNoteTemplate(
+                conditionName: "Actinic Keratosis",
+                affectedAnatomicalZones: ["facial_mesh_nose"],
+                ccHPI: "Carlos Rivera is a 56-year-old male presenting for follow-up and cryotherapy of actinic keratosis on the nose. Reports mild tenderness at treatment sites from 2 months ago, but otherwise doing well.",
+                examFindings: "Nose shows three discrete erythematous, scaly, sandpaper-like papules measuring 3-4mm. No evidence of infiltration or induration.",
+                impressionsAndPlan: "1. Actinic keratosis, nose. Liquid nitrogen cryotherapy applied to three lesions (single freeze-thaw cycle of 10 seconds). Tolerated well. Counselled on sun protection and monitoring.",
+                icd10Code: "L57.0",
+                visitType: "Cryotherapy session",
+                severity: "Mild actinic damage",
+                patientInstructions: "Expect blistering or crusting at treated sites on the nose. Do not pick crusts.",
+                followUpPlan: "Return in 3 months for skin surveillance check.",
+                recommendedOrders: ["None"],
+                carePlanSummary: "Destruction of precancerous skin lesions."
+            ),
+            "APT-015": ClinicalNoteTemplate(
+                conditionName: "Dysplastic Nevus",
+                affectedAnatomicalZones: ["left_upper_extremity"],
+                ccHPI: "Helen Whitfield is a 63-year-old female presenting for evaluation of a suspicious mole on her left arm. She reports the lesion has been present for years but recently seems darker and slightly irregular.",
+                examFindings: "Left upper arm: 5mm slightly asymmetric macule, tan/brown with irregular borders. Dermoscopy shows atypical network without regression structures.",
+                impressionsAndPlan: "1. Atypical nevus, left upper arm. Performed shave biopsy today for pathology. Will call patient with results. Re-excision will be planned if moderate or severe dysplasia is reported.",
+                icd10Code: "D22.6",
+                visitType: "Lesion evaluation",
+                severity: "Atypical nevus",
+                patientInstructions: "Keep bandage on for 24 hours, monitor for bleeding, and await pathology results.",
+                followUpPlan: "Return in 10 days for wound check and pathology discussion.",
+                recommendedOrders: ["Shave biopsy specimen pathology review"],
+                carePlanSummary: "Biopsy and surveillance for atypical melanocytic nevi."
+            )
+        ]
+
+        for patient in patients {
+            for appt in patient.appointments ?? [] {
+                guard let template = noteTemplates[appt.appointmentID] else { continue }
+                
+                let docStatus: String
+                let recordStatus: String
+                switch appt.status.lowercased() {
+                case "completed":
+                    docStatus = "signed"
+                    recordStatus = "Final"
+                case "ready for checkout", "readyforcheckout":
+                    docStatus = "reviewed"
+                    recordStatus = "Final"
+                case "in exam", "inexam", "roomed":
+                    docStatus = "draft"
+                    recordStatus = "Preliminary"
+                default:
+                    continue
+                }
+                
+                let existingRecord = (patient.clinicalRecords ?? []).first { rec in
+                    cal.isDateInToday(rec.dateRecorded) && rec.conditionName == template.conditionName
+                }
+                
+                if let rec = existingRecord {
+                    rec.dateRecorded = appt.scheduledTime
+                    rec.documentationStatus = docStatus
+                    rec.status = recordStatus
+                    rec.documentationSignedAt = docStatus == "signed" ? appt.scheduledTime : nil
+                } else {
+                    let newRec = LocalClinicalRecord(
+                        recordID: "REC-TODAY-\(appt.appointmentID)",
+                        dateRecorded: appt.scheduledTime,
+                        conditionName: template.conditionName,
+                        status: recordStatus,
+                        isHiddenFromPortal: false,
+                        ccHPI: template.ccHPI,
+                        reviewOfSystems: "Gen: Constitutional symptoms denied. Derm: No other active skin issues reported.",
+                        examFindings: template.examFindings,
+                        impressionsAndPlan: template.impressionsAndPlan,
+                        affectedAnatomicalZones: template.affectedAnatomicalZones,
+                        providerSignature: "Dr. Smith, MD",
+                        documentationStatus: docStatus,
+                        documentationSignedAt: docStatus == "signed" ? appt.scheduledTime : nil
+                    )
+                    newRec.icd10Code = template.icd10Code
+                    newRec.visitType = template.visitType
+                    newRec.severity = template.severity
+                    newRec.patientInstructions = template.patientInstructions
+                    newRec.followUpPlan = template.followUpPlan
+                    newRec.recommendedOrders = template.recommendedOrders
+                    newRec.carePlanSummary = template.carePlanSummary
+                    newRec.sourceKind = ClinicalSourceKind.demoLocalCache.rawValue
+                    newRec.sourceSystemName = "OpenClinic Demo Dataset"
+                    newRec.sourceRecordIdentifier = newRec.recordID
+                    newRec.sourceLastSyncedAt = .now
+                    newRec.sourceOfTruth = false
+                    
+                    newRec.patient = patient
+                    modelContext.insert(newRec)
+                    if patient.clinicalRecords == nil {
+                        patient.clinicalRecords = []
+                    }
+                    patient.clinicalRecords?.append(newRec)
+                }
+            }
+        }
+
+        let updatedRecords = patients.flatMap { $0.clinicalRecords ?? [] }
+        AppLogger.data.info("📊 Demo data totals after dynamic note sync: \(patients.count) patients, \(medications.count) meds, \(updatedRecords.count) records, \(appointments.count) appointments")
+        configureDemoData(patients: patients, medications: medications, records: updatedRecords, appointments: appointments)
         try? modelContext.save()
     }
 

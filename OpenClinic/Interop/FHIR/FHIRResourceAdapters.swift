@@ -35,12 +35,28 @@ struct FHIRDosage: Decodable {
     let route: FHIRCodeableConcept?
 }
 
+struct FHIRTelecom: Decodable {
+    let system: String?
+    let value: String?
+}
+
+struct FHIRContact: Decodable {
+    let name: FHIRHumanName?
+    let telecom: [FHIRTelecom]?
+}
+
 struct FHIRPatientResource: Decodable {
     let id: String
     let identifier: [FHIRIdentifier]?
     let name: [FHIRHumanName]?
     let gender: String?
     let birthDate: String?
+    let contact: [FHIRContact]?
+}
+
+struct FHIRAllergyIntoleranceResource: Decodable {
+    let id: String
+    let code: FHIRCodeableConcept?
 }
 
 struct FHIRConditionResource: Decodable {
@@ -87,12 +103,26 @@ enum FHIRResourceAdapters {
         let medicalRecordNumber = resource.identifier?.first(where: { $0.value?.isEmpty == false })?.value ?? resource.id
         let birthDate = dateOnly(resource.birthDate) ?? Date(timeIntervalSince1970: 0)
 
+        var emergencyContactName: String? = nil
+        var emergencyContactPhone: String? = nil
+
+        if let firstContact = resource.contact?.first {
+            let given = firstContact.name?.given?.first ?? ""
+            let family = firstContact.name?.family ?? ""
+            if !given.isEmpty || !family.isEmpty {
+                emergencyContactName = "\(given) \(family)".trimmingCharacters(in: .whitespaces)
+            }
+            emergencyContactPhone = firstContact.telecom?.first(where: { $0.system?.lowercased() == "phone" })?.value
+        }
+
         return PatientProfile(
             medicalRecordNumber: medicalRecordNumber,
             firstName: firstName,
             lastName: lastName,
             dateOfBirth: birthDate,
             gender: resource.gender?.capitalized ?? "Unknown",
+            emergencyContactName: emergencyContactName,
+            emergencyContactPhone: emergencyContactPhone,
             sourceKind: ClinicalSourceKind.smartFHIR.rawValue,
             sourceSystemName: "SMART on FHIR",
             sourceRecordIdentifier: resource.id,

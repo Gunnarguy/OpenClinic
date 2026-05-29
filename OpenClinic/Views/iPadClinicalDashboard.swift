@@ -186,7 +186,7 @@ private struct PatientAgendaRow: View {
     var body: some View {
         HStack(spacing: 10) {
             RoundedRectangle(cornerRadius: 2)
-                .fill(AgendaView.workflowColor(for: summary.primaryAppointment.status))
+                .fill(AgendaView.workflowColor(for: summary.primaryAppointment.resolvedStatus))
                 .frame(width: 3, height: 36)
 
             VStack(alignment: .leading, spacing: 4) {
@@ -212,8 +212,8 @@ private struct PatientAgendaRow: View {
                         .clinicalPillText(weight: .medium)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)
-                        .background(AgendaView.workflowColor(for: summary.primaryAppointment.status).opacity(0.15))
-                        .foregroundStyle(AgendaView.workflowColor(for: summary.primaryAppointment.status))
+                        .background(AgendaView.workflowColor(for: summary.primaryAppointment.resolvedStatus).opacity(0.15))
+                        .foregroundStyle(AgendaView.workflowColor(for: summary.primaryAppointment.resolvedStatus))
                         .clipShape(Capsule())
                 }
                 ClinicalSourceBadge(descriptor: summary.patient.sourceDescriptor)

@@ -44,30 +44,107 @@ extension View {
     }
 }
 
-// MARK: - Screen Glow Background
-struct ClinicGlowBackground: View {
+// MARK: - Liquid Glass Card View Modifier
+struct LiquidGlassCard: ViewModifier {
+    var cornerRadius: CGFloat = 16
+    var borderColor: Color? = nil
+    var shadowRadius: CGFloat = 8
+    var glowColor: Color? = nil
+    
+    func body(content: Content) -> some View {
+        content
+            .background(.ultraThinMaterial)
+            .background(Color.primary.opacity(0.005))
+            .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                    .strokeBorder(
+                        borderColor ?? Color.clear,
+                        lineWidth: borderColor != nil ? 1 : 0
+                    )
+            )
+            .overlay(
+                // Liquid glass edge reflections
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                    .strokeBorder(
+                        LinearGradient(
+                            colors: [
+                                .white.opacity(0.24),
+                                .white.opacity(0.06),
+                                .black.opacity(0.03),
+                                .white.opacity(0.18)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        lineWidth: 1
+                    )
+            )
+            .background(
+                Group {
+                    if let glow = glowColor {
+                        RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                            .stroke(glow.opacity(0.18), lineWidth: 3)
+                            .blur(radius: 4)
+                    }
+                }
+            )
+            .shadow(color: Color.black.opacity(0.04), radius: shadowRadius, x: 0, y: 4)
+    }
+}
+
+extension View {
+    func liquidGlassCard(cornerRadius: CGFloat = 16, borderColor: Color? = nil, shadowRadius: CGFloat = 8, glowColor: Color? = nil) -> some View {
+        modifier(LiquidGlassCard(cornerRadius: cornerRadius, borderColor: borderColor, shadowRadius: shadowRadius, glowColor: glowColor))
+    }
+}
+
+// MARK: - Ambient Liquid Background (Pulsating mesh shadows)
+struct AmbientLiquidBackground: View {
+    @State private var animate = false
+    
     var body: some View {
         ZStack {
             Color.clinicMainBackground
                 .ignoresSafeArea()
             
-            // Soft ambient lighting
             GeometryReader { geo in
                 ZStack {
+                    // Pulsating top-left indigo circle
                     Circle()
-                        .fill(Color.clinicalIndigo.opacity(0.08))
-                        .frame(width: geo.size.width * 0.8, height: geo.size.width * 0.8)
-                        .blur(radius: 60)
-                        .offset(x: -geo.size.width * 0.2, y: -geo.size.height * 0.15)
+                        .fill(Color.clinicalIndigo.opacity(0.06))
+                        .frame(width: geo.size.width * (animate ? 0.95 : 0.8), height: geo.size.width * (animate ? 0.95 : 0.8))
+                        .blur(radius: 65)
+                        .offset(x: -geo.size.width * (animate ? 0.1 : 0.2), y: -geo.size.height * (animate ? 0.08 : 0.18))
                     
+                    // Pulsating bottom-right teal circle
                     Circle()
-                        .fill(Color.clinicalTeal.opacity(0.06))
-                        .frame(width: geo.size.width * 0.7, height: geo.size.width * 0.7)
-                        .blur(radius: 50)
-                        .offset(x: geo.size.width * 0.4, y: geo.size.height * 0.2)
+                        .fill(Color.clinicalTeal.opacity(0.05))
+                        .frame(width: geo.size.width * (animate ? 0.72 : 0.88), height: geo.size.width * (animate ? 0.72 : 0.88))
+                        .blur(radius: 55)
+                        .offset(x: geo.size.width * (animate ? 0.42 : 0.32), y: geo.size.height * (animate ? 0.22 : 0.12))
+
+                    // Center-left warm/purple pulsating circle
+                    Circle()
+                        .fill(Color.clinicalIndigo.opacity(0.04))
+                        .frame(width: geo.size.width * (animate ? 0.65 : 0.5), height: geo.size.width * (animate ? 0.65 : 0.5))
+                        .blur(radius: 60)
+                        .offset(x: geo.size.width * (animate ? 0.05 : 0.15), y: geo.size.height * (animate ? 0.45 : 0.35))
                 }
             }
         }
+        .onAppear {
+            withAnimation(.easeInOut(duration: 8.0).repeatForever(autoreverses: true)) {
+                animate = true
+            }
+        }
+    }
+}
+
+// MARK: - Screen Glow Background
+struct ClinicGlowBackground: View {
+    var body: some View {
+        AmbientLiquidBackground()
     }
 }
 

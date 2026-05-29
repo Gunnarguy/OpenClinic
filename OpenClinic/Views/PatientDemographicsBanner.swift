@@ -99,6 +99,22 @@ struct PatientDemographicsBanner: View {
                                     .font(.subheadline)
                             }
                         }
+                        if let contactName = profile.emergencyContactName {
+                            GridRow {
+                                Text("Emergency Contact")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(contactName)
+                                        .font(.subheadline.weight(.medium))
+                                    if let contactPhone = profile.emergencyContactPhone {
+                                        Text(contactPhone)
+                                            .font(.caption)
+                                            .foregroundColor(.secondary)
+                                    }
+                                }
+                            }
+                        }
                     }
                     
                     // Care plan summary block
@@ -174,7 +190,7 @@ struct PatientDemographicsBanner: View {
             }
         }
         .padding(12)
-        .glassmorphicCard()
+        .liquidGlassCard(cornerRadius: 16)
     }
     
     private func formattedDate(_ date: Date) -> String {

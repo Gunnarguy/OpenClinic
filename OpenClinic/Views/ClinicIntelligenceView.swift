@@ -189,14 +189,12 @@ struct ClinicIntelligenceView: View {
                                         .frame(maxWidth: cardMaxWidth, alignment: .leading)
                                         .padding(.horizontal, 12)
                                         .padding(.vertical, 10)
-                                        .background(.ultraThinMaterial)
-                                        .cornerRadius(12)
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 12)
-                                                .strokeBorder(Color.clinicalIndigo.opacity(0.12), lineWidth: 1)
+                                        .background(
+                                            Color.clear
+                                                .liquidGlassCard(cornerRadius: 12, borderColor: Color.clinicalIndigo.opacity(0.12), shadowRadius: 3)
                                         )
                                 }
-                                .buttonStyle(.plain)
+                                .buttonStyle(InteractivePillButtonStyle())
                                 .foregroundStyle(Color.clinicalIndigo)
                             }
                         }
@@ -249,30 +247,38 @@ struct ClinicIntelligenceView: View {
                     }
                 }
 
-                // Input bar
+                // Floating Frosted Input Capsule
                 VStack(spacing: 0) {
-                    Divider()
                     HStack(spacing: 12) {
                         TextField(selectedPatient == nil ? "Ask about your patient panel…" : "Ask about \(selectedPatient!.firstName)…", text: $queryText)
                             .padding(.horizontal, 16)
                             .padding(.vertical, 10)
-                            .background(Color(UIColor.secondarySystemBackground).opacity(0.8))
+                            .background(Color.primary.opacity(0.04))
                             .clipShape(Capsule())
                             .onSubmit { sendMessage(queryText) }
+                            .textFieldStyle(.plain)
 
                         Button(action: { sendMessage(queryText) }) {
                             Image(systemName: "arrow.up.circle.fill")
-                                .font(.system(size: 28))
+                                .font(.system(size: 30))
                                 .symbolRenderingMode(.hierarchical)
-                                .foregroundColor(queryText.isEmpty ? .secondary.opacity(0.5) : .purple)
+                                .foregroundColor(queryText.isEmpty ? .secondary.opacity(0.5) : .clinicalIndigo)
+                                .scaleEffect(queryText.isEmpty ? 1.0 : 1.05)
+                                .animation(.spring(), value: queryText.isEmpty)
                         }
                         .disabled(queryText.isEmpty || isProcessing)
                     }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(
+                        Color.clear
+                            .liquidGlassCard(cornerRadius: 24, borderColor: Color.primary.opacity(0.08), shadowRadius: 6)
+                    )
                     .padding(.horizontal)
                     .padding(.vertical, 12)
                     .frame(maxWidth: contentMaxWidth)
-                    .background(.ultraThinMaterial)
                 }
+                .background(.clear)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             }
@@ -383,16 +389,15 @@ private struct UserBubble: View {
         HStack(alignment: .bottom, spacing: 8) {
             Spacer(minLength: 60)
             Text(text)
-                .font(.subheadline)
+                .font(.subheadline.weight(.medium))
                 .lineSpacing(2)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 10)
-                .background(LinearGradient(
-                    colors: [Color.clinicalIndigo, Color.clinicalIndigo.opacity(0.85)],
-                    startPoint: .topLeading, endPoint: .bottomTrailing
-                ))
+                .padding(.horizontal, 16)
+                .padding(.vertical, 11)
                 .foregroundColor(.white)
-                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .background(
+                    Color.clinicalIndigo.opacity(0.75)
+                        .liquidGlassCard(cornerRadius: 18, borderColor: Color.clinicalIndigo.opacity(0.3), shadowRadius: 4, glowColor: Color.clinicalIndigo)
+                )
                 .textSelection(.enabled)
         }
         .padding(.horizontal)
@@ -558,13 +563,15 @@ private struct AIResponseView: View {
                 }
 
                 ChatFormattedText(text: message.text)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 12)
-                    .background(.ultraThinMaterial)
-                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 16, style: .continuous)
-                            .strokeBorder(Color.primary.opacity(0.06), lineWidth: 0.5)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 14)
+                    .background(
+                        Color.clear
+                            .liquidGlassCard(
+                                cornerRadius: 18,
+                                shadowRadius: 4,
+                                glowColor: message.metadata.map { confidenceColor($0.verification?.confidence ?? .high) } ?? Color.clinicalIndigo
+                            )
                     )
 
                 if let meta = message.metadata {
@@ -665,7 +672,7 @@ private struct AIResponseView: View {
         .font(.caption2)
         .padding(.horizontal, 9)
         .padding(.vertical, 7)
-        .glassmorphicCard(cornerRadius: 12, borderColor: Color.primary.opacity(0.04), shadowRadius: 2)
+        .liquidGlassCard(cornerRadius: 12, borderColor: Color.primary.opacity(0.04), shadowRadius: 2)
     }
 
     private func confidenceIcon(_ tier: ConfidenceTier) -> String {
@@ -920,5 +927,14 @@ private struct PipelineMetricsView: View {
                 .font(.system(.caption2, design: .monospaced))
                 .clinicalFinePrintMonospaced()
         }
+    }
+}
+
+// MARK: - Button Style for suggestion pills
+private struct InteractivePillButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.96 : 1.0)
+            .animation(.spring(response: 0.2, dampingFraction: 0.6), value: configuration.isPressed)
     }
 }

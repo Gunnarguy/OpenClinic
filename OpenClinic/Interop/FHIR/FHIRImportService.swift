@@ -60,9 +60,29 @@ final class FHIRImportService {
             warnings: &warnings
         )
 
+        let allergyResources: [FHIRAllergyIntoleranceResource] = await resilientBundleFetch(
+            resourceType: "AllergyIntolerance",
+            queryItems: [URLQueryItem(name: "patient", value: patientID)],
+            baseURL: baseURL,
+            decoder: decoder,
+            warnings: &warnings
+        )
+
         let conditionCount = try syncConditions(conditionResources, to: patient, modelContext: modelContext)
         let medicationCount = try syncMedications(medicationResources, to: patient, modelContext: modelContext)
         let appointmentCount = try syncAppointments(appointmentResources, to: patient, modelContext: modelContext)
+
+        // Sync allergies
+        let allergies = allergyResources.compactMap { $0.code?.preferredText }
+        if !allergies.isEmpty {
+            var current = patient.allergies
+            for allergy in allergies {
+                if !current.contains(allergy) {
+                    current.append(allergy)
+                }
+            }
+            patient.allergies = current
+        }
 
         try modelContext.save()
 
@@ -106,6 +126,8 @@ final class FHIRImportService {
             existing.lastName = adapted.lastName
             existing.dateOfBirth = adapted.dateOfBirth
             existing.gender = adapted.gender
+            existing.emergencyContactName = adapted.emergencyContactName
+            existing.emergencyContactPhone = adapted.emergencyContactPhone
             existing.sourceKind = adapted.sourceKind
             existing.sourceSystemName = adapted.sourceSystemName
             existing.sourceRecordIdentifier = adapted.sourceRecordIdentifier

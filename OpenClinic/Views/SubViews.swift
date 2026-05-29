@@ -7,6 +7,10 @@ struct AgendaView: View {
     @Query(sort: \PatientProfile.lastName) private var patients: [PatientProfile]
     @State private var filterStatus: String?
 
+    #if os(iOS)
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    #endif
+
     /// Flattened today-only appointments paired with their patient, sorted by time.
     private var todaySchedule: [(patient: PatientProfile, appointment: Appointment)] {
         let cal = Calendar.current
@@ -23,7 +27,7 @@ struct AgendaView: View {
 
     private var filteredSchedule: [(patient: PatientProfile, appointment: Appointment)] {
         guard let filterStatus else { return todaySchedule }
-        return todaySchedule.filter { $0.appointment.status == filterStatus }
+        return todaySchedule.filter { $0.appointment.resolvedStatus == filterStatus }
     }
 
     /// Group labels in EMA/gPM workflow order.
@@ -72,14 +76,14 @@ struct AgendaView: View {
         return groups
     }
 
-    private var statsCompleted: Int { todaySchedule.filter { $0.appointment.status == "Completed" }.count }
-    private var statsInExam: Int { todaySchedule.filter { $0.appointment.status == "In Exam" }.count }
-    private var statsWaiting: Int { todaySchedule.filter { ["Checked In", "Waiting triage", "Roomed"].contains($0.appointment.status) }.count }
+    private var statsCompleted: Int { todaySchedule.filter { $0.appointment.resolvedStatus == "Completed" }.count }
+    private var statsInExam: Int { todaySchedule.filter { $0.appointment.resolvedStatus == "In Exam" }.count }
+    private var statsWaiting: Int { todaySchedule.filter { ["Checked In", "Waiting triage", "Roomed"].contains($0.appointment.resolvedStatus) }.count }
     private var statsTotal: Int { Set(todaySchedule.map(\.patient.id)).count }
-    private var statsRemaining: Int { todaySchedule.filter { !["Completed", "Ready for Checkout"].contains($0.appointment.status) }.count }
+    private var statsRemaining: Int { todaySchedule.filter { !["Completed", "Ready for Checkout"].contains($0.appointment.resolvedStatus) }.count }
 
     private var nextUpPair: (patient: PatientProfile, appointment: Appointment)? {
-        todaySchedule.first { $0.appointment.status == "Checked In" || $0.appointment.status == "Waiting triage" || $0.appointment.status == "Roomed" }
+        todaySchedule.first { $0.appointment.resolvedStatus == "Checked In" || $0.appointment.resolvedStatus == "Waiting triage" || $0.appointment.resolvedStatus == "Roomed" }
     }
 
     var body: some View {
@@ -140,7 +144,7 @@ struct AgendaView: View {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 8) {
                         ForEach(Self.workflowOrder.reversed(), id: \.self) { status in
-                            let count = todaySchedule.filter { $0.appointment.status == status }.count
+                            let count = todaySchedule.filter { $0.appointment.resolvedStatus == status }.count
                             if count > 0 {
                                 Button {
                                     withAnimation {
@@ -167,14 +171,38 @@ struct AgendaView: View {
                 Divider()
 
                 // ── Metric tiles ──
-                HStack(spacing: 10) {
-                    AgendaMetricTile(label: "Patients", value: "\(statsTotal)", icon: "person.2", color: .purple)
-                    AgendaMetricTile(label: "In Exam", value: "\(statsInExam)", icon: "stethoscope", color: .orange)
-                    AgendaMetricTile(label: "Waiting", value: "\(statsWaiting)", icon: "clock", color: .blue)
-                    AgendaMetricTile(label: "Done", value: "\(statsCompleted)", icon: "checkmark.circle", color: .green)
+                Group {
+                    #if os(iOS)
+                    if horizontalSizeClass == .compact {
+                        LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)], spacing: 8) {
+                            AgendaMetricTile(label: "Patients", value: "\(statsTotal)", icon: "person.2", color: .purple)
+                            AgendaMetricTile(label: "In Exam", value: "\(statsInExam)", icon: "stethoscope", color: .orange)
+                            AgendaMetricTile(label: "Waiting", value: "\(statsWaiting)", icon: "clock", color: .blue)
+                            AgendaMetricTile(label: "Done", value: "\(statsCompleted)", icon: "checkmark.circle", color: .green)
+                        }
+                        .padding(.horizontal)
+                        .padding(.vertical, 6)
+                    } else {
+                        HStack(spacing: 10) {
+                            AgendaMetricTile(label: "Patients", value: "\(statsTotal)", icon: "person.2", color: .purple)
+                            AgendaMetricTile(label: "In Exam", value: "\(statsInExam)", icon: "stethoscope", color: .orange)
+                            AgendaMetricTile(label: "Waiting", value: "\(statsWaiting)", icon: "clock", color: .blue)
+                            AgendaMetricTile(label: "Done", value: "\(statsCompleted)", icon: "checkmark.circle", color: .green)
+                        }
+                        .padding(.horizontal)
+                        .padding(.vertical, 10)
+                    }
+                    #else
+                    HStack(spacing: 10) {
+                        AgendaMetricTile(label: "Patients", value: "\(statsTotal)", icon: "person.2", color: .purple)
+                        AgendaMetricTile(label: "In Exam", value: "\(statsInExam)", icon: "stethoscope", color: .orange)
+                        AgendaMetricTile(label: "Waiting", value: "\(statsWaiting)", icon: "clock", color: .blue)
+                        AgendaMetricTile(label: "Done", value: "\(statsCompleted)", icon: "checkmark.circle", color: .green)
+                    }
+                    .padding(.horizontal)
+                    .padding(.vertical, 10)
+                    #endif
                 }
-                .padding(.horizontal)
-                .padding(.vertical, 10)
 
                 // ── Next Up card ──
                 if let nextUp = nextUpPair {
@@ -199,12 +227,12 @@ struct AgendaView: View {
                             .clinicalFinePrintMonospaced()
                             .lineLimit(1)
                             .fixedSize(horizontal: true, vertical: false)
-                        Text(Self.workflowPillLabel(for: nextUp.appointment.status))
+                        Text(Self.workflowPillLabel(for: nextUp.appointment.resolvedStatus))
                             .clinicalPillText(weight: .medium)
                             .padding(.horizontal, 6)
                             .padding(.vertical, 2)
-                            .background(Self.workflowColor(for: nextUp.appointment.status).opacity(0.15), in: Capsule())
-                            .foregroundStyle(Self.workflowColor(for: nextUp.appointment.status))
+                            .background(Self.workflowColor(for: nextUp.appointment.resolvedStatus).opacity(0.15), in: Capsule())
+                            .foregroundStyle(Self.workflowColor(for: nextUp.appointment.resolvedStatus))
                     }
                     .padding(12)
                     .background(
@@ -234,9 +262,9 @@ struct AgendaView: View {
                                     AgendaRow(patient: item.patient, appointment: item.appointment)
                                 }
                                 .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                                    if let next = Self.nextStatus(after: item.appointment.status) {
+                                    if let next = Self.nextStatus(after: item.appointment.resolvedStatus) {
                                         Button {
-                                            AppLogger.agenda.info("➡️ Swipe advance: \(item.patient.fullName) \(item.appointment.status) → \(next)")
+                                            AppLogger.agenda.info("➡️ Swipe advance: \(item.patient.fullName) \(item.appointment.resolvedStatus) → \(next)")
                                             withAnimation { item.appointment.status = next }
                                         } label: {
                                             Label(next, systemImage: "chevron.right.circle.fill")
@@ -245,9 +273,9 @@ struct AgendaView: View {
                                     }
                                 }
                                 .swipeActions(edge: .leading, allowsFullSwipe: false) {
-                                    if let prev = Self.previousStatus(before: item.appointment.status) {
+                                    if let prev = Self.previousStatus(before: item.appointment.resolvedStatus) {
                                         Button {
-                                            AppLogger.agenda.info("⬅️ Swipe regress: \(item.patient.fullName) \(item.appointment.status) → \(prev)")
+                                            AppLogger.agenda.info("⬅️ Swipe regress: \(item.patient.fullName) \(item.appointment.resolvedStatus) → \(prev)")
                                             withAnimation { item.appointment.status = prev }
                                         } label: {
                                             Label(prev, systemImage: "chevron.left.circle.fill")
@@ -378,7 +406,7 @@ private struct AgendaMetricTile: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 12)
-        .glassmorphicCard(cornerRadius: 12, borderColor: color.opacity(0.15), shadowRadius: 3)
+        .liquidGlassCard(cornerRadius: 12, borderColor: color.opacity(0.15), shadowRadius: 3, glowColor: color)
     }
 }
 
@@ -397,6 +425,7 @@ private struct AgendaRow: View {
             VStack(spacing: 2) {
                 Text(appointment.scheduledTime, format: .dateTime.hour().minute())
                     .font(.subheadline.monospacedDigit().weight(.semibold))
+                    .foregroundColor(.primary)
                     .lineLimit(1)
                     .fixedSize(horizontal: true, vertical: false)
                 if let dur = appointment.durationMinutes {
@@ -405,26 +434,26 @@ private struct AgendaRow: View {
                         .foregroundStyle(.tertiary)
                 }
             }
-            .frame(width: 66, alignment: .trailing)
+            .frame(width: 76, alignment: .trailing)
 
-            // Vertical accent bar from Design System
-            VisualAccentLine(color: AgendaView.workflowColor(for: appointment.status), height: 46)
+            // Vertical accent bar matching workflow status
+            VisualAccentLine(color: AgendaView.workflowColor(for: appointment.resolvedStatus), height: 42)
 
-            // Patient initials avatar with dynamic gradient
+            // Patient initials avatar
             Circle()
                 .fill(LinearGradient(
                     colors: [Color.clinicalIndigo.opacity(0.2), Color.clinicalTeal.opacity(0.1)],
                     startPoint: .topLeading, endPoint: .bottomTrailing
                 ))
-                .frame(width: 32, height: 32)
+                .frame(width: 34, height: 34)
                 .overlay(
                     Text("\(String(patient.firstName.prefix(1)))\(String(patient.lastName.prefix(1)))")
-                        .font(.system(size: 11, weight: .bold, design: .rounded))
+                        .font(.system(size: 12, weight: .bold, design: .rounded))
                         .foregroundColor(.clinicalIndigo)
                 )
 
             // Patient details
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 3) {
                 Text("\(patient.firstName) \(patient.lastName)")
                     .font(.subheadline.weight(.bold))
                     .foregroundColor(.primary)
@@ -441,7 +470,7 @@ private struct AgendaRow: View {
                             .clinicalPillText(weight: .bold)
                             .padding(.horizontal, 6)
                             .padding(.vertical, 1.5)
-                            .background(Color.primary.opacity(0.06), in: Capsule())
+                            .background(Color.primary.opacity(0.05), in: Capsule())
                             .foregroundStyle(.secondary)
                     }
                     if activeMedCount > 0 {
@@ -467,15 +496,24 @@ private struct AgendaRow: View {
             Spacer()
 
             // Status chip
-            Text(AgendaView.workflowPillLabel(for: appointment.status))
+            Text(AgendaView.workflowPillLabel(for: appointment.resolvedStatus))
                 .clinicalPillText(weight: .semibold)
-                .padding(.horizontal, 7)
+                .padding(.horizontal, 8)
                 .padding(.vertical, 3)
-                .background(AgendaView.workflowColor(for: appointment.status).opacity(0.12))
-                .foregroundStyle(AgendaView.workflowColor(for: appointment.status))
+                .background(
+                    Color.clear
+                        .liquidGlassCard(
+                            cornerRadius: 10,
+                            borderColor: AgendaView.workflowColor(for: appointment.resolvedStatus).opacity(0.2),
+                            shadowRadius: 2,
+                            glowColor: AgendaView.workflowColor(for: appointment.resolvedStatus)
+                        )
+                )
+                .background(AgendaView.workflowColor(for: appointment.resolvedStatus).opacity(0.04))
+                .foregroundStyle(AgendaView.workflowColor(for: appointment.resolvedStatus))
                 .clipShape(Capsule())
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, 6)
     }
 }
 
@@ -769,9 +807,8 @@ struct IntraMailDetailView: View {
                 }
                 .padding()
                 .background(
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(Color(.secondarySystemGroupedBackground))
-                        .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Color.primary.opacity(0.06), lineWidth: 1))
+                    Color.clear
+                        .liquidGlassCard(cornerRadius: 12, borderColor: Color.primary.opacity(0.06), shadowRadius: 3)
                 )
 
                 // Body
@@ -780,14 +817,13 @@ struct IntraMailDetailView: View {
                     .padding()
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .background(
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(Color(.secondarySystemGroupedBackground))
-                            .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Color.primary.opacity(0.06), lineWidth: 1))
+                        Color.clear
+                            .liquidGlassCard(cornerRadius: 12, borderColor: Color.primary.opacity(0.06), shadowRadius: 3)
                     )
             }
             .padding()
         }
-        .background(Color(.systemGroupedBackground))
+        .background(ClinicGlowBackground())
         .navigationTitle("Message")
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)

@@ -312,9 +312,11 @@ struct VisitRecordDetailView: View {
                                     .foregroundColor(.secondary)
                                     .clinicalMicroLabel()
                             }
-                            .padding(8)
-                            .background(Color.teal.opacity(0.06))
-                            .cornerRadius(8)
+                            .padding(10)
+                            .background(
+                                Color.clear
+                                    .liquidGlassCard(cornerRadius: 10, borderColor: Color.teal.opacity(0.15), shadowRadius: 2, glowColor: Color.teal)
+                            )
                         }
                     }
                 }
@@ -337,6 +339,7 @@ struct VisitRecordDetailView: View {
             }
             .padding()
         }
+        .background(ClinicGlowBackground())
         .navigationTitle(record.conditionName)
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
@@ -410,12 +413,8 @@ struct VisitRecordDetailView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding()
         .background(
-            RoundedRectangle(cornerRadius: 10)
-                .fill(Color(.secondarySystemGroupedBackground))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 10)
-                        .strokeBorder(Color.primary.opacity(0.06), lineWidth: 1)
-                )
+            Color.clear
+                .liquidGlassCard(cornerRadius: 10, borderColor: Color.indigo.opacity(0.12), shadowRadius: 3, glowColor: Color.indigo)
         )
     }
 
