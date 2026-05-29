@@ -1,7 +1,7 @@
 # OpenClinic
 
 <p align="center">
-  <img src="OpenClinic/Assets.xcassets/AppIcon.appiconset/Icon-60@2x.png" width="128" height="128" alt="OpenClinic App Icon" style="border-radius: 22px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);"/>
+  <img src="OpenClinic/Assets.xcassets/AppIcon.appiconset/app_icon_128.png" alt="OpenClinic app icon" width="128" height="128">
 </p>
 
 <p align="center">
@@ -9,22 +9,21 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Swift-6.0-orange.svg" alt="Swift 6" />
-  <img src="https://img.shields.io/badge/iOS_/_macOS_/_visionOS-26.2%2B-blue.svg" alt="SDK Target" />
-  <img src="https://img.shields.io/badge/Xcode-26.3-blue.svg" alt="Xcode 26.3" />
-  <img src="https://img.shields.io/badge/License-None-red.svg" alt="License" />
-  <img src="https://img.shields.io/badge/App_Store-Not_Published-lightgrey.svg" alt="App Store" />
+  <img alt="Swift" src="https://img.shields.io/badge/Swift-6.0-F05138?style=for-the-badge&logo=swift&logoColor=white">
+  <img alt="iOS" src="https://img.shields.io/badge/iOS-26.2%2B-111827?style=for-the-badge&logo=apple&logoColor=white">
+  <img alt="License" src="https://img.shields.io/badge/License-Proprietary-10B981?style=for-the-badge">
 </p>
+
+---
 
 ## Overview
 
-**OpenClinic** is an advanced, Apple-native clinical workstation designed for healthcare providers (HCPs). It integrates patient schedule management, clinical record tracking, dermatology-focused visual timelines, and a SMART on FHIR interoperability pipeline into a unified, local-first SwiftUI experience.
+OpenClinic is a native iOS, iPadOS, macOS, and visionOS clinical workspace designed for healthcare providers. It integrates patient schedules, clinical record logs, visual timelines for dermatological checkups, and a SMART on FHIR synchronization pipeline into a unified, local-first SwiftUI experience.
 
-* **What the app is:** A native iPad, iPhone, macOS, and visionOS workspace that aggregates patient demographics, clinical records, medications, appointments, and photos.
-* **Who it is for:** Healthcare practitioners (physicians, dermatologists, and nurses) looking for an responsive, offline-capable alternative to traditional web-wrapped Electronic Health Record (EHR) systems.
-* **What problem it solves:** Eliminates latency, internet-dependency, and generic text editors in clinical workflows by using on-device ML for dictation transcription, structured note generation, and semantic chart querying.
-* **Why it is technically interesting:** It runs a complete, local RAG (Retrieval-Augmented Generation) pipeline directly on the client. It features a custom chunking parser, local tokenizers, Core ML vector embeddings, SQLite FTS5 lexical indexing, reciprocal rank fusion (RRF), and a strict **9-gate clinical verification pipeline** to guarantee data safety.
-* **What makes it different:** Unlike patient-facing health apps that utilize the device owner's HealthKit sandbox, OpenClinic is a provider-facing app that imports multi-patient data directly from EHR systems using SMART on FHIR authorization and scopes.
+* **Functional Role:** Aggregates patient demographic profiles, clinical record timelines, medication lists, appointments, and photos.
+* **Clinician Workflow:** Provides offline-capable charting, record lookups, and note completion tools to minimize dependencies on remote servers.
+* **On-Device LLMs & RAG:** Implements a local retrieval-augmented generation (RAG) pipeline to support chart Q&A, clinical note compilation, and documentation checks without transmitting Patient Health Information (PHI) to third-party cloud APIs.
+* **EHR Integration:** Connects to standard EHR sandbox platforms using SMART on FHIR OAuth scopes to import multi-patient records.
 
 ---
 
@@ -32,203 +31,97 @@
 
 | Dimension | Detail |
 |---|---|
-| **Platform** | iOS 26.2+ / iPadOS 26.2+ / macOS Catalyst 26.2+ / visionOS 26.2+ |
-| **Language** | Swift (Swift 6 Concurrency and Structured Concurrency) |
-| **UI** | SwiftUI (with native multi-column navigation and custom Design System tokens) |
-| **Architecture** | Container-driven state with Service-orchestrated RAG pipelines |
-| **Primary APIs** | Apple Foundation Models (`LanguageModelSession`), SMART on FHIR, Core ML |
-| **Storage** | SwiftData local persistence, SQLite FTS5 for search indexing, Keychain for secrets |
-| **Status** | Serious Prototype / Active Architecture Playground |
-| **App Store** | Not published (Internal prototype only) |
-| **License** | Proprietary / None (Add explicit license for fork usage) |
+| Platform | iOS / iPadOS / macOS Catalyst / visionOS |
+| Language | Swift |
+| UI | SwiftUI |
+| Architecture | Container-driven / Actor-isolated RAG |
+| Primary APIs | Apple Foundation Models (`LanguageModelSession`), SMART on FHIR, Core ML |
+| Storage | SwiftData, SQLite FTS5, Keychain |
+| Status | Active |
+| License | Proprietary / None |
 
 ---
 
-## What This App Demonstrates
+## Key Capabilities
 
-- **Apple Intelligence Integration:** Directly binds to on-device Foundation Models (`LanguageModelSession`) to generate structured, same-day encounter notes (`ClinicalVisitNote`) from raw doctor dictations.
-- **On-Device RAG Pipeline:** Indexes clinical patient data locally using a bundled Core ML embedding model and tokenization vocabulary, storing vectors in `ClinicalVectorStore`.
-- **9-Gate Verification Framework:** Before displaying any AI-synthesized response to a clinician, the output is subjected to nine safety and grounding checks covering retrieval confidence, numerical sanity, contradiction detection, and patient isolation.
-- **SMART on FHIR Interoperability:** Implements OAuth 2.0 authorization via `ASWebAuthenticationSession` with capability statement discovery to import Patients, Conditions, Medications, and Appointments.
-- **Traceable Provenance:** Attaches cryptographic and source-tracking metadata (`sourceKind`, `sourceSystemName`) to every database object to separate demo data, imported records, and AI-generated text.
-- **Advanced Concurrency & Actors:** Utilizes Swift Actor isolation for the database-heavy embedding and full-text search indexers to keep the SwiftUI main thread entirely stutter-free.
+- **On-Device LLM Integration:** Binds to local Apple Foundation Models (`LanguageModelSession`) to transcribe dictations into structured notes (`ClinicalVisitNote`).
+- **Local Vector Search:** Generates 768-dimensional embeddings using a bundled Core ML model, indexing chunks in a local vector database.
+- **9-Gate Verification:** Runs post-processing safety checks (evaluating evidence coverage, numeric sanity, contradictions, and patient data boundaries) before displaying generated text.
+- **FHIR Interoperability:** Uses `ASWebAuthenticationSession` to authorize and sync Patient, Condition, MedicationRequest, and Appointment resources.
+- **Data Provenance:** Attaches sync timestamps and source system attributes to SwiftData entities to preserve the authority of remote records.
+- **Main-Thread Concurrency:** Isolates database inserts, vector queries, and full-text indexing inside background Actors.
 
 ---
 
-## End-to-End User Journey
+## How It Works
+
+This flowchart details the clinician onboarding, patient navigation, and database sync workflow:
 
 ```mermaid
 flowchart TD
-    subgraph UI ["User Interface"]
-        A[Launch OpenClinic] --> B{SMART Session Valid?}
-        B -->|No| C[Settings / Live EHR Sync]
-        B -->|Yes| D[Agenda / Today's Schedule]
-        C --> E[SMART OAuth In-App Sign-in]
-        E -->|Store Token in Keychain| D
-    end
-
-    subgraph DataSync ["EHR Data Sync"]
-        D --> F[Select Patient Dashboard]
-        F --> G[Fetch & Import FHIR Resources]
-        G -->|Patient, Condition, Meds, Appts| H[(SwiftData Store)]
-    end
-
-    subgraph Intelligence ["Local AI Workflow"]
-        H -->|Auto Reindex on Launch| I[Local Vector & FTS5 Indexing]
-        F --> J[Encounter Workspace / Chart Chat]
-        J -->|Clinician Dictation or Query| K[RAG Pipeline Search]
-        I --> K
-        K --> L[On-Device Foundation Model]
-        L --> M[9-Gate Safety Verification]
-        M -->|Grounding & Isolation Checks| N[Render Structured Output / Answer]
-    end
+    A[Launch App] --> B{OAuth Configured?}
+    B -->|No| C[Settings/EHR Server URL]
+    B -->|Yes| D[Agenda Schedule]
+    C --> E[SMART OAuth Authentication]
+    E --> D
+    D --> F[Select Patient Chart]
+    F --> G[Import/Sync Patient Data]
+    G --> H[Open Patient Dashboard]
 ```
+
+On launch, OpenClinic seeds a baseline configuration and sets up the local SwiftData model container. Clinicians select patients from a daily schedule timeline. If connected to a SMART on FHIR server, the client queries and resolves patient records locally on demand.
 
 ---
 
-## System Architecture
+## Architecture
+
+OpenClinic organizes components into distinct functional layers:
+
+```mermaid
+flowchart LR
+    subgraph Layers ["System Tiers"]
+        UI[SwiftUI View Layer] --> Controllers[State & Orchestration Controllers]
+        Controllers --> Ingestion[FHIR Ingestion & RAG Pipelines]
+        Ingestion --> Storage[SwiftData & Local Vector Stores]
+    end
+```
+
+*For a detailed view-by-view diagram covering controllers, services, and local file storage, refer to [ARCHITECTURE.md](ARCHITECTURE.md#2-system-layer-diagram).*
+
+---
+
+## Core Workflows
+
+The RAG query engine processes clinician inputs using a hybrid vector-lexical lookup and output validator:
 
 ```mermaid
 flowchart TD
-    subgraph UI_Layer ["User Interface (SwiftUI)"]
-        View[EHRMainShellView]
-        Dashboard[PatientDashboardView]
-        Exam[ClinicalExamView]
-        IntelView[ClinicIntelligenceView]
-    end
-
-    subgraph Controller_Layer ["Orchestration & State Controllers"]
-        SmartController[SMARTConnectionController]
-        IntelService[ClinicalIntelligenceService]
-        RAGService[ClinicalRAGService]
-    end
-
-    subgraph Processing_Layer ["Ingestion & Local AI Pipelines"]
-        Import[FHIRImportService]
-        Chunker[ClinicalChunker]
-        Embedding[ClinicalEmbeddingService]
-        FTS[ClinicalFTSService]
-        RAGEngine[ClinicalRAGEngine]
-        Gates[ClinicalVerificationGates]
-    end
-
-    subgraph Storage_Layer ["On-Device Persistence & Assets"]
-        SD[(SwiftData Container)]
-        VecStore[ClinicalVectorStore]
-        Keychain[[iOS Keychain]]
-        MLModels[Core ML Packages]
-    end
-
-    subgraph External ["External Services"]
-        FHIR[SMART on FHIR Server]
-        AppleAI[Apple Intelligence Model]
-    end
-
-    View --> Dashboard
-    View --> IntelView
-    Dashboard --> Exam
-    Dashboard --> SmartController
-
-    SmartController --> Import
-    IntelService --> RAGService
-    RAGService --> Chunker
-    RAGService --> Embedding
-    RAGService --> FTS
-    RAGService --> RAGEngine
-    RAGService --> Gates
-
-    Import --> SD
-    Import --> FHIR
-    SmartController --> Keychain
-    
-    Embedding --> MLModels
-    RAGEngine --> VecStore
-    
-    IntelService --> AppleAI
-    
-    SD --> Chunker
+    A[Clinician Query] --> B[Generate Query Vector]
+    B --> C[Hybrid Search: FTS5 + Core ML]
+    C --> D[RRF Fusion & MMR Rerank]
+    D --> E[On-Device LLM Synthesis]
+    E --> F[9-Gate Safety Verification]
+    F --> G{Passed?}
+    G -->|Yes| H[Render Verified Response]
+    G -->|No| I[Display Warnings & Block]
 ```
+
+*For details on chunking parameters, cross-encoders, and reciprocal rank fusion, refer to [ARCHITECTURE.md](ARCHITECTURE.md#7-core-retrieval-rag-pipeline).*
 
 ---
 
-## Core Pipeline
+## Data Flow
 
-OpenClinic coordinates a hybrid retrieval architecture to fetch, rank, verify, and generate clinical insights locally.
+This diagram traces the local storage boundaries and data synchronization paths:
 
 ```mermaid
 flowchart TD
-    subgraph Ingestion ["1. Data Ingestion"]
-        Record[SwiftData Clinical Record] --> Chunker[Clinical Chunker]
-        Chunker -->|Text Paragraphs| Chunks[Clinical Chunks]
-    end
-
-    subgraph Indexing ["2. Storage & Indexing"]
-        Chunks -->|Text| FTS5[SQLite FTS5 Keyword Index]
-        Chunks -->|Core ML inference| Embedder[ClinicalEmbeddingService]
-        Embedder -->|768-dim Vector| VecDB[ClinicalVectorStore]
-    end
-
-    subgraph Retrieval ["3. Retrieval & Fusion"]
-        Query[Clinician Query] -->|Generate Query Vector| Embedder
-        Embedder -->|Cosine Similarity Search| VecDB
-        Query -->|Token Match Query| FTS5
-        VecDB -->|Semantic Candidates| RRF[Reciprocal Rank Fusion]
-        FTS5 -->|Keyword Candidates| RRF
-    end
-
-    subgraph Processing ["4. Reranking & Budgeting"]
-        RRF -->|Ranked Candidates| Rerank[Cross-Encoder Reranker]
-        Rerank -->|Top Scoring Chunks| MMR[Maximal Marginal Relevance]
-        MMR -->|Diverse Chunks| Middle[Lost-in-the-Middle Reordering]
-        Middle -->|Reordered Context| LLM[SystemLanguageModel]
-    end
-
-    subgraph Verification ["5. 9-Gate Verification"]
-        LLM -->|Synthesized Output| GateEval[ClinicalVerificationGates]
-        GateEval -->|Evaluate Gates A-I| Check{Safety Threshold Passed?}
-        Check -->|Yes| Output[Display with Confidence Level]
-        Check -->|No| Warn[Display Warnings & Block Action]
-    end
+    FHIR[FHIR Server] -->|HTTPS JSON| Import[FHIRImportService]
+    Import -->|Entity Map| SD[(SwiftData Store)]
+    SD -->|Local Chunks| VectorStore[ClinicalVectorStore]
+    SD -->|FTS Row| FTS[SQLite FTS5 Index]
+    Keychain[[Keychain]] -->|OAuth Tokens| Import
 ```
-
-### Ingestion & Processing Details
-
-#### Ingestion
-Patient contexts enter the system through two main entry points:
-1. **Interactive EHR Sync:** Clinicians sign in to a SMART on FHIR OAuth server. OpenClinic retrieves the launch patient payload, query-mapping conditions, active medications, appointments, and allergy statuses.
-2. **Local Seeding & Capture:** In the absence of a network connection, the system self-seeds a multi-patient clinical agenda (e.g., Catherine Hartley, Maria Santos) and supports live local camera capture and dictation.
-
-#### Processing
-On launch, or whenever a new patient record is written, the `ClinicalChunker` executes a clinical-aware split:
-* **Section Splitting:** Segregates records by clinical categories (`ccHPI`, `examFindings`, `impressionsAndPlan`).
-* **Metadata Tagging:** Attaches patient UUIDs, diagnostic ICD-10 codes, and clinical categories to every text chunk to prevent data leakage.
-* **Lexical & Semantic Storage:** Text chunks are pushed asynchronously to FTS5. Concurrently, they pass through a local Core ML model to generate a 768-dimensional vector, which is saved in `ClinicalVectorStore` on the device's local filesystem.
-
-#### Retrieval & Querying
-OpenClinic uses hybrid search to bypass the limitations of keyword-only or embedding-only searches:
-* **Reciprocal Rank Fusion (RRF):** Blends semantic vector scores and SQLite FTS5 lexical scores using a constant scaling factor ($k=60$).
-* **Diversity Reranking (MMR):** Applies Maximal Marginal Relevance ($\lambda=0.7$) to filter out redundant chunks.
-* **Context Placement:** Reorders context to place high-relevance chunks at the absolute beginning and end of the prompt sequence, minimizing model attention decay.
-
-#### Generation & Output
-Structured note generation and clinical assistant Q&A leverage Apple's System Language Models:
-* **Token Budget Management:** Computes a strict 4096-token boundary. Generates query-specific compact patient representations (e.g., dropping medication data for demographic questions) to reclaim token space.
-* **Recursive RAG Synthesis:** If a panel query (across all patients) exceeds the single-pass token window, OpenClinic segments patients into batches, executes multiple parallel inference sessions, and runs a final synthesis model pass to merge results.
-* **Verification Gates:** An offline evaluator runs 9 automated checks on the model output before the clinician sees it.
-
----
-
-## Key Technical Decisions
-
-| Decision | Rationale | Tradeoff |
-|---|---|---|
-| **SwiftData for Local Storage** | Provides schema validation and relationship mapping out-of-the-box on Apple platforms. | Requires manual migrations if schema versions change rapidly. |
-| **On-Device Core ML Embeddings** | Ensures patient health records never leave the device to generate embeddings, keeping compliance boundaries strict. | Requires downloading and caching a 768-dimensional model package on the device. |
-| **9-Gate Verification** | Protects clinicians from LLM hallucinations, contradictions, and numerical medication dosage errors. | Introduces a minor post-processing computation delay on older Apple Silicon chips. |
-| **Query-Aware Token Budgeting** | Classifies incoming query intent (e.g. Meds vs. Demographics) to drop irrelevant patient metadata. | Requires robust classification heuristics to avoid dropping critical peripheral data. |
-| **Batch Recursive RAG** | Allows queries across the entire patient panel without overflowing the 4096-token model context window. | Multi-pass generation increases processing time proportionally to batch count. |
-| **SMART on FHIR Client** | Connects to standards-compliant sandbox servers out of the box using ASWebAuthenticationSession. | Bound to FHIR API schemas; requires custom adapters for legacy hospital protocols. |
-| **Separated HealthKit Sync** | Entitlements contain HealthKit flags, but sync is restricted since HealthKit exposes consumer owner data rather than practitioner records. | Disconnects the app from consumer-wearable data streams. |
 
 ---
 
@@ -263,7 +156,7 @@ These environment configurations control OpenClinic's local storage and sync beh
 
 ---
 
-## Getting Started
+## Build & Run
 
 ### Prerequisite Toolchain
 * macOS 15.0+ or compatible development workstation.
@@ -283,13 +176,13 @@ open OpenClinic.xcodeproj
 1. Select the `OpenClinic` target in the scheme editor.
 2. Under **Signing & Capabilities**, select your developer team and update the bundle identifier if compiling for a physical device.
 3. Choose a simulator (e.g. iPad Pro running iOS 26.2) or select a connected Apple device.
-4. Press `Cmd + R` to compile and run. On launch, the app will automatically seed clinical demo records and start the local vector indexer.
+4. Press `Cmd + R` to compile and run. On launch, the app will seed clinical demo records and start the local vector indexer.
 
 ---
 
-## Testing and QA
+## Testing
 
-OpenClinic does not currently ship with automated unit or integration tests. Verification relies on manual flow checks and diagnostic logging.
+Verification relies on manual flow checks and diagnostic logging.
 
 | Validation | Command / Procedure | Expected Result |
 |---|---|---|
@@ -299,12 +192,9 @@ OpenClinic does not currently ship with automated unit or integration tests. Ver
 | **RAG Indexing Test** | Launch app, check Console logs | Logs show "📊 Reindex complete: X chunks, Y FTS rows". |
 | **AI Verification Test** | Ask a panel question in Intelligence tab | Result outputs with green shield for "High" grounding, or red warnings for failed gates. |
 
-> [!WARNING]
-> Because the app lacks automated CI check pipelines, all changes to data models or query structures must be manually verified across both simulator and target device modes before submission.
-
 ---
 
-## Privacy and Security
+## Privacy & Security
 
 OpenClinic runs as a closed system on the doctor's device. No clinical data is synced to third-party databases:
 * **Encryption at Rest:** SwiftData sqlite files inherit default Apple sandbox encryption.
@@ -315,18 +205,15 @@ For more details, see [PRIVACY.md](PRIVACY.md) and [SECURITY.md](SECURITY.md).
 
 ---
 
-## Documentation Index
+## Documentation
 
 | Document | Purpose |
 |---|---|
-| [README.md](README.md) | Primary project overview, snapshot, and verified setup. |
-| [ARCHITECTURE.md](ARCHITECTURE.md) | Architectural layers, concurrency model, and service boundaries. |
-| [ROADMAP.md](ROADMAP.md) | Release milestones, limitations, and future feature targets. |
-| [SECURITY.md](SECURITY.md) | Vulnerability disclosure, storage models, and key handling. |
-| [PRIVACY.md](PRIVACY.md) | Data handling principles and App Store privacy configurations. |
-| [APP_STORE.md](APP_STORE.md) | Step-by-step credentials and environment notes for reviewer compliance. |
-| [CONTRIBUTING.md](CONTRIBUTING.md) | Standards for coding style, PR structures, and subagent validations. |
-| [docs/CASE_STUDY.md](docs/CASE_STUDY.md) | Comprehensive engineering case study detailing architectural tradeoffs. |
+| [Architecture](ARCHITECTURE.md) | System design, data flow, and service boundaries |
+| [Security](SECURITY.md) | Secret handling, local storage, and release checks |
+| [Privacy](PRIVACY.md) | Data storage, API transmission, and user controls |
+| [Roadmap](ROADMAP.md) | Current status, planned work, and known gaps |
+| [Case Study](docs/CASE_STUDY.md) | Engineering retrospective and implementation notes |
 
 ---
 

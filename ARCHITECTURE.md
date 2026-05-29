@@ -8,14 +8,16 @@ OpenClinic is designed as a standalone, Apple-native clinical workstation for he
 
 Traditional Electronic Health Record (EHR) systems are built as database-centric web portals that suffer from high latency, poor offline capabilities, and complex UI layouts. OpenClinic proposes an alternative: **a local-first, Apple-native, intelligence-augmented client**. 
 
-Our design thesis rests on three pillars:
-1. **Low Latency & Offline Autonomy:** Clinical work happens in high-stress, variable-connectivity environments. The application must store and query clinical records locally using SwiftData and custom indexes, allowing full workflow completion without internet access.
+The design rests on three pillars:
+1. **Low Latency & Offline Autonomy:** Clinical work happens in high-stress, variable-connectivity environments. The application stores and queries clinical records locally using SwiftData and custom indexes, allowing workflow completion without internet access.
 2. **Contextual On-Device AI:** Rather than sending sensitive Patient Health Information (PHI) to cloud-based LLM endpoints, the app leverages Apple's on-device Foundation Models for clinical summarization, structured documentation generation, and Q&A.
 3. **Traceable Interoperability:** Data imported from external EHR systems via SMART on FHIR is never flattened; it retains clear provenance metadata to expose its origin, sync timestamp, and authority level.
 
 ---
 
 ## 2. System Layer Diagram
+
+This diagram displays the detailed connections between the SwiftUI views, the background orchestration services, local storage components, and the on-device inference model.
 
 ```mermaid
 flowchart TD
@@ -192,7 +194,56 @@ sequenceDiagram
 
 ---
 
-## 7. Concurrency Model
+## 7. Core Retrieval (RAG) Pipeline
+
+OpenClinic implements a local hybrid RAG pipeline that compiles indexed content, scores candidates using Reciprocal Rank Fusion, and validates outputs through safety gates.
+
+```mermaid
+flowchart TD
+    subgraph Ingestion ["1. Data Ingestion"]
+        Record[SwiftData Clinical Record] --> Chunker[Clinical Chunker]
+        Chunker -->|Text Paragraphs| Chunks[Clinical Chunks]
+    end
+
+    subgraph Indexing ["2. Storage & Indexing"]
+        Chunks -->|Text| FTS5[SQLite FTS5 Keyword Index]
+        Chunks -->|Core ML inference| Embedder[ClinicalEmbeddingService]
+        Embedder -->|768-dim Vector| VecDB[ClinicalVectorStore]
+    end
+
+    subgraph Retrieval ["3. Retrieval & Fusion"]
+        Query[Clinician Query] -->|Generate Query Vector| Embedder
+        Embedder -->|Cosine Similarity Search| VecDB
+        Query -->|Token Match Query| FTS5
+        VecDB -->|Semantic Candidates| RRF[Reciprocal Rank Fusion]
+        FTS5 -->|Keyword Candidates| RRF
+    end
+
+    subgraph Processing ["4. Reranking & Budgeting"]
+        RRF -->|Ranked Candidates| Rerank[Cross-Encoder Reranker]
+        Rerank -->|Top Scoring Chunks| MMR[Maximal Marginal Relevance]
+        MMR -->|Diverse Chunks| Middle[Lost-in-the-Middle Reordering]
+        Middle -->|Reordered Context| LLM[SystemLanguageModel]
+    end
+
+    subgraph Verification ["5. 9-Gate Verification"]
+        LLM -->|Synthesized Output| GateEval[ClinicalVerificationGates]
+        GateEval -->|Evaluate Gates A-I| Check{Safety Threshold Passed?}
+        Check -->|Yes| Output[Display with Confidence Level]
+        Check -->|No| Warn[Display Warnings & Block Action]
+    end
+```
+
+### Detailed Pipeline Breakdown
+1. **Ingestion:** Clinical records are parsed by the `ClinicalChunker`, separating sections like history (HPI), physical findings, and plans, while appending patient scope markers.
+2. **Indexing:** Chunks are concurrently stored in an FTS5 full-text index for lexical recall and compiled into 768-dimensional float arrays via Core ML for vector similarity.
+3. **Retrieval & Fusion:** The query is routed to FTS5 and the Core ML embedding evaluator. The search rankings are combined via Reciprocal Rank Fusion ($k=60$).
+4. **Reranking:** The `ClinicalRAGEngine` runs candidate lists through a cross-encoder and filters redundancies via MMR before reordering context elements to avoid attention degradation.
+5. **9-Gate Verification:** Runs checks evaluating retrieval confidence, coverage, number grounding, contradictions, and patient scope boundaries.
+
+---
+
+## 8. Concurrency Model
 
 OpenClinic enforces strict actor isolation and asynchronous task scheduling to maintain a 120 FPS UI target:
 * **`@MainActor` Isolation:** Applied to all views, UI state controllers (`SMARTConnectionController`), and the `ClinicalIntelligenceService` to ensure UI state modifications occur strictly on the main thread.
@@ -201,7 +252,7 @@ OpenClinic enforces strict actor isolation and asynchronous task scheduling to m
 
 ---
 
-## 8. Error Handling Model
+## 9. Error Handling Model
 
 The application follows a structured, type-safe error management approach:
 * **`SMARTConnectionControllerError`:** Standardizes connectivity errors (such as state mismatch, missing credentials, or discovery failure) and provides localized user-facing alerts.
@@ -210,9 +261,9 @@ The application follows a structured, type-safe error management approach:
 
 ---
 
-## 9. Observability & Logging Model
+## 10. Observability & Logging Model
 
-Subsystem activities are logged using Apple's unified logging system via `os.Logger`. subsystem categories are defined in [AppLogger.swift](OpenClinic/AppLogger.swift):
+Subsystem activities are logged using Apple's unified logging system via `os.Logger`. Subsystem categories are defined in [AppLogger.swift](OpenClinic/AppLogger.swift):
 
 * `App`: Launch operations, database migrations, and schema issues.
 * `Data`: Mock data seeding and database operations.
@@ -224,7 +275,7 @@ Log statements use private privacy boundaries (e.g., `\(patient.fullName, privac
 
 ---
 
-## 10. Architectural Tradeoffs
+## 11. Architectural Tradeoffs
 
 1. **Launch-time RAG Reindexing:** The application reindexes all patient files on every app launch. While fast for prototype scopes (~200 chunks take less than 1.5 seconds), a production EHR environment will require delta-based background indexing.
 2. **Import-Only FHIR Pipeline:** The current FHIR service is import-only. Outbound changes (like newly signed notes or updated medication requests) stay local and are not written back to the EHR server, leaving writeback as a future capability.
@@ -232,7 +283,7 @@ Log statements use private privacy boundaries (e.g., `\(patient.fullName, privac
 
 ---
 
-## 11. Extension Points
+## 12. Extension Points
 
 * **Spatial visionOS Views:** The views under `OpenClinic/Views/AnatomicalRealityView.swift` are designed to display 2D body maps. These can be extended to use native visionOS RealityKit anchors for interactive 3D anatomy tracking.
 * **Outbound Sync Handlers:** `FHIRImportService` can be extended with `FHIRExportService` to submit POST requests containing signed clinical documents formatted as FHIR `DocumentReference` resources.

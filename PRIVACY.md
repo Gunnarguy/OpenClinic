@@ -57,9 +57,9 @@ OpenClinic provides a complete reset path:
 
 ---
 
-## 7. App Store Privacy Label Guidance
+## 7. Standard Privacy Profile
 
-For App Store submissions, the developer should configure the privacy questionnaire as follows:
+For deployment configurations, the privacy characteristics map as follows:
 
 | Category | Status | Details |
 |---|---|---|

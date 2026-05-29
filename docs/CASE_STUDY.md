@@ -1,44 +1,44 @@
-# Case Study: OpenClinic
+# Technical Design Review: OpenClinic
 
-An engineering study of a native, local-first Electronic Health Record (EHR) workspace utilizing on-device Apple Intelligence, Core ML vector embeddings, SQLite keyword search, and a strict 9-gate safety verification framework.
+An engineering analysis of a native, local-first clinical workspace utilizing on-device Apple Intelligence, Core ML vector embeddings, SQLite keyword search, and a 9-gate safety verification framework.
 
 ---
 
 ## 1. Problem Space
 
-Electronic Health Record (EHR) systems are the core operating software of modern medicine, yet they are widely cited as a primary driver of physician burnout. Traditional EHRs suffer from:
-1. **High Latency & Web Wrappers:** Most clinical portals are generic, cloud-hosted webview templates. Every page transition, document load, and note-save triggers network handshakes, adding friction to rapid clinician charting.
-2. **Network Dependency:** If a clinic's internet connection drops or fluctuates, clinicians cannot chart, review schedules, or document encounters, creating significant operational bottlenecks.
-3. **Data Privacy Concerns:** Uploading unstructured audio dictations or patient records to third-party cloud APIs introduces compliance complexity, data residency issues, and risk of leaks.
-4. **Clinical Hallucinations:** Introducing general-purpose Large Language Models (LLMs) into clinical writing risks "hallucinations"—synthesizing incorrect medication dosages, inventing symptoms, or cross-contaminating patient records.
+Electronic Health Record (EHR) systems are the core operational software of healthcare environments, but they commonly face the following technical limitations:
+1. **High Latency Web Clients:** Many clinical systems are built as cloud-hosted web wrappers. Page transitions, document loading, and note completion events trigger multiple network roundtrips, introducing lag.
+2. **Network Dependency:** If a clinic's internet connection drops or fluctuates, clinicians lose access to charting, schedule navigation, and note verification tools.
+3. **Data Security Risks:** Processing unstructured audio dictations or patient chart profiles using cloud-based API endpoints requires complex HIPAA/GDPR data residency controls.
+4. **LLM Hallucinations:** Utilizing general-purpose, non-deterministic Large Language Models (LLMs) in clinical writing risks compiling incorrect medication names or dosages, fabricating symptoms, or mixing patient files.
 
-OpenClinic was built to solve these issues by proving that **a native, offline-autonomous clinical workspace** can execute complex charts, imports, and intelligence workflows entirely on-device.
+OpenClinic explores an alternative: **implementing a local-first, offline-autonomous workspace** that processes charting, data sync, and clinical RAG workflows on the client device.
 
 ---
 
 ## 2. Technical Constraints
 
-Building a local-first clinical intelligence engine on iOS, macOS, and visionOS introduces strict hardware and design limitations:
-* **The 4096-Token Ceiling:** Apple's on-device foundation models (System Language Model) enforce a strict context window limit of 4096 tokens per session. Standard multi-patient lists or comprehensive histories quickly exceed this boundary.
-* **Lexical vs. Semantic Tradeoff:** Embedding models are excellent at conceptual searches (e.g. matching "heart burn" to "gastroesophageal reflux"), but fail at exact token matching (e.g., searching for the specific code "C44.11" or the drug " Tremfya").
-* **HIPAA/PHI Strict Isolation:** Clinicians frequently ask questions about the entire clinic panel (e.g., "Which of my patients are currently taking Simvastatin?"). Synthesizing answers across a database of multiple patients raises the risk of cross-patient data mixtures.
-* **On-Device Battery and Compute Budgets:** Generating multi-dimensional embeddings and executing tokenizers locally must not lock the main UI thread or drain the device's battery in under a standard 8-hour shift.
+Building a local retrieval and reasoning pipeline on iOS, macOS, and visionOS introduces strict engineering boundaries:
+* **The 4096-Token Ceiling:** Apple's on-device foundation models (`SystemLanguageModel`) enforce a strict context window limit of 4096 tokens per session. Compiling multi-patient records or comprehensive histories easily overflows this limit.
+* **Lexical vs. Semantic Tradeoff:** Embedding models retrieve content based on conceptual similarity (e.g. matching "heart burn" to "GERD"), but struggle with exact code matching (e.g., locating the precise ICD-10 code "C44.11" or the medication "Tremfya").
+* **Patient Data Isolation:** Clinicians query panel data across multiple patients (e.g., "Which patients are scheduled for biopsy today?"). Synthesizing answers across a database of patient records increases the risk of cross-patient data leaks.
+* **Client Device Compute Limits:** Generating vector embeddings and executing tokenization locally must run asynchronously to prevent blocking the main SwiftUI thread.
 
 ---
 
-## 3. Selected Architecture
+## 3. Implemented RAG Architecture
 
-To resolve these constraints, OpenClinic implements a **local hybrid RAG (Retrieval-Augmented Generation) pipeline** backed by SwiftData:
+To resolve these constraints, OpenClinic coordinates a local hybrid RAG pipeline backed by SwiftData:
 
 ```mermaid
 flowchart TD
-    subgraph Storage ["Local Persistence"]
-        SD[(SwiftData Core Database)]
+    subgraph Storage ["Local Storage"]
+        SD[(SwiftData SQL Database)]
         VecStore[ClinicalVectorStore]
         FTSIndex[SQLite FTS5 Lexical Index]
     end
 
-    subgraph Pipeline ["RAG Orchestration"]
+    subgraph Pipeline ["RAG Execution Pipeline"]
         Chunker[Clinical Chunker]
         EmbedSvc[ClinicalEmbeddingService]
         RRF[Reciprocal Rank Fusion]
@@ -46,8 +46,8 @@ flowchart TD
         Gates[9-Gate Safety Validator]
     end
 
-    subgraph Models ["Local Inference"]
-        FM[Apple Intelligence SystemLanguageModel]
+    subgraph Models ["On-Device Models"]
+        FM[Apple Intelligence LLM]
     end
 
     SD -->|Asynchronous Extract| Chunker
@@ -57,6 +57,8 @@ flowchart TD
 
     Query[Clinician Query] -->|Embedding Search| VecStore
     Query -->|Keyword Match| FTSIndex
+    VecDB -->|Semantic Candidates| RRF
+    FTSIndex -->|Keyword Candidates| RRF
     VecStore & FTSIndex --> RRF
     RRF --> MMR
     MMR -->|Grounding Context| FM
@@ -64,38 +66,23 @@ flowchart TD
     Gates -->|Verified Response| UI[Clinician Console]
 ```
 
-This architecture splits operations between the **SwiftData main context** (maintaining the clinician schema) and **asynchronous background actors** that run Core ML embeddings and SQLite tokenization.
+This design separates user-facing UI state on the main actor from background data transformations, vector lookups, and tokenization.
 
 ---
 
-## 4. Key Technical Challenges & Solutions
+## 4. Key Challenges & Solutions
 
-### Challenge 1: The Token Window Limit for Panel Queries
-When executing queries across the entire patient database (e.g., "Show me all patient appointments scheduled for today"), loading full clinical note graphs for 15+ patients into a 4096-token context window leads to immediate truncation.
+### Challenge 1: Compressing Context for Panel-Wide Queries
+When querying across the entire patient database (e.g., compiling active medications across today's scheduled list), loading the complete notes graph for 15+ patients will overflow the 4096-token window.
 
-#### Solution: Query Intent Classification & Compact Representations
-Implemented in [ClinicalIntelligenceService.swift](OpenClinic/AI/ClinicalIntelligenceService.swift), the intelligence engine performs query-aware token pruning:
+#### Solution: Query-Intent Classification and Property Compacting
+The intelligence engine performs query-aware context pruning:
 1. **Intent Classification:** Classifies incoming questions into specific intents (such as `medications`, `scheduling`, `demographics`, or `riskFactors`).
-2. **Compact Mapping:** Drops all database properties irrelevant to that intent. For example, a medication query compiles a single line per patient containing *only* active medication arrays, omitting appointments, reviews of systems, and emergency contacts.
-3. **Token Reclaiming:** This compacting method reclaims over 70% of the token window compared to traditional full-object serializations.
-
-```swift
-// Example of intent-specific compact mapping
-func compactLine(for patient: PatientProfile) -> String {
-    switch self {
-    case .medications:
-        let meds = (patient.medications ?? [])
-            .filter { ($0.status ?? "Active") == "Active" }
-            .map { "\($0.medicationName) \($0.dose ?? "")" }
-            .joined(separator: "; ")
-        return "\(patient.fullName) | Meds: \(meds.isEmpty ? "none" : String(meds.prefix(200)))"
-    // ... other intents
-    }
-}
-```
+2. **Property Compacting:** Maps the query to only the SwiftData properties required. For example, a medication query compiles a single line per patient containing *only* active medication arrays, completely dropping appointments, reviews of systems, and emergency contact details.
+3. **Token Conservation:** This compacting method reduces token consumption by over 70% compared to serializing the entire patient object graph.
 
 ### Challenge 2: Context Overflow via Recursive RAG Synthesis
-Even with compact representations, large patient panels (e.g., 50+ records) still exceed the 4096-token boundary.
+When the patient dataset exceeds the token window even after compacting, the system requires a multi-pass synthesis method.
 
 #### Solution: Parallel Batch Inferences and Synthesis Pass
 If token calculations indicate the compact dataset exceeds the available window:
@@ -123,7 +110,7 @@ OpenClinic routes all generated responses through a dedicated validator ([Verifi
 ## 5. Architectural Tradeoffs
 
 ### 1. Launch-time RAG Reindexing vs. Disk Caching
-* **Tradeoff:** OpenClinic completely clears and rebuilds its vector database and SQLite FTS5 index on every application launch.
+* **Tradeoff:** OpenClinic clears and rebuilds its vector database and SQLite FTS5 index on every application launch.
 * **Rationale:** Since the active patient database is small, launch-time reindexing guarantees that any changes made offline are synchronized, avoiding complex database synchronization code.
 * **Consequence:** Reindexing introduces a minor startup delay on larger datasets. As the panel grows, this must be refactored into a delta-based background update model.
 
@@ -134,18 +121,10 @@ OpenClinic routes all generated responses through a dedicated validator ([Verifi
 
 ---
 
-## 6. Engineering Outcomes
+## 6. Implementation Outcomes
 
 * **100% On-Device Isolation:** Zero network requests are initiated for ML embeddings, tokenization, or text generation.
 * **9 Verification Passes:** Every RAG response is subjected to validation before rendering.
 * **Token Budget Control:** Context packaging guarantees compliance with the 4096-token limit.
 * **SMART on FHIR Sync:** Supports syncing Patients, Conditions, MedicationRequests, and Appointments from R4 sandboxes.
 * **Redacted Logging:** Zero print statements leak Protected Health Information (PHI) in system console logs.
-
----
-
-## 7. Future Work
-
-* **Writeback Capabilities:** Enable outbound FHIR syncs to upload clinical notes directly to Epic or Cerner sandboxes.
-* **XCTest Grounding Audits:** Build an automated testing harness to evaluate verification gate accuracy using mock database configurations.
-* **3D visionOS Layouts:** Map clinical photos directly to 3D spatial models of human anatomy on Apple Vision Pro, replacing 2D layout sheets.

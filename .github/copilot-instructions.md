@@ -2,7 +2,7 @@
 
 ## 1. Project Identity
 
-OpenClinic is a native Swift/iOS clinical workspace built with SwiftUI and SwiftData. It combines patient charting, encounter notes, dermatology-focused visual timelines, SMART on FHIR synchronizations, and an on-device local RAG (Retrieval-Augmented Generation) pipeline using Core ML embeddings and Apple's Foundation Models framework. The project is an architecture prototype and developer playground for modern clinical software on Apple platforms.
+OpenClinic is a native Swift/iOS clinical workspace built with SwiftUI and SwiftData. It combines patient charting, encounter notes, dermatology-focused visual timelines, SMART on FHIR synchronizations, and an on-device local RAG (Retrieval-Augmented Generation) pipeline using Core ML embeddings and Apple's Foundation Models framework. The project is a prototype for evaluating native, on-device clinical software architectures on Apple platforms.
 
 ---
 
