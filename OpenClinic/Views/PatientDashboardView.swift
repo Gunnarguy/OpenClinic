@@ -490,6 +490,10 @@ struct PatientChartPageView: View {
                         chartRow(label: "Clinical Intelligence", icon: "brain.head.profile", color: .blue)
                     }
                     Divider().padding(.leading, 44)
+                    NavigationLink(destination: ClinicalAssistantView(patient: patient)) {
+                        chartRow(label: "On-Device AI Assistant", icon: "bubble.left.and.bubble.right.fill", color: .clinicalIndigo)
+                    }
+                    Divider().padding(.leading, 44)
                     NavigationLink(destination: InteroperabilityWorkspaceView()) {
                         chartRow(label: "EHR Connectivity", icon: "network", color: .teal)
                     }

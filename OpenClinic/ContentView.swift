@@ -406,6 +406,9 @@ struct ContentView: View {
         carlosRivera.appointments = [schedAppt14]
         helenWhitfield.appointments = [schedAppt15]
 
+        seedMockPhotos(for: janeDoe, zone: "right_upper_extremity", baseName: "bcc_progression", notesSuffix: "BCC progression tracking")
+        seedMockPhotos(for: robertChen, zone: "left_upper_extremity", baseName: "melanoma_progression", notesSuffix: "Melanoma in situ progression tracking")
+
         try? modelContext.save()
     }
 
@@ -1035,6 +1038,78 @@ struct ContentView: View {
         appointment.sourceRecordIdentifier = appointment.appointmentID
         appointment.sourceLastSyncedAt = .now
         appointment.sourceOfTruth = false
+    }
+
+    private func seedMockPhotos(for patient: PatientProfile, zone: String, baseName: String, notesSuffix: String) {
+        #if canImport(UIKit)
+        let fm = FileManager.default
+        guard let documentsDir = fm.urls(for: .documentDirectory, in: .userDomainMask).first else { return }
+        let photosDir = documentsDir.appendingPathComponent("ClinicalPhotos", isDirectory: true)
+        try? fm.createDirectory(at: photosDir, withIntermediateDirectories: true)
+        
+        let cal = Calendar.current
+        let today = Date()
+        
+        // We will generate 3 photos showing progression (e.g. 180 days ago, 90 days ago, 30 days ago)
+        let photoData: [(daysAgo: Int, color: UIColor, size: CGFloat, notes: String)] = [
+            (180, UIColor(red: 0.55, green: 0.35, blue: 0.25, alpha: 1.0), 12.0, "Initial presentation of pigmented lesion, border irregular"),
+            (90, UIColor(red: 0.50, green: 0.30, blue: 0.20, alpha: 1.0), 14.5, "Slight enlargement, color variegation noted"),
+            (30, UIColor(red: 0.45, green: 0.25, blue: 0.15, alpha: 1.0), 16.0, "Pre-biopsy baseline documentation, margins irregular")
+        ]
+        
+        var list: [ClinicalPhoto] = []
+        for (daysAgo, color, size, notes) in photoData {
+            let captureDate = cal.date(byAdding: .day, value: -daysAgo, to: today)!
+            let filename = "\(patient.medicalRecordNumber)_\(baseName)_\(daysAgo).jpg"
+            let fileURL = photosDir.appendingPathComponent(filename)
+            
+            if !fm.fileExists(atPath: fileURL.path) {
+                let renderer = UIGraphicsImageRenderer(size: CGSize(width: 200, height: 200))
+                let img = renderer.image { ctx in
+                    // Skin background (tan)
+                    let skinColor = UIColor(red: 0.93, green: 0.78, blue: 0.68, alpha: 1.0)
+                    skinColor.setFill()
+                    ctx.fill(CGRect(x: 0, y: 0, width: 200, height: 200))
+                    
+                    // Lesion shadow/halo (reddish border)
+                    let haloColor = UIColor(red: 0.70, green: 0.30, blue: 0.30, alpha: 0.4)
+                    haloColor.setFill()
+                    let haloRect = CGRect(x: 100 - (size + 3), y: 100 - (size + 3), width: (size + 3) * 2, height: (size + 3) * 2)
+                    UIBezierPath(ovalIn: haloRect).fill()
+                    
+                    // Main lesion
+                    color.setFill()
+                    let lesionRect = CGRect(x: 100 - size, y: 100 - size, width: size * 2, height: size * 2)
+                    UIBezierPath(ovalIn: lesionRect).fill()
+                    
+                    // Irregular dark center dots
+                    let darkColor = UIColor(red: 0.18, green: 0.08, blue: 0.05, alpha: 0.9)
+                    darkColor.setFill()
+                    ctx.fill(CGRect(x: 95, y: 92, width: 4, height: 4))
+                    ctx.fill(CGRect(x: 106, y: 104, width: 3, height: 5))
+                }
+                if let jpegData = img.jpegData(compressionQuality: 0.85) {
+                    try? jpegData.write(to: fileURL)
+                }
+            }
+            
+            let photo = ClinicalPhoto(
+                captureDate: captureDate,
+                anatomicalRegion: zone,
+                notes: "\(notes) (\(notesSuffix))",
+                filePath: fileURL.path,
+                sourceKind: ClinicalSourceKind.clinicianCaptured.rawValue,
+                sourceSystemName: "OpenClinic Capture Workspace",
+                sourceRecordIdentifier: filename,
+                sourceLastSyncedAt: .now,
+                sourceOfTruth: true
+            )
+            photo.patient = patient
+            modelContext.insert(photo)
+            list.append(photo)
+        }
+        patient.clinicalPhotos = list
+        #endif
     }
     // swiftlint:enable function_body_length
 }

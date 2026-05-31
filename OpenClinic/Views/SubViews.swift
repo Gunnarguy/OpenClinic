@@ -535,6 +535,7 @@ private struct AgendaRow: View {
 struct InboxView: View {
     @State private var messages = InboxView.sampleMessages
     @State private var filterCategory: MessageCategory?
+    @State private var showingComposeSheet = false
 
     private var unreadCount: Int { messages.filter { !$0.isRead }.count }
 
@@ -671,7 +672,7 @@ struct InboxView: View {
             #endif
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button(action: {}) {
+                    Button(action: { showingComposeSheet = true }) {
                         Image(systemName: "square.and.pencil")
                     }
                 }
@@ -686,6 +687,11 @@ struct InboxView: View {
                                 .font(.caption)
                         }
                     }
+                }
+            }
+            .sheet(isPresented: $showingComposeSheet) {
+                ComposeMessageView { newMessage in
+                    messages.insert(newMessage, at: 0)
                 }
             }
         }
@@ -842,5 +848,94 @@ struct IntraMailDetailView: View {
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
+    }
+}
+
+struct ComposeMessageView: View {
+    @Environment(\.dismiss) private var dismiss
+    @State private var recipient = "Dr. Natalie Jones, MD"
+    @State private var category = InboxView.MessageCategory.clinical
+    @State private var subject = ""
+    @State private var bodyText = ""
+
+    let onSend: (InboxView.IntraMailMessage) -> Void
+
+    private let recipients = [
+        "Dr. Natalie Jones, MD",
+        "Dr. Elizabeth Smith, MD",
+        "Dr. Natalie Patel, MD",
+        "Dr. David Williams, MD",
+        "Front Desk",
+        "Lab Coordinator",
+        "Pharmacy Desk",
+        "Clinical Admin"
+    ]
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("Message Header") {
+                    Picker("Recipient", selection: $recipient) {
+                        ForEach(recipients, id: \.self) { rep in
+                            Text(rep).tag(rep)
+                        }
+                    }
+                    
+                    Picker("Category", selection: $category) {
+                        ForEach(InboxView.MessageCategory.allCases, id: \.self) { cat in
+                            HStack {
+                                Image(systemName: cat.icon)
+                                    .foregroundStyle(cat.color)
+                                Text(cat.rawValue)
+                            }
+                            .tag(cat)
+                        }
+                    }
+                }
+                
+                Section("Message Content") {
+                    TextField("Subject", text: $subject)
+                    
+                    ZStack(alignment: .topLeading) {
+                        TextEditor(text: $bodyText)
+                            .frame(minHeight: 120)
+                        
+                        if bodyText.isEmpty {
+                            Text("Type your message here...")
+                                .foregroundColor(.secondary.opacity(0.5))
+                                .padding(.leading, 5)
+                                .padding(.top, 8)
+                                .allowsHitTesting(false)
+                        }
+                    }
+                }
+            }
+            .navigationTitle("Compose Message")
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") {
+                        dismiss()
+                    }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Send") {
+                        let newMessage = InboxView.IntraMailMessage(
+                            sender: recipient,
+                            subject: subject.isEmpty ? "(No Subject)" : subject,
+                            preview: bodyText.isEmpty ? "(No Content)" : bodyText,
+                            date: Date(),
+                            isRead: false,
+                            category: category
+                        )
+                        onSend(newMessage)
+                        dismiss()
+                    }
+                    .disabled(bodyText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                }
+            }
+        }
     }
 }
