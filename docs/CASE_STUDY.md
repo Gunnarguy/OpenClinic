@@ -1,6 +1,6 @@
 # Technical Design Review: OpenClinic
 
-An engineering analysis of a native, local-first clinical workspace utilizing on-device Apple Intelligence, Core ML vector embeddings, SQLite keyword search, and a 9-gate safety verification framework.
+An engineering analysis of a native clinical workspace prototype utilizing on-device Apple Intelligence, Core ML vector embeddings, SQLite keyword search, and a 9-gate safety verification framework.
 
 ---
 
@@ -12,7 +12,9 @@ Electronic Health Record (EHR) systems are the core operational software of heal
 3. **Data Security Risks:** Processing unstructured audio dictations or patient chart profiles using cloud-based API endpoints requires complex HIPAA/GDPR data residency controls.
 4. **LLM Hallucinations:** Utilizing general-purpose, non-deterministic Large Language Models (LLMs) in clinical writing risks compiling incorrect medication names or dosages, fabricating symptoms, or mixing patient files.
 
-OpenClinic explores an alternative: **implementing a local-first, offline-autonomous workspace** that processes charting, data sync, and clinical RAG workflows on the client device.
+OpenClinic explores an alternative: **implementing a local-first clinical workspace prototype** that processes charting, data sync, and clinical RAG workflows on the client device.
+
+The retrieval stack is not built in a vacuum. Clinical embeddings, retrieval shaping, and verification patterns are adapted from OpenIntelligence and then specialized for patient-scoped clinical safety.
 
 ---
 

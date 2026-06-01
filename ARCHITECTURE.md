@@ -1,6 +1,6 @@
 # Architectural Deep Dive: OpenClinic
 
-OpenClinic is designed as a standalone, Apple-native clinical workstation for healthcare providers. This document outlines the core architectural principles, layer responsibilities, state management models, concurrency guarantees, and system designs that drive the application.
+OpenClinic is designed as an Apple-native clinical workstation prototype for healthcare providers. This document outlines the core architectural principles, layer responsibilities, state management models, concurrency guarantees, and system designs that drive the application.
 
 ---
 
@@ -8,10 +8,11 @@ OpenClinic is designed as a standalone, Apple-native clinical workstation for he
 
 Traditional Electronic Health Record (EHR) systems are built as database-centric web portals that suffer from high latency, poor offline capabilities, and complex UI layouts. OpenClinic proposes an alternative: **a local-first, Apple-native, intelligence-augmented client**. 
 
-The design rests on three pillars:
+The design rests on four pillars:
 1. **Low Latency & Offline Autonomy:** Clinical work happens in high-stress, variable-connectivity environments. The application stores and queries clinical records locally using SwiftData and custom indexes, allowing workflow completion without internet access.
 2. **Contextual On-Device AI:** Rather than sending sensitive Patient Health Information (PHI) to cloud-based LLM endpoints, the app leverages Apple's on-device Foundation Models for clinical summarization, structured documentation generation, and Q&A.
 3. **Traceable Interoperability:** Data imported from external EHR systems via SMART on FHIR is never flattened; it retains clear provenance metadata to expose its origin, sync timestamp, and authority level.
+4. **OpenIntelligence-Derived Retrieval Core:** The clinical retrieval stack borrows and adapts proven OpenIntelligence patterns for embeddings, FTS, retrieval shaping, and verification, then narrows them to patient-scoped clinical safety requirements.
 
 ---
 
@@ -93,7 +94,7 @@ Orchestrators are implemented as `@MainActor` singletons or state objects that b
 This layer handles the parsing, transformation, and vector indexing of clinical resources.
 * **`FHIRImportService`:** Pulls raw JSON data for Patient, Condition, MedicationRequest, and Appointment resources from external servers and updates the SwiftData context.
 * **`ClinicalChunker`:** Segregates patient profiles, clinical histories, and medications into standardized text chunks, enriching each chunk with metadata.
-* **`ClinicalEmbeddingService`:** Houses the natural language tokenizer vocabulary and Core ML models to generate high-dimensional vectors on-device.
+* **`ClinicalEmbeddingService`:** Houses the natural language tokenizer vocabulary and Core ML models to generate high-dimensional vectors on-device. Portions of this stack are explicitly adapted from OpenIntelligence's embedding pipeline.
 
 ### Persistence & Storage Layer
 * **SwiftData:** The primary object graph persistence layer. It maps patient entities, appointments, records, and clinical photos, automatically persisting data to SQLite.
@@ -249,6 +250,10 @@ OpenClinic enforces strict actor isolation and asynchronous task scheduling to m
 * **`@MainActor` Isolation:** Applied to all views, UI state controllers (`SMARTConnectionController`), and the `ClinicalIntelligenceService` to ensure UI state modifications occur strictly on the main thread.
 * **Global Actor Isolation:** Subsystem indices (such as vector database search and SQLite index inserts) are separated using task context switches. Embedding batches are compiled on background threads before being packaged.
 * **Structured Tasks:** RAG reindexing and SMART sync operations are wrapped in Structured Concurrency scopes (`Task { ... }`). The main app loop listens for URL callbacks and handles them on task-isolated threads.
+
+## 8.5. Product Boundary
+
+OpenClinic should be described as a clinical workspace prototype, not a production EHR replacement and not a live deployment target. The architecture is intentionally serious about PHI boundaries and workflow realism, but the repository does not claim production compliance, outbound writeback readiness, or operational hardening for real-world deployment.
 
 ---
 

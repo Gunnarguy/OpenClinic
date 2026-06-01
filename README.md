@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <strong>A provider-facing, local-first clinical workspace for patient charting, encounter documentation, and on-device clinical intelligence.</strong>
+  <strong>A provider-facing clinical workspace prototype for patient charting, SMART on FHIR import, and on-device clinical intelligence.</strong>
 </p>
 
 <p align="center">
@@ -18,12 +18,14 @@
 
 ## Overview
 
-OpenClinic is a native iOS, iPadOS, macOS, and visionOS clinical workspace designed for healthcare providers. It integrates patient schedules, clinical record logs, visual timelines for dermatological checkups, and a SMART on FHIR synchronization pipeline into a unified, local-first SwiftUI experience.
+OpenClinic is a native iOS, iPadOS, macOS, and visionOS clinical workspace designed for healthcare providers. It integrates patient schedules, clinical record logs, visual timelines for dermatological checkups, and a SMART on FHIR synchronization pipeline into a unified SwiftUI experience that keeps chart state local on device.
 
 * **Functional Role:** Aggregates patient demographic profiles, clinical record timelines, medication lists, appointments, and photos.
-* **Clinician Workflow:** Provides offline-capable charting, record lookups, and note completion tools to minimize dependencies on remote servers.
+* **Clinician Workflow:** Provides offline-capable charting, record lookups, and note completion tools while keeping PHI inside the device sandbox except when explicitly pulling records from configured SMART on FHIR servers.
 * **On-Device LLMs & RAG:** Implements a local retrieval-augmented generation (RAG) pipeline to support chart Q&A, clinical note compilation, and documentation checks without transmitting Patient Health Information (PHI) to third-party cloud APIs.
+* **Engine Lineage:** The clinical retrieval stack adapts OpenIntelligence internals for Core ML embeddings, token budgeting, retrieval shaping, and verification, then specializes those paths for patient-scoped clinical use.
 * **EHR Integration:** Connects to standard EHR sandbox platforms using SMART on FHIR OAuth scopes to import multi-patient records.
+* **Product Boundary:** OpenClinic is a prototype and design exploration. It is not approved for live clinical deployment and should not be presented as a production EHR replacement.
 
 ---
 
@@ -37,7 +39,7 @@ OpenClinic is a native iOS, iPadOS, macOS, and visionOS clinical workspace desig
 | Architecture | Container-driven / Actor-isolated RAG |
 | Primary APIs | Apple Foundation Models (`LanguageModelSession`), SMART on FHIR, Core ML |
 | Storage | SwiftData, SQLite FTS5, Keychain |
-| Status | Active |
+| Status | Prototype |
 | License | Proprietary / None |
 
 ---
@@ -49,6 +51,7 @@ OpenClinic is a native iOS, iPadOS, macOS, and visionOS clinical workspace desig
 - **9-Gate Verification:** Runs post-processing safety checks (evaluating evidence coverage, numeric sanity, contradictions, and patient data boundaries) before displaying generated text.
 - **FHIR Interoperability:** Uses `ASWebAuthenticationSession` to authorize and sync Patient, Condition, MedicationRequest, and Appointment resources.
 - **Data Provenance:** Attaches sync timestamps and source system attributes to SwiftData entities to preserve the authority of remote records.
+- **OpenIntelligence-Derived Retrieval Internals:** Reuses and adapts embedding, full-text, boosting, and verification patterns from OpenIntelligence, but applies them to patient-scoped clinical workflows instead of general document Q&A.
 - **Main-Thread Concurrency:** Isolates database inserts, vector queries, and full-text indexing inside background Actors.
 
 ---
