@@ -173,7 +173,23 @@ enum FHIRResourceAdapters {
     }
 
     static func appointment(from resource: FHIRAppointmentResource) -> Appointment {
-        let scheduledTime = dateTime(resource.start) ?? .now
+        let parsedTime = dateTime(resource.start) ?? .now
+        
+        // Shift the year, month, and day of the appointment to today for the demo workflow
+        let calendar = Calendar.current
+        let todayComponents = calendar.dateComponents([.year, .month, .day], from: Date())
+        let originalComponents = calendar.dateComponents([.hour, .minute, .second], from: parsedTime)
+        
+        var targetComponents = DateComponents()
+        targetComponents.year = todayComponents.year
+        targetComponents.month = todayComponents.month
+        targetComponents.day = todayComponents.day
+        targetComponents.hour = originalComponents.hour
+        targetComponents.minute = originalComponents.minute
+        targetComponents.second = originalComponents.second
+        
+        let scheduledTime = calendar.date(from: targetComponents) ?? Date()
+        
         let clinicianName = resource.participant?
             .compactMap { $0.actor?.display }
             .first
@@ -220,7 +236,7 @@ enum FHIRResourceAdapters {
         switch rawValue.lowercased() {
         case "proposed", "pending": return "Pending"
         case "booked": return "Scheduled"
-        case "arrived", "checked-in", "checked in": return "Arrived"
+        case "arrived", "checked-in", "checked in": return "Checked In"
         case "fulfilled": return "Completed"
         case "noshow", "no-show": return "No Show"
         case "cancelled", "canceled": return "Cancelled"
