@@ -179,15 +179,11 @@ final class SMARTConnectionController: ObservableObject {
 
         applyPresetDefaultClientIDIfNeeded()
 
-        do {
-            if session.isAuthorized,
-               let baseURL = fhirBaseURL,
-               lastDiscoverySummary?.baseURL == baseURL {
-                statusMessage = "SMART session is already authorized. Import the live patient when you're ready."
-                lastErrorMessage = nil
-                return
-            }
+        // Reset any existing session to ensure a fresh web authentication sheet is presented
+        session.reset()
+        persistSessionState()
 
+        do {
             await discoverConfiguration()
             guard lastErrorMessage == nil else { return }
 
@@ -411,6 +407,17 @@ final class SMARTConnectionController: ObservableObject {
         statusMessage = resolvedPatientID == nil ?
             "Manual access token applied for sandbox import." :
             "Manual access token applied and patient context loaded for import."
+    }
+
+    func disconnect() {
+        session.reset()
+        patientIDText = ""
+        manualAccessToken = ""
+        lastImportSummary = nil
+        lastDiscoverySummary = nil
+        lastErrorMessage = nil
+        statusMessage = "SMART connection cleared."
+        persistSessionState()
     }
 
     func importLaunchPatient(modelContext: ModelContext) async {

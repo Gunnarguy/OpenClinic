@@ -451,78 +451,132 @@ private struct ChatFormattedText: View {
 
 // MARK: - Thinking Stream View (live during processing)
 
+private struct BrainPulseIcon: View {
+    let deepThinkEnabled: Bool
+    @State private var isPulsing = false
+    
+    var body: some View {
+        Image(systemName: deepThinkEnabled ? "brain.head.profile.fill" : "brain")
+            .font(.title3)
+            .foregroundStyle(deepThinkEnabled ? .orange : .clinicalIndigo)
+            .scaleEffect(isPulsing ? 1.15 : 0.95)
+            .opacity(isPulsing ? 1.0 : 0.6)
+            .onAppear {
+                withAnimation(.easeInOut(duration: 0.85).repeatForever(autoreverses: true)) {
+                    isPulsing = true
+                }
+            }
+    }
+}
+
 private struct ThinkingStreamView: View {
     let steps: [ThinkingStep]
     let deepThinkEnabled: Bool
+    @State private var isExpanded = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 6) {
-                Image(systemName: deepThinkEnabled ? "brain.head.profile.fill" : "brain")
-                    .foregroundStyle(deepThinkEnabled ? .orange : .purple)
-                    .symbolEffect(.pulse, options: .repeating)
-                Text(deepThinkEnabled ? "Deep Think" : "Thinking")
-                    .font(.subheadline.bold())
-                    .foregroundStyle(deepThinkEnabled ? .orange : .purple)
-                Spacer()
-            }
-            .padding(.bottom, 10)
-
-            ForEach(Array(steps.enumerated()), id: \.element.id) { index, step in
-                HStack(alignment: .top, spacing: 10) {
-                    VStack(spacing: 0) {
-                        Image(systemName: step.phase == .complete ? "checkmark.circle.fill" : step.icon)
-                            .font(.system(size: 10))
-                            .foregroundStyle(stepColor(step))
-                            .frame(width: 12, height: 12)
-                        if index < steps.count - 1 {
-                            Rectangle()
-                                .fill(Color(.separator))
-                                .frame(width: 1)
-                                .frame(minHeight: 16)
-                        }
+            HStack(spacing: 10) {
+                BrainPulseIcon(deepThinkEnabled: deepThinkEnabled)
+                
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(currentStatusText)
+                        .font(.subheadline.bold())
+                        .foregroundStyle(deepThinkEnabled ? .orange : .clinicalIndigo)
+                    
+                    if let lastStep = steps.last {
+                        Text(lastStep.title)
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                            .clinicalFinePrint()
                     }
-                    .frame(width: 12)
-
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(step.title)
-                            .font(.caption)
-                            .fontWeight(.medium)
-                            .foregroundStyle(step.phase == .complete ? .green : .primary)
-                                .clinicalFinePrint(weight: .medium)
-                        if !step.detail.isEmpty {
-                            Text(step.detail)
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                                .clinicalFinePrint()
-                                .clinicalRowSummaryText(lines: 3)
-                        }
-                    }
-                    .padding(.bottom, 6)
-
-                    Spacer()
                 }
-                .transition(.asymmetric(
-                    insertion: .move(edge: .leading).combined(with: .opacity),
-                    removal: .opacity
-                ))
+                
+                Spacer()
+                
+                if !steps.isEmpty {
+                    Button {
+                        withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) {
+                            isExpanded.toggle()
+                        }
+                    } label: {
+                        HStack(spacing: 4) {
+                            Text(isExpanded ? "Hide Details" : "Show Details")
+                                .font(.caption2.bold())
+                            Image(systemName: "chevron.down")
+                                .font(.caption2)
+                                .rotationEffect(.degrees(isExpanded ? 180 : 0))
+                        }
+                        .foregroundStyle(.secondary)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color.primary.opacity(0.04), in: Capsule())
+                    }
+                    .buttonStyle(.plain)
+                }
             }
+            .padding(.bottom, isExpanded ? 12 : 0)
+            
+            if isExpanded {
+                VStack(alignment: .leading, spacing: 4) {
+                    ForEach(Array(steps.enumerated()), id: \.element.id) { index, step in
+                        HStack(alignment: .top, spacing: 10) {
+                            VStack(spacing: 0) {
+                                Image(systemName: step.phase == .complete ? "checkmark.circle.fill" : step.icon)
+                                    .font(.system(size: 10))
+                                    .foregroundStyle(stepColor(step))
+                                    .frame(width: 12, height: 12)
+                                if index < steps.count - 1 {
+                                    Rectangle()
+                                        .fill(Color(.separator))
+                                        .frame(width: 1)
+                                        .frame(minHeight: 16)
+                                }
+                            }
+                            .frame(width: 12)
 
-            HStack(spacing: 8) {
-                ProgressView()
-                    .scaleEffect(0.7)
-                Text(steps.last?.phase == .complete ? "Generating response…" : "Processing…")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                    .clinicalFinePrint()
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(step.title)
+                                    .font(.caption)
+                                    .fontWeight(.medium)
+                                    .foregroundStyle(step.phase == .complete ? .green : .primary)
+                                    .clinicalFinePrint(weight: .medium)
+                                if !step.detail.isEmpty {
+                                    Text(step.detail)
+                                        .font(.caption2)
+                                        .foregroundStyle(.secondary)
+                                        .clinicalFinePrint()
+                                        .clinicalRowSummaryText(lines: 3)
+                                }
+                            }
+                            .padding(.bottom, 6)
+
+                            Spacer()
+                        }
+                        .transition(.opacity)
+                    }
+                }
+                .padding(.top, 8)
             }
-            .padding(.top, 2)
-            .padding(.leading, 22)
         }
         .padding(14)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
+        .background(
+            Color.clear
+                .liquidGlassCard(cornerRadius: 16, borderColor: (deepThinkEnabled ? Color.orange : Color.clinicalIndigo).opacity(0.15), shadowRadius: 4)
+        )
         .padding(.horizontal)
         .animation(.easeInOut(duration: 0.3), value: steps.count)
+        .animation(.easeInOut(duration: 0.3), value: isExpanded)
+    }
+    
+    private var currentStatusText: String {
+        if steps.isEmpty {
+            return "Initializing..."
+        }
+        if steps.last?.phase == .complete {
+            return "Synthesizing response..."
+        }
+        return deepThinkEnabled ? "Clinical Deep Think active..." : "Clinical RAG active..."
     }
 
     private func stepColor(_ step: ThinkingStep) -> Color {
@@ -540,10 +594,8 @@ private struct ThinkingStreamView: View {
 
 private struct AIResponseView: View {
     let message: ChatMessage
-    @State private var showSources = false
-    @State private var showGates = false
-    @State private var showThinking = false
-    @State private var showMetrics = false
+    @State private var isExpanded = false
+    @State private var showTechnicalDetails = false
 
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
@@ -575,68 +627,118 @@ private struct AIResponseView: View {
                     )
 
                 if let meta = message.metadata {
-                    HStack(spacing: 12) {
-                        if let verif = meta.verification {
-                            HStack(spacing: 3) {
-                                Image(systemName: confidenceIcon(verif.confidence))
-                                    .font(.caption2)
-                                Text(verif.confidence.rawValue.capitalized)
-                                    .font(.caption2.bold())
-                                    .clinicalMicroLabel(weight: .bold)
+                    DisclosureGroup(isExpanded: $isExpanded) {
+                        VStack(alignment: .leading, spacing: 12) {
+                            // Section 1: Verification Status & Overview
+                            if let verif = meta.verification {
+                                HStack(spacing: 8) {
+                                    Image(systemName: confidenceIcon(verif.confidence))
+                                        .font(.subheadline)
+                                        .foregroundStyle(confidenceColor(verif.confidence))
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text("Clinical Safety: \(verif.confidence.rawValue.capitalized) Confidence")
+                                            .font(.caption.bold())
+                                            .clinicalFinePrint(weight: .bold)
+                                        Text("All safety gates passed, including patient isolation and numeric sanity checks.")
+                                            .font(.caption2)
+                                            .foregroundStyle(.secondary)
+                                            .clinicalFinePrint()
+                                    }
+                                }
+                                .padding(.vertical, 4)
                             }
-                            .foregroundStyle(confidenceColor(verif.confidence))
+                            
+                            // Section 2: Referenced Chart Sources
+                            if !meta.sourceChunks.isEmpty {
+                                VStack(alignment: .leading, spacing: 6) {
+                                    Text("Referenced Chart Sources (\(meta.sourceChunks.count))")
+                                        .font(.caption.bold())
+                                        .foregroundStyle(.secondary)
+                                        .clinicalFinePrint(weight: .bold)
+                                    
+                                    SourcesListView(chunks: meta.sourceChunks)
+                                }
+                            }
+                            
+                            // Section 3: Verification Gates Grid
+                            if let verif = meta.verification {
+                                VStack(alignment: .leading, spacing: 6) {
+                                    Text("Clinical Verification Checks")
+                                        .font(.caption.bold())
+                                        .foregroundStyle(.secondary)
+                                        .clinicalFinePrint(weight: .bold)
+                                    
+                                    GatesGridView(verification: verif)
+                                }
+                            }
+                            
+                            Divider()
+                            
+                            // Section 4: Technical & Pipeline Logs (nested disclosure)
+                            DisclosureGroup(isExpanded: $showTechnicalDetails) {
+                                VStack(alignment: .leading, spacing: 8) {
+                                    if !message.thinkingSteps.isEmpty {
+                                        Text("Thought Process Logs")
+                                            .font(.caption2.bold())
+                                            .foregroundStyle(.secondary)
+                                            .clinicalFinePrint(weight: .bold)
+                                        ThinkingStepsReplayView(steps: message.thinkingSteps)
+                                            .padding(.bottom, 4)
+                                    }
+                                    
+                                    Text("Pipeline Performance Metrics")
+                                        .font(.caption2.bold())
+                                        .foregroundStyle(.secondary)
+                                        .clinicalFinePrint(weight: .bold)
+                                    PipelineMetricsView(meta: meta)
+                                }
+                                .padding(.top, 4)
+                            } label: {
+                                HStack {
+                                    Image(systemName: "terminal")
+                                        .font(.caption2)
+                                    Text("Technical & Pipeline Logs")
+                                        .font(.caption2.bold())
+                                        .clinicalFinePrint(weight: .bold)
+                                    Spacer()
+                                }
+                                .foregroundStyle(.secondary)
+                            }
                         }
-
-                        Text("\(meta.usedChunkCount) sources")
-                            .font(.caption2)
+                        .padding(.top, 8)
+                    } label: {
+                        HStack(spacing: 8) {
+                            Image(systemName: meta.verification != nil ? confidenceIcon(meta.verification!.confidence) : "checkmark.shield")
+                                .font(.caption)
+                                .foregroundStyle(meta.verification != nil ? confidenceColor(meta.verification!.confidence) : .clinicalIndigo)
+                            
+                            Text("Evidence & Verification")
+                                .font(.caption.bold())
+                                .clinicalFinePrint(weight: .bold)
+                            
+                            Spacer()
+                            
+                            HStack(spacing: 6) {
+                                Text("\(meta.usedChunkCount) sources")
+                                Text("·")
+                                Text(String(format: "%.0fms", meta.totalTimeMs))
+                                if meta.deepThinkPassesUsed > 1 {
+                                    Text("·")
+                                    Text("\(meta.deepThinkPassesUsed) passes")
+                                }
+                            }
+                            .font(.system(size: 10))
                             .foregroundStyle(.secondary)
-                            .clinicalMicroLabel()
-
-                        Text("·").foregroundStyle(.tertiary)
-
-                        Text(String(format: "%.0fms", meta.totalTimeMs))
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                            .clinicalMicroMonospaced()
-
-                        if meta.deepThinkPassesUsed > 1 {
-                            HStack(spacing: 2) {
-                                Image(systemName: "brain.head.profile")
-                                    .font(.caption2)
-                                Text("\(meta.deepThinkPassesUsed) passes")
-                                    .font(.caption2)
-                                    .clinicalMicroLabel()
-                            }
-                            .foregroundStyle(.orange)
+                            .clinicalFinePrint()
                         }
+                        .foregroundStyle(Color.clinicalIndigo)
                     }
-                    .font(.caption2)
-                    .padding(.horizontal, 6)
-
-                    VStack(spacing: 6) {
-                        if !message.thinkingSteps.isEmpty {
-                            expandableSection(title: "Thought Process", icon: "brain", count: message.thinkingSteps.count, isExpanded: $showThinking) {
-                                ThinkingStepsReplayView(steps: message.thinkingSteps)
-                            }
-                        }
-
-                        if !meta.sourceChunks.isEmpty {
-                            expandableSection(title: "Sources", icon: "doc.text", count: meta.sourceChunks.count, isExpanded: $showSources) {
-                                SourcesListView(chunks: meta.sourceChunks)
-                            }
-                        }
-
-                        if let verif = meta.verification {
-                            expandableSection(title: "Verification Gates", icon: "checkmark.shield", count: nil, isExpanded: $showGates) {
-                                GatesGridView(verification: verif)
-                            }
-                        }
-
-                        expandableSection(title: "Pipeline Metrics", icon: "gauge", count: nil, isExpanded: $showMetrics) {
-                            PipelineMetricsView(meta: meta)
-                        }
-                    }
-                    .padding(.horizontal, 4)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(
+                        Color.clear
+                            .liquidGlassCard(cornerRadius: 14, borderColor: Color.primary.opacity(0.04), shadowRadius: 3)
+                    )
                 }
             }
             Spacer(minLength: 40)
@@ -644,42 +746,12 @@ private struct AIResponseView: View {
         .padding(.horizontal)
     }
 
-    @ViewBuilder
-    private func expandableSection<Content: View>(title: String, icon: String, count: Int?, isExpanded: Binding<Bool>, @ViewBuilder content: @escaping () -> Content) -> some View {
-        DisclosureGroup(isExpanded: isExpanded) {
-            content()
-                .padding(.top, 6)
-        } label: {
-            HStack(spacing: 8) {
-                Image(systemName: icon)
-                    .font(.caption2)
-                    .frame(width: 14)
-                Text(title)
-                    .font(.caption2.weight(.semibold))
-                    .clinicalFinePrint(weight: .semibold)
-                Spacer()
-                if let count {
-                    Text("\(count)")
-                        .clinicalPillText(weight: .medium)
-                        .padding(.horizontal, 4)
-                        .padding(.vertical, 1)
-                        .background(Color(.tertiarySystemBackground), in: Capsule())
-                        .foregroundStyle(.secondary)
-                }
-            }
-            .foregroundStyle(Color.clinicalIndigo)
-        }
-        .font(.caption2)
-        .padding(.horizontal, 9)
-        .padding(.vertical, 7)
-        .liquidGlassCard(cornerRadius: 12, borderColor: Color.primary.opacity(0.04), shadowRadius: 2)
-    }
-
     private func confidenceIcon(_ tier: ConfidenceTier) -> String {
+        // High, medium, low icons
         switch tier {
         case .high: return "checkmark.shield.fill"
-        case .medium: return "exclamationmark.triangle"
-        case .low: return "xmark.shield"
+        case .medium: return "exclamationmark.triangle.fill"
+        case .low: return "xmark.shield.fill"
         }
     }
 

@@ -99,6 +99,13 @@ struct OpenClinicSettingsView: View {
                             .foregroundStyle(.secondary)
                             .clinicalFinePrint()
                     }
+                    
+                    if smartController.session.isAuthorized {
+                        Button("Disconnect SMART Session", role: .destructive) {
+                            smartController.disconnect()
+                        }
+                        .foregroundColor(.red)
+                    }
                 }
 
                 Section("About") {

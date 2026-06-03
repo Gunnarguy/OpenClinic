@@ -418,6 +418,13 @@ struct InteroperabilityWorkspaceView: View {
                 if let errorMessage = smartController.lastErrorMessage {
                     messageRow(errorMessage, color: .red, icon: "exclamationmark.triangle.fill")
                 }
+                
+                if smartController.session.isAuthorized {
+                    Button("Disconnect SMART Session", role: .destructive) {
+                        smartController.disconnect()
+                    }
+                    .foregroundColor(.red)
+                }
             }
 
             if let summary = smartController.lastImportSummary {
