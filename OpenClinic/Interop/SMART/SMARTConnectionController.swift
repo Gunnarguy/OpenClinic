@@ -2,6 +2,7 @@ import Foundation
 import Combine
 import SwiftData
 import os
+import Security
 
 struct SMARTSandboxPreset: Identifiable, Hashable {
     let name: String
@@ -63,7 +64,6 @@ enum SMARTConnectionControllerError: LocalizedError {
 @MainActor
 final class SMARTConnectionController: ObservableObject {
     private enum StorageKey {
-        static let tokenResponse = "smart.savedTokenResponse"
         static let baseURLText = "smart.savedBaseURLText"
         static let patientIDText = "smart.savedPatientIDText"
         static let clientID = "smart.savedClientID"
@@ -511,13 +511,16 @@ final class SMARTConnectionController: ObservableObject {
         defaults.set(patientIDText, forKey: StorageKey.patientIDText)
         defaults.set(clientID, forKey: StorageKey.clientID)
 
+        let keychainService = "com.openclinic.smart"
+        let keychainAccount = "tokenResponse"
+
         guard let tokenResponse = session.tokenResponse,
               let encoded = try? JSONEncoder().encode(tokenResponse) else {
-            defaults.removeObject(forKey: StorageKey.tokenResponse)
+            KeychainHelper.shared.delete(service: keychainService, account: keychainAccount)
             return
         }
 
-        defaults.set(encoded, forKey: StorageKey.tokenResponse)
+        KeychainHelper.shared.save(encoded, service: keychainService, account: keychainAccount)
     }
 
     private func restorePersistedSession() {
@@ -534,7 +537,17 @@ final class SMARTConnectionController: ObservableObject {
             clientID = savedClientID
         }
 
-        guard let data = defaults.data(forKey: StorageKey.tokenResponse),
+        let keychainService = "com.openclinic.smart"
+        let keychainAccount = "tokenResponse"
+        let legacyTokenKey = "smart.savedTokenResponse"
+
+        // Migrate legacy token from UserDefaults if it exists
+        if let legacyData = defaults.data(forKey: legacyTokenKey) {
+            KeychainHelper.shared.save(legacyData, service: keychainService, account: keychainAccount)
+            defaults.removeObject(forKey: legacyTokenKey)
+        }
+
+        guard let data = KeychainHelper.shared.read(service: keychainService, account: keychainAccount),
               let tokenResponse = try? JSONDecoder().decode(SMARTTokenResponse.self, from: data) else {
             return
         }
@@ -630,5 +643,55 @@ private extension Data {
         }
 
         self.init(base64Encoded: normalized)
+    }
+}
+
+private struct KeychainHelper {
+    static let shared = KeychainHelper()
+
+    func save(_ data: Data, service: String, account: String) {
+        let query = [
+            kSecValueData: data,
+            kSecClass: kSecClassGenericPassword,
+            kSecAttrService: service,
+            kSecAttrAccount: account,
+        ] as [CFString: Any]
+
+        let status = SecItemAdd(query as CFDictionary, nil)
+
+        if status == errSecDuplicateItem {
+            let query = [
+                kSecAttrService: service,
+                kSecAttrAccount: account,
+                kSecClass: kSecClassGenericPassword,
+            ] as [CFString: Any]
+
+            let attributesToUpdate = [kSecValueData: data] as [CFString: Any]
+            SecItemUpdate(query as CFDictionary, attributesToUpdate as CFDictionary)
+        }
+    }
+
+    func read(service: String, account: String) -> Data? {
+        let query = [
+            kSecAttrService: service,
+            kSecAttrAccount: account,
+            kSecClass: kSecClassGenericPassword,
+            kSecReturnData: true
+        ] as [CFString: Any]
+
+        var result: AnyObject?
+        SecItemCopyMatching(query as CFDictionary, &result)
+
+        return (result as? Data)
+    }
+
+    func delete(service: String, account: String) {
+        let query = [
+            kSecAttrService: service,
+            kSecAttrAccount: account,
+            kSecClass: kSecClassGenericPassword,
+        ] as [CFString: Any]
+
+        SecItemDelete(query as CFDictionary)
     }
 }
