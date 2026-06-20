@@ -727,7 +727,8 @@ final class ClinicalIntelligenceService: ObservableObject {
         }
 
         // Medication queries across panel
-        if q.contains("medication") || q.contains("rx") || q.contains("prescri") || q.contains("drug") || q.contains("taking") {
+        let medicationKeywords = ["medication", "rx", "prescri", "drug", "taking"]
+        if medicationKeywords.contains(where: { q.contains($0) }) {
             let medEntries = patients.flatMap { p in
                 (p.medications ?? []).map { "[\(p.fullName)] \($0.medicationName) — \($0.quantityInfo) | Status: \($0.status ?? "Active")" }
             }
