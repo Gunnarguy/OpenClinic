@@ -685,7 +685,7 @@ final class ClinicalIntelligenceService: ObservableObject {
     private func executeFallbackQuery(query: String, modelContext: ModelContext, patient: PatientProfile?) async throws -> String {
         let normalizedQuery = query.lowercased()
 
-        if normalizedQuery.contains("medication") || normalizedQuery.contains("prescription") || normalizedQuery.contains("rx") || normalizedQuery.contains("refill") {
+        if ["medication", "prescription", "rx", "refill"].contains(where: normalizedQuery.contains) {
             let medications = try ClinicalChartFormatter.medications(modelContext: modelContext, patient: patient)
             if medications.isEmpty {
                 return "No medications are currently on file for this patient."
@@ -693,12 +693,12 @@ final class ClinicalIntelligenceService: ObservableObject {
             return ClinicalChartFormatter.medicationSummary(medications: medications)
         }
 
-        if normalizedQuery.contains("appointment") || normalizedQuery.contains("follow-up") || normalizedQuery.contains("schedule") || normalizedQuery.contains("next visit") {
+        if ["appointment", "follow-up", "schedule", "next visit"].contains(where: normalizedQuery.contains) {
             let appointments = (patient?.appointments ?? []).sorted { $0.scheduledTime < $1.scheduledTime }
             return appointments.isEmpty ? "No appointments are currently scheduled for this patient." : ClinicalChartFormatter.appointmentSummary(appointments: appointments)
         }
 
-        if normalizedQuery.contains("allerg") || normalizedQuery.contains("smok") || normalizedQuery.contains("pharmacy") || normalizedQuery.contains("mrn") || normalizedQuery.contains("risk") {
+        if ["allerg", "smok", "pharmacy", "mrn", "risk"].contains(where: normalizedQuery.contains) {
             return ClinicalChartFormatter.patientSummary(patient: patient)
         }
 
@@ -715,7 +715,7 @@ final class ClinicalIntelligenceService: ObservableObject {
         let cal = Calendar.current
 
         // Schedule / today queries
-        if q.contains("schedule") || q.contains("today") || q.contains("agenda") || q.contains("who") {
+        if ["schedule", "today", "agenda", "who"].contains(where: q.contains) {
             let todayAppts = patients.flatMap { p in
                 (p.appointments ?? []).filter { cal.isDateInToday($0.scheduledTime) }
                     .map { (p, $0) }
@@ -727,7 +727,7 @@ final class ClinicalIntelligenceService: ObservableObject {
         }
 
         // Medication queries across panel
-        if q.contains("medication") || q.contains("rx") || q.contains("prescri") || q.contains("drug") || q.contains("taking") {
+        if ["medication", "rx", "prescri", "drug", "taking"].contains(where: q.contains) {
             let medEntries = patients.flatMap { p in
                 (p.medications ?? []).map { "[\(p.fullName)] \($0.medicationName) — \($0.quantityInfo) | Status: \($0.status ?? "Active")" }
             }
@@ -735,7 +735,7 @@ final class ClinicalIntelligenceService: ObservableObject {
         }
 
         // Risk / allergy queries
-        if q.contains("risk") || q.contains("allerg") || q.contains("flag") || q.contains("smok") {
+        if ["risk", "allerg", "flag", "smok"].contains(where: q.contains) {
             let entries = patients.compactMap { p -> String? in
                 var flags: [String] = []
                 if !p.allergies.isEmpty { flags.append("Allergies: \(p.allergies.joined(separator: ", "))") }
