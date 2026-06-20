@@ -146,10 +146,11 @@ final class FHIRImportService {
         if patient.clinicalRecords == nil {
             patient.clinicalRecords = []
         }
+        let existingRecordsDict = Dictionary(uniqueKeysWithValues: existingRecords.map { ($0.recordID, $0) })
 
         for resource in resources {
             let adapted = FHIRResourceAdapters.clinicalRecord(from: resource)
-            if let existing = existingRecords.first(where: { $0.recordID == adapted.recordID }) {
+            if let existing = existingRecordsDict[adapted.recordID] {
                 existing.dateRecorded = adapted.dateRecorded
                 existing.conditionName = adapted.conditionName
                 existing.status = adapted.status
@@ -178,10 +179,11 @@ final class FHIRImportService {
         if patient.medications == nil {
             patient.medications = []
         }
+        let existingMedicationsDict = Dictionary(uniqueKeysWithValues: existingMedications.map { ($0.rxID, $0) })
 
         for resource in resources {
             let adapted = FHIRResourceAdapters.medication(from: resource)
-            if let existing = existingMedications.first(where: { $0.rxID == adapted.rxID }) {
+            if let existing = existingMedicationsDict[adapted.rxID] {
                 existing.medicationName = adapted.medicationName
                 existing.writtenBy = adapted.writtenBy
                 existing.writtenDate = adapted.writtenDate
@@ -211,10 +213,11 @@ final class FHIRImportService {
         if patient.appointments == nil {
             patient.appointments = []
         }
+        let existingAppointmentsDict = Dictionary(uniqueKeysWithValues: existingAppointments.map { ($0.appointmentID, $0) })
 
         for resource in resources {
             let adapted = FHIRResourceAdapters.appointment(from: resource)
-            if let existing = existingAppointments.first(where: { $0.appointmentID == adapted.appointmentID }) {
+            if let existing = existingAppointmentsDict[adapted.appointmentID] {
                 existing.scheduledTime = adapted.scheduledTime
                 existing.reasonForVisit = adapted.reasonForVisit
                 existing.status = adapted.status
