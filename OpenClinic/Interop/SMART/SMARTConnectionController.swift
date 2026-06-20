@@ -543,8 +543,10 @@ final class SMARTConnectionController: ObservableObject {
 
         // Migrate legacy token from UserDefaults if it exists
         if let legacyData = defaults.data(forKey: legacyTokenKey) {
-            KeychainHelper.shared.save(legacyData, service: keychainService, account: keychainAccount)
-            defaults.removeObject(forKey: legacyTokenKey)
+            let status = KeychainHelper.shared.save(legacyData, service: keychainService, account: keychainAccount)
+            if status == errSecSuccess {
+                defaults.removeObject(forKey: legacyTokenKey)
+            }
         }
 
         guard let data = KeychainHelper.shared.read(service: keychainService, account: keychainAccount),
@@ -649,12 +651,14 @@ private extension Data {
 private struct KeychainHelper {
     static let shared = KeychainHelper()
 
-    func save(_ data: Data, service: String, account: String) {
+    @discardableResult
+    func save(_ data: Data, service: String, account: String) -> OSStatus {
         let query = [
             kSecValueData: data,
             kSecClass: kSecClassGenericPassword,
             kSecAttrService: service,
             kSecAttrAccount: account,
+            kSecAttrAccessible: kSecAttrAccessibleWhenUnlockedThisDeviceOnly
         ] as [CFString: Any]
 
         let status = SecItemAdd(query as CFDictionary, nil)
@@ -666,9 +670,13 @@ private struct KeychainHelper {
                 kSecClass: kSecClassGenericPassword,
             ] as [CFString: Any]
 
-            let attributesToUpdate = [kSecValueData: data] as [CFString: Any]
-            SecItemUpdate(query as CFDictionary, attributesToUpdate as CFDictionary)
+            let attributesToUpdate = [
+                kSecValueData: data,
+                kSecAttrAccessible: kSecAttrAccessibleWhenUnlockedThisDeviceOnly
+            ] as [CFString: Any]
+            return SecItemUpdate(query as CFDictionary, attributesToUpdate as CFDictionary)
         }
+        return status
     }
 
     func read(service: String, account: String) -> Data? {
