@@ -228,6 +228,8 @@ For more details, see [PRIVACY.md](PRIVACY.md) and [SECURITY.md](SECURITY.md).
 - [x] 9-Gate verification pipeline evaluating RAG outputs for clinical correctness.
 - [x] SMART on FHIR OAuth discovery and patient record import flows.
 - [x] Reciprocal Rank Fusion (RRF) and MMR search candidate balancing.
+- [x] Multi-platform UI Unification and macOS Catalyst Support.
+- [x] Integration of RAG Evaluation and XCTest Suites.
 
 ### In Progress
 - [ ] Enhancing multi-pass Deep Think query extraction heuristics.
@@ -236,7 +238,6 @@ For more details, see [PRIVACY.md](PRIVACY.md) and [SECURITY.md](SECURITY.md).
 
 ### Planned / Backlog
 - [ ] Outbound writebacks to FHIR servers (e.g. uploading signed notes).
-- [ ] Implementing XCTest unit suite for verification gates.
 - [ ] Full-body anatomical mesh mapping in 3D for spatial tracking.
 
 ---

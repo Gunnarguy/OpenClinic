@@ -22,6 +22,8 @@ OpenClinic is a research prototype and system design evaluation workspace for na
 - [x] **Dermatology Workflow:** Anatomical body region mapping, lesion visual timelines, and photo attachments.
 - [x] **PDF Note Export:** Native generation of visit-note PDFs once documentation is signed.
 - [x] **Token Budget Management:** Query-intent classification and batch recursive RAG synthesis to stay within 4096-token limits.
+- [x] **XCTest Suite Integration:** Automated unit tests to validate the 9 verification gates against synthetic inputs.
+- [x] **macOS Catalyst Port:** Full multi-platform compatibility across iOS, iPadOS, and macOS.
 
 ### Active Work
 - [ ] **Multi-Pass "Deep Think" Retrieval:** Optimizing query expansion heuristics to pull broader histories for complex panel questions.
@@ -30,7 +32,6 @@ OpenClinic is a research prototype and system design evaluation workspace for na
 
 ### Planned Improvements
 - [ ] **Outbound FHIR Sync:** Adding writeback capability to upload signed visit notes as FHIR `DocumentReference` resources.
-- [ ] **XCTest Suite Integration:** Creating automated unit tests to validate the 9 verification gates against synthetic inputs.
 - [ ] **Biometric Access Gate:** Adding FaceID/TouchID checks before exposing local SwiftData databases.
 - [ ] **HNSW Vector Indexing:** Upgrading the linear-scan vector store to a scalable graph index for panels exceeding 1,000 patient records.
 
