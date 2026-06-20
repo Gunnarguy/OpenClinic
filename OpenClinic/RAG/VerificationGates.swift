@@ -122,12 +122,12 @@ final class ClinicalVerificationGates: @unchecked Sendable {
         let responseTokens = extractClinicalTerms(from: response)
         guard !responseTokens.isEmpty else { return (true, []) }
 
-        let chunkText = chunks.map { $0.chunk.content.lowercased() }.joined(separator: " ")
-        let covered = responseTokens.filter { chunkText.contains($0) }
+        let chunkTokens = Set(chunks.flatMap { extractClinicalTerms(from: $0.chunk.content) })
+        let covered = responseTokens.filter { chunkTokens.contains($0) }
         let coverage = Double(covered.count) / Double(responseTokens.count)
 
         if coverage < 0.5 {
-            let uncovered = responseTokens.filter { !chunkText.contains($0) }
+            let uncovered = responseTokens.filter { !chunkTokens.contains($0) }
             return (false, ["Low evidence coverage (\(Int(coverage * 100))%). Uncovered terms: \(uncovered.prefix(5).joined(separator: ", "))"])
         }
         return (true, [])
