@@ -195,6 +195,7 @@ actor ClinicalFTSService {
         let tokens = query.lowercased()
             .components(separatedBy: CharacterSet.alphanumerics.inverted)
             .filter { $0.count > 2 }
+            .map { "\"\($0)\"" }
         guard !tokens.isEmpty else { return [] }
 
         // Try AND first for precision
