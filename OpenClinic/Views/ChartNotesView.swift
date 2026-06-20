@@ -27,6 +27,14 @@ struct ChartNotesView: View {
         }
     }
 
+    private var filterToolbarPlacement: ToolbarItemPlacement {
+        #if os(iOS)
+        return .topBarTrailing
+        #else
+        return .primaryAction
+        #endif
+    }
+
     var body: some View {
         List {
             if records.isEmpty {
@@ -123,7 +131,7 @@ struct ChartNotesView: View {
         .navigationTitle("Chart Notes")
         .searchable(text: $searchText, prompt: "Search notes, diagnoses, ICD-10…")
         .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
+            ToolbarItem(placement: filterToolbarPlacement) {
                 Menu {
                     Button { filterStatus = nil } label: {
                         Label("All", systemImage: filterStatus == nil ? "checkmark" : "")

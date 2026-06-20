@@ -8,6 +8,29 @@
 import SwiftUI
 
 // MARK: - Clinic Colors
+#if canImport(UIKit)
+import UIKit
+#elseif canImport(AppKit)
+import AppKit
+#endif
+
+#if canImport(UIKit)
+extension Color {
+    static let clinicSecondarySystemBackground = Color(uiColor: .secondarySystemBackground)
+    static let clinicTertiarySystemBackground = Color(uiColor: .tertiarySystemBackground)
+    static let clinicSystemGroupedBackground = Color(uiColor: .systemGroupedBackground)
+    static let clinicSecondarySystemGroupedBackground = Color(uiColor: .secondarySystemGroupedBackground)
+}
+#else
+extension Color {
+    static let clinicSecondarySystemBackground = Color(nsColor: .underPageBackgroundColor)
+    static let clinicTertiarySystemBackground = Color(nsColor: .controlBackgroundColor).opacity(0.8)
+    static let clinicSystemGroupedBackground = Color(nsColor: .windowBackgroundColor)
+    static let clinicSecondarySystemGroupedBackground = Color(nsColor: .controlBackgroundColor)
+}
+#endif
+
+// MARK: - Clinic Colors
 extension Color {
     static let clinicalTeal = Color(red: 0.05, green: 0.58, blue: 0.53) // #0D9488
     static let clinicalIndigo = Color(red: 0.31, green: 0.27, blue: 0.90) // #4F46E5
@@ -15,8 +38,8 @@ extension Color {
     static let criticalRed = Color(red: 0.86, green: 0.15, blue: 0.15) // #DC2626
     static let clinicalSlate = Color(red: 0.28, green: 0.33, blue: 0.41) // #475569
     
-    static let clinicRowBackground = Color(UIColor.secondarySystemGroupedBackground)
-    static let clinicMainBackground = Color(UIColor.systemGroupedBackground)
+    static let clinicRowBackground = Color.clinicSecondarySystemGroupedBackground
+    static let clinicMainBackground = Color.clinicSystemGroupedBackground
 }
 
 // MARK: - Glassmorphic Card View Modifier
@@ -160,3 +183,35 @@ struct VisualAccentLine: View {
             .frame(width: width, height: height)
     }
 }
+
+#if !os(iOS)
+struct TextInputAutocapitalization: Sendable {
+    static let never = TextInputAutocapitalization()
+    static let words = TextInputAutocapitalization()
+    static let sentences = TextInputAutocapitalization()
+    static let characters = TextInputAutocapitalization()
+}
+
+enum UIKeyboardType: Sendable {
+    case URL
+    case defaultType
+}
+
+struct InsetGroupedPlaceholderStyle {
+    static let insetGrouped = InsetGroupedPlaceholderStyle()
+}
+
+extension View {
+    func textInputAutocapitalization(_ autocapitalization: TextInputAutocapitalization?) -> some View {
+        self
+    }
+    
+    func keyboardType(_ type: UIKeyboardType) -> some View {
+        self
+    }
+    
+    func listStyle(_ style: InsetGroupedPlaceholderStyle) -> some View {
+        self.listStyle(.inset)
+    }
+}
+#endif

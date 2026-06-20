@@ -274,6 +274,7 @@ struct AnatomicalRealityView: View {
                 } else {
                     ForEach(regionPhotos) { photo in
                         HStack {
+                            #if canImport(UIKit)
                             if let img = UIImage(contentsOfFile: photo.filePath) {
                                 Image(uiImage: img)
                                     .resizable()
@@ -281,6 +282,15 @@ struct AnatomicalRealityView: View {
                                     .frame(width: 50, height: 50)
                                     .clipShape(RoundedRectangle(cornerRadius: 6))
                             }
+                            #else
+                            if let img = NSImage(contentsOfFile: photo.filePath) {
+                                Image(nsImage: img)
+                                    .resizable()
+                                    .scaledToFill()
+                                    .frame(width: 50, height: 50)
+                                    .clipShape(RoundedRectangle(cornerRadius: 6))
+                            }
+                            #endif
                             VStack(alignment: .leading) {
                                 Text(photo.captureDate, format: .dateTime.month().day().year())
                                     .font(.caption)

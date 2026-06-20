@@ -6,6 +6,35 @@ import os
 
 #if canImport(FoundationModels)
 import FoundationModels
+
+// Fallback dummy for SDKs without PrivateCloudComputeLanguageModel
+#if !compiler(>=7.0)
+@available(iOS 26.0, macOS 26.0, visionOS 26.0, *)
+final class PrivateCloudComputeLanguageModel {
+    var isAvailable: Bool { false }
+    var quotaUsage: QuotaUsage { QuotaUsage() }
+    
+    struct QuotaUsage {
+        var isLimitReached: Bool { true }
+    }
+}
+
+@available(iOS 26.0, macOS 26.0, visionOS 26.0, *)
+extension LanguageModelSession {
+    convenience init(model: PrivateCloudComputeLanguageModel, instructions: String) {
+        self.init(instructions: instructions)
+    }
+    convenience init(model: PrivateCloudComputeLanguageModel, tools: [any Tool], instructions: String) {
+        self.init(tools: tools, instructions: instructions)
+    }
+}
+#endif
+
+@available(iOS 26.0, macOS 26.0, visionOS 26.0, *)
+enum PlatformLanguageModel {
+    case system(SystemLanguageModel)
+    case privateCloudCompute(PrivateCloudComputeLanguageModel)
+}
 #endif
 
 #if canImport(FoundationModels)
@@ -166,20 +195,23 @@ final class ClinicalIntelligenceService: ObservableObject {
     func generateStructuredNote(from dictation: String, patient: PatientProfile? = nil, selectedAnatomy: String? = nil) async throws -> ClinicalVisitNote {
         AppLogger.ai.info("🧠 generateStructuredNote called — dictation: \(dictation.count) chars, patient: \(patient?.fullName ?? "nil"), anatomy: \(selectedAnatomy ?? "nil")")
         #if canImport(FoundationModels)
-        if #available(iOS 26.0, macOS 26.0, visionOS 26.0, *), let model = availableFoundationModel() {
-            AppLogger.ai.info("✨ Foundation Model available — using on-device AI")
-            do {
-                let note = try await generateStructuredNoteWithFoundationModel(
-                    from: dictation,
-                    patient: patient,
-                    selectedAnatomy: selectedAnatomy,
-                    model: model
-                )
-                AppLogger.ai.info("✅ Foundation Model note generated: \(note.primaryDiagnosis)")
-                return note
-            } catch {
-                AppLogger.ai.error("❌ Foundation Model failed, falling back: \(error.localizedDescription)")
-                return generateFallbackStructuredNote(from: dictation, patient: patient, selectedAnatomy: selectedAnatomy)
+        if #available(iOS 26.0, macOS 26.0, visionOS 26.0, *) {
+            let estimatedTokens = Self.estimateTokens(dictation) + 1500 // Base summary estimate
+            if let model = resolveModel(for: estimatedTokens) {
+                AppLogger.ai.info("✨ Foundation Model available — using AI")
+                do {
+                    let note = try await generateStructuredNoteWithFoundationModel(
+                        from: dictation,
+                        patient: patient,
+                        selectedAnatomy: selectedAnatomy,
+                        model: model
+                    )
+                    AppLogger.ai.info("✅ Foundation Model note generated: \(note.primaryDiagnosis)")
+                    return note
+                } catch {
+                    AppLogger.ai.error("❌ Foundation Model failed, falling back: \(error.localizedDescription)")
+                    return generateFallbackStructuredNote(from: dictation, patient: patient, selectedAnatomy: selectedAnatomy)
+                }
             }
         }
         #endif
@@ -221,15 +253,18 @@ final class ClinicalIntelligenceService: ObservableObject {
         ragService.addStep(.generation, "Generating with Apple Intelligence", "On-device Foundation Model", icon: "apple.logo")
 
         #if canImport(FoundationModels)
-        if #available(iOS 26.0, macOS 26.0, visionOS 26.0, *), let model = availableFoundationModel() {
-            AppLogger.ai.info("✨ Foundation Model tool query")
-            do {
-                let result = try await executeFoundationModelQuery(query: query, modelContext: modelContext, patient: patient, model: model, ragContext: ragContext)
-                AppLogger.ai.info("✅ Tool query response: \(result.count) chars")
-                return result
-            } catch {
-                AppLogger.ai.error("❌ Foundation Model tool query failed: \(error.localizedDescription)")
-                return try await executeFallbackQuery(query: query, modelContext: modelContext, patient: patient)
+        if #available(iOS 26.0, macOS 26.0, visionOS 26.0, *) {
+            let estimatedTokens = Self.estimateTokens(query) + (ragContext.map { Self.estimateTokens($0) } ?? 0) + 1000 // Base context tools estimate
+            if let model = resolveModel(for: estimatedTokens) {
+                AppLogger.ai.info("✨ Foundation Model tool query")
+                do {
+                    let result = try await executeFoundationModelQuery(query: query, modelContext: modelContext, patient: patient, model: model, ragContext: ragContext)
+                    AppLogger.ai.info("✅ Tool query response: \(result.count) chars")
+                    return result
+                } catch {
+                    AppLogger.ai.error("❌ Foundation Model tool query failed: \(error.localizedDescription)")
+                    return try await executeFallbackQuery(query: query, modelContext: modelContext, patient: patient)
+                }
             }
         }
         #endif
@@ -266,15 +301,18 @@ final class ClinicalIntelligenceService: ObservableObject {
         ragService.addStep(.generation, "Generating with Apple Intelligence", "On-device Foundation Model (panel)", icon: "apple.logo")
 
         #if canImport(FoundationModels)
-        if #available(iOS 26.0, macOS 26.0, visionOS 26.0, *), let model = availableFoundationModel() {
-            AppLogger.ai.info("✨ Foundation Model panel query")
-            do {
-                let result = try await executePanelFoundationModelQuery(query: query, patients: allPatients, modelContext: modelContext, model: model, ragContext: ragContext)
-                AppLogger.ai.info("✅ Panel response: \(result.count) chars")
-                return result
-            } catch {
-                AppLogger.ai.error("❌ Foundation Model panel query failed: \(error.localizedDescription)")
-                return executePanelFallbackQuery(query: query, patients: allPatients, modelContext: modelContext)
+        if #available(iOS 26.0, macOS 26.0, visionOS 26.0, *) {
+            let estimatedTokens = Self.estimateTokens(query) + (ragContext.map { Self.estimateTokens($0) } ?? 0) + (allPatients.count * 20)
+            if let model = resolveModel(for: estimatedTokens) {
+                AppLogger.ai.info("✨ Foundation Model panel query")
+                do {
+                    let result = try await executePanelFoundationModelQuery(query: query, patients: allPatients, modelContext: modelContext, model: model, ragContext: ragContext)
+                    AppLogger.ai.info("✅ Panel response: \(result.count) chars")
+                    return result
+                } catch {
+                    AppLogger.ai.error("❌ Foundation Model panel query failed: \(error.localizedDescription)")
+                    return executePanelFallbackQuery(query: query, patients: allPatients, modelContext: modelContext)
+                }
             }
         }
         #endif
@@ -285,9 +323,15 @@ final class ClinicalIntelligenceService: ObservableObject {
 
     #if canImport(FoundationModels)
     @available(iOS 26.0, macOS 26.0, visionOS 26.0, *)
-    private func availableFoundationModel() -> SystemLanguageModel? {
+    private func resolveModel(for estimatedTokens: Int) -> PlatformLanguageModel? {
+        let pcc = PrivateCloudComputeLanguageModel()
+        if estimatedTokens > 4000, pcc.isAvailable, !pcc.quotaUsage.isLimitReached {
+            AppLogger.ai.info("☁️ Routing to Private Cloud Compute (\(estimatedTokens) estimated tokens)")
+            return .privateCloudCompute(pcc)
+        }
+        
         let model = SystemLanguageModel(useCase: .general)
-        return model.isAvailable ? model : nil
+        return model.isAvailable ? .system(model) : nil
     }
 
     @available(iOS 26.0, macOS 26.0, visionOS 26.0, *)
@@ -295,10 +339,16 @@ final class ClinicalIntelligenceService: ObservableObject {
         from dictation: String,
         patient: PatientProfile?,
         selectedAnatomy: String?,
-        model: SystemLanguageModel
+        model: PlatformLanguageModel
     ) async throws -> ClinicalVisitNote {
         AppLogger.ai.info("🚀 Building Foundation Model prompt for structured note")
-        let session = LanguageModelSession(model: model, instructions: documentationInstructions)
+        let session: LanguageModelSession
+        switch model {
+        case .system(let m):
+            session = LanguageModelSession(model: m, instructions: documentationInstructions)
+        case .privateCloudCompute(let m):
+            session = LanguageModelSession(model: m, instructions: documentationInstructions)
+        }
         let context = ClinicalChartFormatter.patientSummary(patient: patient)
         let history = ClinicalChartFormatter.recordSummary(records: (patient?.clinicalRecords ?? []).sorted { $0.dateRecorded > $1.dateRecorded })
         let medications = ClinicalChartFormatter.medicationSummary(medications: (patient?.medications ?? []).sorted { $0.writtenDate > $1.writtenDate })
@@ -334,7 +384,7 @@ final class ClinicalIntelligenceService: ObservableObject {
         query: String,
         modelContext: ModelContext,
         patient: PatientProfile?,
-        model: SystemLanguageModel,
+        model: PlatformLanguageModel,
         ragContext: String? = nil
     ) async throws -> String {
         let patientSummary = ClinicalChartFormatter.patientSummary(patient: patient)
@@ -374,7 +424,12 @@ final class ClinicalIntelligenceService: ObservableObject {
             session = existing
             AppLogger.ai.info("♻️ Reusing existing patient session")
         } else {
-            session = LanguageModelSession(model: model, tools: tools, instructions: assistantInstructions)
+            switch model {
+            case .system(let m):
+                session = LanguageModelSession(model: m, tools: tools, instructions: assistantInstructions)
+            case .privateCloudCompute(let m):
+                session = LanguageModelSession(model: m, tools: tools, instructions: assistantInstructions)
+            }
             self.patientSession = session
             AppLogger.ai.info("🆕 Created new patient session")
         }
@@ -395,13 +450,20 @@ final class ClinicalIntelligenceService: ObservableObject {
         query: String,
         patients: [PatientProfile],
         modelContext: ModelContext,
-        model: SystemLanguageModel,
+        model: PlatformLanguageModel,
         ragContext: String? = nil
     ) async throws -> String {
         // ── Token Budget (OpenIntelligence-style) ──────────────────────
-        // 4096 total context window (Apple FM hard limit per TN3193)
+        // If PCC is used, we have 32768 context window, otherwise 4096.
+        let isPCC: Bool
+        switch model {
+        case .system:
+            isPCC = false
+        case .privateCloudCompute:
+            isPCC = true
+        }
+        let contextWindow = isPCC ? 32768 : 4096
         // 1.4 chars/token (empirically validated for Apple FM WordPiece tokenizer)
-        let contextWindow = 4096
         let charsPerToken: Double = 1.4
 
         let systemPromptTokens = Self.estimateTokens(panelAssistantInstructions)
@@ -438,7 +500,13 @@ final class ClinicalIntelligenceService: ObservableObject {
         if contextTokens <= availableTokens {
             ragService.addStep(.generation, "Single-pass mode", "\(contextTokens)/\(availableTokens) tokens — fits", icon: "checkmark.seal")
 
-            let session = LanguageModelSession(model: model, instructions: panelAssistantInstructions)
+            let session: LanguageModelSession
+            switch model {
+            case .system(let m):
+                session = LanguageModelSession(model: m, instructions: panelAssistantInstructions)
+            case .privateCloudCompute(let m):
+                session = LanguageModelSession(model: m, instructions: panelAssistantInstructions)
+            }
             let trimmedRAG = ragContext.map { String($0.prefix(1200)) }
 
             let prompt = """
@@ -492,7 +560,13 @@ final class ClinicalIntelligenceService: ObservableObject {
             ragService.addStep(.generation, "Pass \(i + 1)/\(batches.count)", names, icon: "brain")
 
             do {
-                let session = LanguageModelSession(model: model, instructions: panelAssistantInstructions)
+                let session: LanguageModelSession
+                switch model {
+                case .system(let m):
+                    session = LanguageModelSession(model: m, instructions: panelAssistantInstructions)
+                case .privateCloudCompute(let m):
+                    session = LanguageModelSession(model: m, instructions: panelAssistantInstructions)
+                }
                 let batchContext = batch.joined(separator: "\n")
                 let prompt = """
                 Patient batch \(i + 1)/\(batches.count) (\(batchPts.count) patients):
@@ -520,7 +594,13 @@ final class ClinicalIntelligenceService: ObservableObject {
         if combinedTokens <= availableTokens {
             // Fits — synthesize with FM
             do {
-                let session = LanguageModelSession(model: model, instructions: "Merge partial clinical answers into one cohesive response. Preserve all patient names and data. Be concise.")
+                let session: LanguageModelSession
+                switch model {
+                case .system(let m):
+                    session = LanguageModelSession(model: m, instructions: "Merge partial clinical answers into one cohesive response. Preserve all patient names and data. Be concise.")
+                case .privateCloudCompute(let m):
+                    session = LanguageModelSession(model: m, instructions: "Merge partial clinical answers into one cohesive response. Preserve all patient names and data. Be concise.")
+                }
                 let prompt = """
                 Original question: \(query)
 

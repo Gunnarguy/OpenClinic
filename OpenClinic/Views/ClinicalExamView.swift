@@ -166,11 +166,7 @@ struct ClinicalExamWorkspace: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             ScrollView { intelligencePanel }
                 .frame(width: 380)
-                #if os(iOS)
-                .background(Color(UIColor.secondarySystemBackground))
-                #else
-                .background(Color(NSColor.windowBackgroundColor))
-                #endif
+                .background(Color.clinicSecondarySystemBackground)
         }
     }
 
@@ -268,11 +264,7 @@ struct ClinicalExamWorkspace: View {
                             .foregroundColor(.secondary)
                     }
                     .padding(8)
-                    #if os(iOS)
-                    .background(Color(UIColor.tertiarySystemBackground))
-                    #else
-                    .background(Color(NSColor.controlBackgroundColor))
-                    #endif
+                    .background(Color.clinicTertiarySystemBackground)
                     .cornerRadius(8)
                 }
             }
@@ -298,19 +290,11 @@ struct ClinicalExamWorkspace: View {
                     .font(.caption).foregroundColor(.secondary)
 
                 ZStack(alignment: .topLeading) {
-                    #if os(iOS)
                     TextEditor(text: $dictationText)
                         .frame(minHeight: 140, maxHeight: 220)
                         .padding(4)
-                        .background(Color(UIColor.tertiarySystemBackground))
+                        .background(Color.clinicTertiarySystemBackground)
                         .cornerRadius(10)
-                    #else
-                    TextEditor(text: $dictationText)
-                        .frame(minHeight: 140, maxHeight: 220)
-                        .padding(4)
-                        .background(Color(NSColor.controlBackgroundColor))
-                        .cornerRadius(10)
-                    #endif
 
                     if dictationText.isEmpty {
                         Text("e.g. \"2mm papule on the right cheek, slightly erythematous border, no ulceration…\"")
@@ -371,7 +355,7 @@ struct ClinicalExamWorkspace: View {
         } label: {
             ZStack {
                 RoundedRectangle(cornerRadius: 4)
-                    .fill(isSelected ? Color.purple.opacity(0.35) : Color(.systemGray5))
+                    .fill(isSelected ? Color.purple.opacity(0.35) : Color.gray.opacity(0.18))
                     .overlay(
                         RoundedRectangle(cornerRadius: 4)
                             .strokeBorder(isSelected ? Color.purple : Color.clear, lineWidth: 2)

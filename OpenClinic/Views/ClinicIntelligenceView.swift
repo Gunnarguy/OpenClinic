@@ -42,6 +42,22 @@ struct ClinicIntelligenceView: View {
         self.initialPatient = patient
     }
 
+    private var toolbarLeadingPlacement: ToolbarItemPlacement {
+        #if os(iOS)
+        return .topBarLeading
+        #else
+        return .navigation
+        #endif
+    }
+
+    private var toolbarTrailingPlacement: ToolbarItemPlacement {
+        #if os(iOS)
+        return .topBarTrailing
+        #else
+        return .primaryAction
+        #endif
+    }
+
     private var contextLabel: String {
         selectedPatient?.fullName ?? "All Patients"
     }
@@ -124,7 +140,7 @@ struct ClinicIntelligenceView: View {
                         }
                         .padding(.horizontal, 7)
                         .padding(.vertical, 3)
-                        .background(deepThinkEnabled ? Color.orange.opacity(0.2) : Color(.tertiarySystemBackground), in: Capsule())
+                        .background(deepThinkEnabled ? Color.orange.opacity(0.2) : Color.clinicTertiarySystemBackground, in: Capsule())
                         .foregroundStyle(deepThinkEnabled ? .orange : .secondary)
                     }
                     .buttonStyle(.plain)
@@ -220,8 +236,7 @@ struct ClinicIntelligenceView: View {
                             }
                             if isProcessing {
                                 ThinkingStreamView(
-                                    steps: ragService.thinkingSteps,
-                                    deepThinkEnabled: deepThinkEnabled
+                                    events: ragService.thinkingSteps
                                 )
                                 .id("thinking")
                             }
@@ -287,7 +302,7 @@ struct ClinicIntelligenceView: View {
             .navigationBarTitleDisplayMode(.inline)
             #endif
             .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
+                ToolbarItem(placement: toolbarLeadingPlacement) {
                     Button {
                         Task { await ragService.indexAllData(modelContext: modelContext) }
                     } label: {
@@ -300,7 +315,7 @@ struct ClinicIntelligenceView: View {
                     .disabled(ragService.isIndexing)
                     .help("Reindex RAG pipeline")
                 }
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItem(placement: toolbarTrailingPlacement) {
                     Button {
                         chatHistory.removeAll()
                         intelligenceService.resetSessions()
@@ -449,146 +464,7 @@ private struct ChatFormattedText: View {
     }
 }
 
-// MARK: - Thinking Stream View (live during processing)
 
-private struct BrainPulseIcon: View {
-    let deepThinkEnabled: Bool
-    @State private var isPulsing = false
-    
-    var body: some View {
-        Image(systemName: deepThinkEnabled ? "brain.head.profile.fill" : "brain")
-            .font(.title3)
-            .foregroundStyle(deepThinkEnabled ? .orange : .clinicalIndigo)
-            .scaleEffect(isPulsing ? 1.15 : 0.95)
-            .opacity(isPulsing ? 1.0 : 0.6)
-            .onAppear {
-                withAnimation(.easeInOut(duration: 0.85).repeatForever(autoreverses: true)) {
-                    isPulsing = true
-                }
-            }
-    }
-}
-
-private struct ThinkingStreamView: View {
-    let steps: [ThinkingStep]
-    let deepThinkEnabled: Bool
-    @State private var isExpanded = false
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 10) {
-                BrainPulseIcon(deepThinkEnabled: deepThinkEnabled)
-                
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(currentStatusText)
-                        .font(.subheadline.bold())
-                        .foregroundStyle(deepThinkEnabled ? .orange : .clinicalIndigo)
-                    
-                    if let lastStep = steps.last {
-                        Text(lastStep.title)
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                            .clinicalFinePrint()
-                    }
-                }
-                
-                Spacer()
-                
-                if !steps.isEmpty {
-                    Button {
-                        withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) {
-                            isExpanded.toggle()
-                        }
-                    } label: {
-                        HStack(spacing: 4) {
-                            Text(isExpanded ? "Hide Details" : "Show Details")
-                                .font(.caption2.bold())
-                            Image(systemName: "chevron.down")
-                                .font(.caption2)
-                                .rotationEffect(.degrees(isExpanded ? 180 : 0))
-                        }
-                        .foregroundStyle(.secondary)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(Color.primary.opacity(0.04), in: Capsule())
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-            .padding(.bottom, isExpanded ? 12 : 0)
-            
-            if isExpanded {
-                VStack(alignment: .leading, spacing: 4) {
-                    ForEach(Array(steps.enumerated()), id: \.element.id) { index, step in
-                        HStack(alignment: .top, spacing: 10) {
-                            VStack(spacing: 0) {
-                                Image(systemName: step.phase == .complete ? "checkmark.circle.fill" : step.icon)
-                                    .font(.system(size: 10))
-                                    .foregroundStyle(stepColor(step))
-                                    .frame(width: 12, height: 12)
-                                if index < steps.count - 1 {
-                                    Rectangle()
-                                        .fill(Color(.separator))
-                                        .frame(width: 1)
-                                        .frame(minHeight: 16)
-                                }
-                            }
-                            .frame(width: 12)
-
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(step.title)
-                                    .font(.caption)
-                                    .fontWeight(.medium)
-                                    .foregroundStyle(step.phase == .complete ? .green : .primary)
-                                    .clinicalFinePrint(weight: .medium)
-                                if !step.detail.isEmpty {
-                                    Text(step.detail)
-                                        .font(.caption2)
-                                        .foregroundStyle(.secondary)
-                                        .clinicalFinePrint()
-                                        .clinicalRowSummaryText(lines: 3)
-                                }
-                            }
-                            .padding(.bottom, 6)
-
-                            Spacer()
-                        }
-                        .transition(.opacity)
-                    }
-                }
-                .padding(.top, 8)
-            }
-        }
-        .padding(14)
-        .background(
-            Color.clear
-                .liquidGlassCard(cornerRadius: 16, borderColor: (deepThinkEnabled ? Color.orange : Color.clinicalIndigo).opacity(0.15), shadowRadius: 4)
-        )
-        .padding(.horizontal)
-        .animation(.easeInOut(duration: 0.3), value: steps.count)
-        .animation(.easeInOut(duration: 0.3), value: isExpanded)
-    }
-    
-    private var currentStatusText: String {
-        if steps.isEmpty {
-            return "Initializing..."
-        }
-        if steps.last?.phase == .complete {
-            return "Synthesizing response..."
-        }
-        return deepThinkEnabled ? "Clinical Deep Think active..." : "Clinical RAG active..."
-    }
-
-    private func stepColor(_ step: ThinkingStep) -> Color {
-        switch step.phase {
-        case .complete: return .green
-        case .verification: return step.icon == "checkmark.shield.fill" ? .green : .orange
-        case .deepThinkPass, .followUpExtraction: return .orange
-        case .generation: return .purple
-        default: return .blue
-        }
-    }
-}
 
 // MARK: - AI Response View
 
@@ -872,7 +748,7 @@ private struct SourcesListView: View {
                         .italic()
                 }
                 .padding(8)
-                .background(Color(.tertiarySystemBackground), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                .background(Color.clinicTertiarySystemBackground, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
             }
         }
         .padding(.top, 2)

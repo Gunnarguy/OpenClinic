@@ -204,6 +204,14 @@ struct VisitRecordDetailView: View {
     @State private var showShareSheet = false
     @State private var lifecycleUpdateMessage: String?
 
+    private var pdfToolbarPlacement: ToolbarItemPlacement {
+        #if os(iOS)
+        return .topBarTrailing
+        #else
+        return .primaryAction
+        #endif
+    }
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
@@ -345,7 +353,7 @@ struct VisitRecordDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         #endif
         .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
+            ToolbarItem(placement: pdfToolbarPlacement) {
                 if let url = pdfURL {
                     ShareLink(item: url) {
                         Label("Share PDF", systemImage: "square.and.arrow.up")

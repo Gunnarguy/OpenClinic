@@ -15,7 +15,7 @@ import os
 
 /// Transforms SwiftData clinical models into embeddable ClinicalChunks.
 struct ClinicalChunker {
-    private static let maxWordsPerChunk = 310
+    private static let defaultMaxWordsPerChunk = 310
 
     // MARK: - Patient Profile Chunks
 
@@ -154,9 +154,12 @@ struct ClinicalChunker {
 
         let prefix = "[\(patientFullName)] [\(dateStr)] [\(sectionTitle)]"
 
+        let analysis = ClinicalComplexityAnalyzer.shared.analyze(text: trimmed)
+        let dynamicMaxWords = analysis.recommendedChunkSize
+        
         // Split if over max words
         let words = trimmed.split(separator: " ")
-        if words.count <= maxWordsPerChunk {
+        if words.count <= dynamicMaxWords {
             chunks.append(ClinicalChunk(
                 patientId: patientId,
                 content: trimmed,
@@ -175,7 +178,7 @@ struct ClinicalChunker {
             // Split into sub-chunks
             var start = words.startIndex
             while start < words.endIndex {
-                let end = min(start + maxWordsPerChunk, words.endIndex)
+                let end = min(start + dynamicMaxWords, words.endIndex)
                 let subContent = words[start..<end].joined(separator: " ")
                 chunks.append(ClinicalChunk(
                     patientId: patientId,
@@ -225,7 +228,10 @@ struct ClinicalChunker {
         let fullContent = lines.joined(separator: "\n")
         let words = fullContent.split(separator: " ")
 
-        if words.count <= maxWordsPerChunk {
+        let analysis = ClinicalComplexityAnalyzer.shared.analyze(text: fullContent)
+        let dynamicMaxWords = analysis.recommendedChunkSize
+
+        if words.count <= dynamicMaxWords {
             return [ClinicalChunk(
                 patientId: patient.id,
                 content: fullContent,
@@ -250,7 +256,7 @@ struct ClinicalChunker {
 
         for line in lines {
             let lineWords = line.split(separator: " ").count
-            if currentWordCount + lineWords > maxWordsPerChunk && !currentLines.isEmpty {
+            if currentWordCount + lineWords > dynamicMaxWords && !currentLines.isEmpty {
                 chunks.append(ClinicalChunk(
                     patientId: patient.id,
                     content: currentLines.joined(separator: "\n"),

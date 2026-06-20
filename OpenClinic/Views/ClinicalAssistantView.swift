@@ -8,12 +8,14 @@ private struct AssistantMessage: Identifiable {
     let isUser: Bool
     let text: String
     let sourceDescriptor: ClinicalSourceDescriptor?
+    let thinkingSteps: [ThinkingStep]?
 
-    init(id: UUID = UUID(), isUser: Bool, text: String, sourceDescriptor: ClinicalSourceDescriptor? = nil) {
+    init(id: UUID = UUID(), isUser: Bool, text: String, sourceDescriptor: ClinicalSourceDescriptor? = nil, thinkingSteps: [ThinkingStep]? = nil) {
         self.id = id
         self.isUser = isUser
         self.text = text
         self.sourceDescriptor = sourceDescriptor
+        self.thinkingSteps = thinkingSteps
     }
 }
 
@@ -21,6 +23,7 @@ struct ClinicalAssistantView: View {
     let patient: PatientProfile
     @Environment(\.modelContext) private var modelContext
     @StateObject private var intelligenceService = ClinicalIntelligenceService()
+    @ObservedObject private var ragService = ClinicalRAGService.shared
 
     @State private var queryText = ""
     @State private var chatHistory: [AssistantMessage] = []
@@ -38,7 +41,7 @@ struct ClinicalAssistantView: View {
 
     var body: some View {
         ZStack {
-            Color(.systemGroupedBackground)
+            Color.clinicSystemGroupedBackground
                 .ignoresSafeArea()
 
             VStack(spacing: 0) {
@@ -123,12 +126,17 @@ struct ClinicalAssistantView: View {
                                                 }
                                             }
                                         }
+                                        
+                                        if let steps = message.thinkingSteps, !steps.isEmpty {
+                                            ThinkingStreamView(events: steps)
+                                                .padding(.bottom, 4)
+                                        }
 
                                         ChatFormattedText(text: message.text)
                                     }
                                     .padding(.horizontal, 14)
                                     .padding(.vertical, 12)
-                                    .background(Color(UIColor.secondarySystemBackground))
+                                    .background(Color.clinicSecondarySystemBackground)
                                     .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 16, style: .continuous)
@@ -142,15 +150,8 @@ struct ClinicalAssistantView: View {
                     }
                     if isProcessing {
                         HStack {
-                            ProgressView()
-                                .padding(10)
-                                #if os(iOS)
-                                .background(Color(UIColor.secondarySystemBackground))
-                                #else
-                                .background(Color(NSColor.textBackgroundColor))
-                                #endif
-                                .cornerRadius(14)
-                            Spacer()
+                            ThinkingStreamView(events: ragService.thinkingSteps)
+                                .frame(maxWidth: .infinity)
                         }
                         .padding(.horizontal)
                     }
@@ -168,7 +169,7 @@ struct ClinicalAssistantView: View {
                     TextField("Ask about \(patient.firstName)'s history...", text: $queryText)
                         .padding(.horizontal, 16)
                         .padding(.vertical, 10)
-                        .background(Color(UIColor.secondarySystemBackground).opacity(0.8))
+                        .background(Color.clinicSecondarySystemBackground.opacity(0.8))
                         .clipShape(Capsule())
                         .onSubmit(askAssistant)
 
@@ -215,7 +216,7 @@ struct ClinicalAssistantView: View {
             do {
                 let response = try await intelligenceService.executeToolQuery(query: query, modelContext: modelContext, patient: patient)
                 AppLogger.assistant.info("✅ Assistant response: \(response.count) chars")
-                chatHistory.append(AssistantMessage(isUser: false, text: response, sourceDescriptor: ClinicalSourceDescriptor(kind: .localAI, systemName: patient.sourceDescriptor.systemName ?? "Local Chart Cache", authoritative: false, lastSyncedAt: patient.sourceDescriptor.lastSyncedAt)))
+                chatHistory.append(AssistantMessage(isUser: false, text: response, sourceDescriptor: ClinicalSourceDescriptor(kind: .localAI, systemName: patient.sourceDescriptor.systemName ?? "Local Chart Cache", authoritative: false, lastSyncedAt: patient.sourceDescriptor.lastSyncedAt), thinkingSteps: intelligenceService.ragMetadata?.thinkingSteps))
                 isProcessing = false
             } catch {
                 AppLogger.assistant.error("❌ Assistant query failed: \(error.localizedDescription)")

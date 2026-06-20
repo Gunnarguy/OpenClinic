@@ -2,6 +2,10 @@ import SwiftUI
 import SwiftData
 import os
 
+#if canImport(AppKit)
+import AppKit
+#endif
+
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var patients: [PatientProfile]
@@ -1089,6 +1093,78 @@ struct ContentView: View {
                     ctx.fill(CGRect(x: 106, y: 104, width: 3, height: 5))
                 }
                 if let jpegData = img.jpegData(compressionQuality: 0.85) {
+                    try? jpegData.write(to: fileURL)
+                }
+            }
+            
+            let photo = ClinicalPhoto(
+                captureDate: captureDate,
+                anatomicalRegion: zone,
+                notes: "\(notes) (\(notesSuffix))",
+                filePath: fileURL.path,
+                sourceKind: ClinicalSourceKind.clinicianCaptured.rawValue,
+                sourceSystemName: "OpenClinic Capture Workspace",
+                sourceRecordIdentifier: filename,
+                sourceLastSyncedAt: .now,
+                sourceOfTruth: true
+            )
+            photo.patient = patient
+            modelContext.insert(photo)
+            list.append(photo)
+        }
+        patient.clinicalPhotos = list
+        #elseif canImport(AppKit)
+        let fm = FileManager.default
+        guard let documentsDir = fm.urls(for: .documentDirectory, in: .userDomainMask).first else { return }
+        let photosDir = documentsDir.appendingPathComponent("ClinicalPhotos", isDirectory: true)
+        try? fm.createDirectory(at: photosDir, withIntermediateDirectories: true)
+        
+        let cal = Calendar.current
+        let today = Date()
+        
+        let photoData: [(daysAgo: Int, color: NSColor, size: CGFloat, notes: String)] = [
+            (180, NSColor(red: 0.55, green: 0.35, blue: 0.25, alpha: 1.0), 12.0, "Initial presentation of pigmented lesion, border irregular"),
+            (90, NSColor(red: 0.50, green: 0.30, blue: 0.20, alpha: 1.0), 14.5, "Slight enlargement, color variegation noted"),
+            (30, NSColor(red: 0.45, green: 0.25, blue: 0.15, alpha: 1.0), 16.0, "Pre-biopsy baseline documentation, margins irregular")
+        ]
+        
+        var list: [ClinicalPhoto] = []
+        for (daysAgo, color, size, notes) in photoData {
+            let captureDate = cal.date(byAdding: .day, value: -daysAgo, to: today)!
+            let filename = "\(patient.medicalRecordNumber)_\(baseName)_\(daysAgo).jpg"
+            let fileURL = photosDir.appendingPathComponent(filename)
+            
+            if !fm.fileExists(atPath: fileURL.path) {
+                let img = NSImage(size: CGSize(width: 200, height: 200))
+                img.lockFocus()
+                
+                // Skin background (tan)
+                let skinColor = NSColor(red: 0.93, green: 0.78, blue: 0.68, alpha: 1.0)
+                skinColor.setFill()
+                NSRect(x: 0, y: 0, width: 200, height: 200).fill()
+                
+                // Lesion shadow/halo (reddish border)
+                let haloColor = NSColor(red: 0.70, green: 0.30, blue: 0.30, alpha: 0.4)
+                haloColor.setFill()
+                let haloPath = NSBezierPath(ovalIn: NSRect(x: 100 - (size + 3), y: 100 - (size + 3), width: (size + 3) * 2, height: (size + 3) * 2))
+                haloPath.fill()
+                
+                // Main lesion
+                color.setFill()
+                let lesionPath = NSBezierPath(ovalIn: NSRect(x: 100 - size, y: 100 - size, width: size * 2, height: size * 2))
+                lesionPath.fill()
+                
+                // Irregular dark center dots
+                let darkColor = NSColor(red: 0.18, green: 0.08, blue: 0.05, alpha: 0.9)
+                darkColor.setFill()
+                NSRect(x: 95, y: 92, width: 4, height: 4).fill()
+                NSRect(x: 106, y: 104, width: 3, height: 5).fill()
+                
+                img.unlockFocus()
+                
+                if let tiff = img.tiffRepresentation,
+                   let bitmap = NSBitmapImageRep(data: tiff),
+                   let jpegData = bitmap.representation(using: .jpeg, properties: [.compressionFactor: 0.85]) {
                     try? jpegData.write(to: fileURL)
                 }
             }

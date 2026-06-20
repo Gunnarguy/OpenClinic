@@ -25,6 +25,14 @@ struct AgendaView: View {
         return pairs.sorted { $0.appointment.scheduledTime < $1.appointment.scheduledTime }
     }
 
+    private var toolbarTrailingPlacement: ToolbarItemPlacement {
+        #if os(iOS)
+        return .topBarTrailing
+        #else
+        return .status
+        #endif
+    }
+
     private var filteredSchedule: [(patient: PatientProfile, appointment: Appointment)] {
         guard let filterStatus else { return todaySchedule }
         return todaySchedule.filter { $0.appointment.resolvedStatus == filterStatus }
@@ -236,7 +244,7 @@ struct AgendaView: View {
                     .padding(12)
                     .background(
                         RoundedRectangle(cornerRadius: 12)
-                            .fill(Color(.secondarySystemGroupedBackground))
+                            .fill(Color.clinicSecondarySystemGroupedBackground)
                             .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Color.purple.opacity(0.15), lineWidth: 1))
                     )
                     .padding(.horizontal)
@@ -310,7 +318,7 @@ struct AgendaView: View {
             .navigationBarTitleDisplayMode(.inline)
             #endif
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItem(placement: toolbarTrailingPlacement) {
                     HStack(spacing: 4) {
                         Text("\(statsRemaining) left")
                             .font(.caption2)
@@ -318,7 +326,7 @@ struct AgendaView: View {
                         // Progress ring
                         ZStack {
                             Circle()
-                                .strokeBorder(Color(.tertiarySystemFill), lineWidth: 2.5)
+                                .strokeBorder(Color.primary.opacity(0.12), lineWidth: 2.5)
                             Circle()
                                 .trim(from: 0, to: todaySchedule.isEmpty ? 0 : Double(statsCompleted) / Double(todaySchedule.count))
                                 .stroke(Color.green, style: StrokeStyle(lineWidth: 2.5, lineCap: .round))
@@ -539,6 +547,22 @@ struct InboxView: View {
 
     private var unreadCount: Int { messages.filter { !$0.isRead }.count }
 
+    private var toolbarLeadingPlacement: ToolbarItemPlacement {
+        #if os(iOS)
+        return .topBarLeading
+        #else
+        return .navigation
+        #endif
+    }
+
+    private var toolbarTrailingPlacement: ToolbarItemPlacement {
+        #if os(iOS)
+        return .topBarTrailing
+        #else
+        return .primaryAction
+        #endif
+    }
+
     private var filteredMessages: [IntraMailMessage] {
         guard let filterCategory else { return messages }
         return messages.filter { $0.category == filterCategory }
@@ -671,12 +695,12 @@ struct InboxView: View {
             .navigationBarTitleDisplayMode(.inline)
             #endif
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItem(placement: toolbarTrailingPlacement) {
                     Button(action: { showingComposeSheet = true }) {
                         Image(systemName: "square.and.pencil")
                     }
                 }
-                ToolbarItem(placement: .topBarLeading) {
+                ToolbarItem(placement: toolbarLeadingPlacement) {
                     if unreadCount > 0 {
                         Button {
                             withAnimation {

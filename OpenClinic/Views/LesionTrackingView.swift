@@ -81,6 +81,7 @@ struct LesionTrackingView: View {
 
     private func timelineCard(_ photo: ClinicalPhoto) -> some View {
         VStack(spacing: 6) {
+            #if canImport(UIKit)
             if let image = UIImage(contentsOfFile: photo.filePath) {
                 Image(uiImage: image)
                     .resizable()
@@ -88,11 +89,20 @@ struct LesionTrackingView: View {
                     .frame(width: 100, height: 100)
                     .clipShape(RoundedRectangle(cornerRadius: 10))
             } else {
-                RoundedRectangle(cornerRadius: 10)
-                    .fill(Color.gray.opacity(0.15))
-                    .frame(width: 100, height: 100)
-                    .overlay(Image(systemName: "photo").foregroundColor(.gray))
+                placeholderCard
             }
+            #else
+            if let image = NSImage(contentsOfFile: photo.filePath) {
+                Image(nsImage: image)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: 100, height: 100)
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+            } else {
+                placeholderCard
+            }
+            #endif
+            
             Text(photo.captureDate, format: .dateTime.month(.abbreviated).day())
                 .font(.caption2.bold())
                 .clinicalMicroLabel(weight: .bold)
@@ -105,5 +115,12 @@ struct LesionTrackingView: View {
                     .frame(width: 100)
             }
         }
+    }
+
+    private var placeholderCard: some View {
+        RoundedRectangle(cornerRadius: 10)
+            .fill(Color.gray.opacity(0.15))
+            .frame(width: 100, height: 100)
+            .overlay(Image(systemName: "photo").foregroundColor(.gray))
     }
 }

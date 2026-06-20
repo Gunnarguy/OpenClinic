@@ -2,15 +2,23 @@ import SwiftUI
 import PhotosUI
 import SwiftData
 
+#if canImport(UIKit)
+import UIKit
+typealias PlatformImage = UIImage
+#elseif canImport(AppKit)
+import AppKit
+typealias PlatformImage = NSImage
+#endif
+
 struct ClinicalPhotoView: View {
     let patient: PatientProfile
     @Environment(\.modelContext) private var modelContext
     @State private var selectedItems: [PhotosPickerItem] = []
     @State private var selectedRegion: String = "unspecified"
     @State private var noteText: String = ""
-    @State private var capturedImages: [UIImage] = []
+    @State private var capturedImages: [PlatformImage] = []
     @State private var showCamera = false
-    @State private var cameraImage: UIImage?
+    @State private var cameraImage: PlatformImage?
 
     private var photos: [ClinicalPhoto] {
         (patient.clinicalPhotos ?? []).sorted { $0.captureDate > $1.captureDate }
@@ -57,11 +65,19 @@ struct ClinicalPhotoView: View {
                     ScrollView(.horizontal) {
                         HStack(spacing: 8) {
                             ForEach(capturedImages.indices, id: \.self) { idx in
+                                #if canImport(UIKit)
                                 Image(uiImage: capturedImages[idx])
                                     .resizable()
                                     .scaledToFill()
                                     .frame(width: 80, height: 80)
                                     .clipShape(RoundedRectangle(cornerRadius: 8))
+                                #else
+                                Image(nsImage: capturedImages[idx])
+                                    .resizable()
+                                    .scaledToFill()
+                                    .frame(width: 80, height: 80)
+                                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                                #endif
                             }
                         }
                     }
@@ -95,9 +111,16 @@ struct ClinicalPhotoView: View {
         .onChange(of: selectedItems) { _, newItems in
             Task {
                 for item in newItems {
-                    if let data = try? await item.loadTransferable(type: Data.self),
-                       let image = UIImage(data: data) {
-                        capturedImages.append(image)
+                    if let data = try? await item.loadTransferable(type: Data.self) {
+                        #if canImport(UIKit)
+                        if let image = UIImage(data: data) {
+                            capturedImages.append(image)
+                        }
+                        #else
+                        if let image = NSImage(data: data) {
+                            capturedImages.append(image)
+                        }
+                        #endif
                     }
                 }
                 selectedItems = []
@@ -109,20 +132,46 @@ struct ClinicalPhotoView: View {
                 cameraImage = nil
             }
         }
+#if os(iOS)
         .fullScreenCover(isPresented: $showCamera) {
             CameraView(image: $cameraImage)
                 .ignoresSafeArea()
         }
+#else
+        .sheet(isPresented: $showCamera) {
+            VStack(spacing: 16) {
+                Text("Camera Capture Not Supported")
+                    .font(.headline)
+                Text("Camera capture is only supported on iOS devices.")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                Button("Dismiss") {
+                    showCamera = false
+                }
+                .buttonStyle(.borderedProminent)
+            }
+            .frame(width: 300, height: 180)
+            .padding()
+        }
+#endif
     }
 
     private func photoRow(_ photo: ClinicalPhoto) -> some View {
         HStack(spacing: 12) {
             if let image = loadImage(from: photo.filePath) {
+                #if canImport(UIKit)
                 Image(uiImage: image)
                     .resizable()
                     .scaledToFill()
                     .frame(width: 60, height: 60)
                     .clipShape(RoundedRectangle(cornerRadius: 8))
+                #else
+                Image(nsImage: image)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: 60, height: 60)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                #endif
             } else {
                 RoundedRectangle(cornerRadius: 8)
                     .fill(Color.gray.opacity(0.2))
@@ -157,10 +206,22 @@ struct ClinicalPhotoView: View {
         try? FileManager.default.createDirectory(at: photosDir, withIntermediateDirectories: true)
 
         for image in capturedImages {
-            guard let data = image.jpegData(compressionQuality: 0.85) else { continue }
+            let data: Data?
+            #if canImport(UIKit)
+            data = image.jpegData(compressionQuality: 0.85)
+            #else
+            if let tiff = image.tiffRepresentation,
+               let bitmap = NSBitmapImageRep(data: tiff) {
+                data = bitmap.representation(using: .jpeg, properties: [.compressionFactor: 0.85])
+            } else {
+                data = nil
+            }
+            #endif
+            
+            guard let finalData = data else { continue }
             let filename = "\(patient.medicalRecordNumber)_\(UUID().uuidString).jpg"
             let fileURL = photosDir.appendingPathComponent(filename)
-            try? data.write(to: fileURL)
+            try? finalData.write(to: fileURL)
 
             let photo = ClinicalPhoto(
                 anatomicalRegion: selectedRegion,
@@ -181,13 +242,18 @@ struct ClinicalPhotoView: View {
         noteText = ""
     }
 
-    private func loadImage(from path: String) -> UIImage? {
-        UIImage(contentsOfFile: path)
+    private func loadImage(from path: String) -> PlatformImage? {
+        #if canImport(UIKit)
+        return UIImage(contentsOfFile: path)
+        #else
+        return NSImage(contentsOfFile: path)
+        #endif
     }
 }
 
 // MARK: - Camera UIKit Bridge
 
+#if canImport(UIKit)
 struct CameraView: UIViewControllerRepresentable {
     @Binding var image: UIImage?
     @Environment(\.dismiss) private var dismiss
@@ -215,3 +281,4 @@ struct CameraView: UIViewControllerRepresentable {
         }
     }
 }
+#endif

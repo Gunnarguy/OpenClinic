@@ -377,29 +377,48 @@ final class NLEmbeddingProvider: ClinicalEmbeddingProvider, @unchecked Sendable 
 
 // MARK: - Unified Embedding Service
 
-/// Tries CoreML first, falls back to NLEmbedding. Exposes the active provider's dimension.
+/// Tries CoreAI first (if iOS 27), then CoreML, falls back to NLEmbedding. Exposes the active provider's dimension.
 final class ClinicalEmbeddingService: @unchecked Sendable {
+    private var coreAI: Any? = nil
     private let coreML: CoreMLEmbeddingProvider
     private let nlFallback: NLEmbeddingProvider
 
     /// The dimension of the active provider.
     var dimension: Int { activeProvider.dimension }
 
-    /// The active provider (CoreML if available, else NL).
+    /// The active provider.
     private var activeProvider: any ClinicalEmbeddingProvider {
-        coreML.isAvailable ? coreML : nlFallback
+        if #available(iOS 27.0, *) {
+            if let ai = coreAI as? CoreAIClinicalEmbeddingProvider, ai.isAvailable {
+                return ai
+            }
+        }
+        return coreML.isAvailable ? coreML : nlFallback
     }
 
     var providerName: String {
-        coreML.isAvailable ? "CoreML MiniLM-L6-v2 (384D)" : "NLEmbedding (\(nlFallback.dimension)D)"
+        if #available(iOS 27.0, *) {
+            if let ai = coreAI as? CoreAIClinicalEmbeddingProvider, ai.isAvailable {
+                return "CoreAI MiniLM-L6-v2 (384D)"
+            }
+        }
+        return coreML.isAvailable ? "CoreML MiniLM-L6-v2 (384D)" : "NLEmbedding (\(nlFallback.dimension)D)"
     }
 
-    var isAvailable: Bool { coreML.isAvailable || nlFallback.isAvailable }
+    var isAvailable: Bool { 
+        if #available(iOS 27.0, *) {
+            if let ai = coreAI as? CoreAIClinicalEmbeddingProvider, ai.isAvailable { return true }
+        }
+        return coreML.isAvailable || nlFallback.isAvailable 
+    }
 
     init() {
+        if #available(iOS 27.0, *) {
+            coreAI = CoreAIClinicalEmbeddingProvider()
+        }
         coreML = CoreMLEmbeddingProvider()
         nlFallback = NLEmbeddingProvider()
-        AppLogger.ai.info("🧬 EmbeddingService initialized — active: \(self.coreML.isAvailable ? "CoreML 384D" : "NLEmbedding \(self.nlFallback.dimension)D")")
+        AppLogger.ai.info("🧬 EmbeddingService initialized — active: \(self.providerName)")
     }
 
     func embed(text: String) async throws -> [Float] {
