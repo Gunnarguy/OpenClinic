@@ -67,53 +67,18 @@ struct ClinicalChunker {
 
         // Helper to create a chunk from a section
         func addSection(content: String, sectionTitle: String, category: ClinicalCategory) {
-            let trimmed = content.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !trimmed.isEmpty else { return }
-
-            let prefix = "[\(patient.fullName)] [\(dateStr)] [\(sectionTitle)]"
-
-            // Split if over max words
-            let words = trimmed.split(separator: " ")
-            if words.count <= maxWordsPerChunk {
-                chunks.append(ClinicalChunk(
-                    patientId: patient.id,
-                    content: trimmed,
-                    contextualPrefix: prefix,
-                    metadata: ChunkMetadata(
-                        chunkIndex: chunkIndex,
-                        sourceType: .clinicalRecord,
-                        sectionTitle: sectionTitle,
-                        dateRecorded: record.dateRecorded,
-                        clinicalCategory: category,
-                        patientName: patient.fullName,
-                        wordCount: words.count
-                    )
-                ))
-                chunkIndex += 1
-            } else {
-                // Split into sub-chunks
-                var start = words.startIndex
-                while start < words.endIndex {
-                    let end = min(start + maxWordsPerChunk, words.endIndex)
-                    let subContent = words[start..<end].joined(separator: " ")
-                    chunks.append(ClinicalChunk(
-                        patientId: patient.id,
-                        content: subContent,
-                        contextualPrefix: prefix,
-                        metadata: ChunkMetadata(
-                            chunkIndex: chunkIndex,
-                            sourceType: .clinicalRecord,
-                            sectionTitle: sectionTitle,
-                            dateRecorded: record.dateRecorded,
-                            clinicalCategory: category,
-                            patientName: patient.fullName,
-                            wordCount: end - start
-                        )
-                    ))
-                    chunkIndex += 1
-                    start = end
-                }
-            }
+            let newChunks = createSectionChunks(
+                content: content,
+                sectionTitle: sectionTitle,
+                category: category,
+                dateRecorded: record.dateRecorded,
+                patientId: patient.id,
+                patientFullName: patient.fullName,
+                dateStr: dateStr,
+                startIndex: chunkIndex
+            )
+            chunks.append(contentsOf: newChunks)
+            chunkIndex += newChunks.count
         }
 
         // Condition header
@@ -166,6 +131,69 @@ struct ClinicalChunker {
         // Anatomical Zones
         if let zones = record.affectedAnatomicalZones, !zones.isEmpty {
             addSection(content: "Affected zones: \(zones.joined(separator: ", "))", sectionTitle: "Anatomical Zones", category: .examFindings)
+        }
+
+        return chunks
+    }
+
+    private static func createSectionChunks(
+        content: String,
+        sectionTitle: String,
+        category: ClinicalCategory,
+        dateRecorded: Date?,
+        patientId: UUID,
+        patientFullName: String,
+        dateStr: String,
+        startIndex: Int
+    ) -> [ClinicalChunk] {
+        var chunks: [ClinicalChunk] = []
+        var chunkIndex = startIndex
+
+        let trimmed = content.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return chunks }
+
+        let prefix = "[\(patientFullName)] [\(dateStr)] [\(sectionTitle)]"
+
+        // Split if over max words
+        let words = trimmed.split(separator: " ")
+        if words.count <= maxWordsPerChunk {
+            chunks.append(ClinicalChunk(
+                patientId: patientId,
+                content: trimmed,
+                contextualPrefix: prefix,
+                metadata: ChunkMetadata(
+                    chunkIndex: chunkIndex,
+                    sourceType: .clinicalRecord,
+                    sectionTitle: sectionTitle,
+                    dateRecorded: dateRecorded,
+                    clinicalCategory: category,
+                    patientName: patientFullName,
+                    wordCount: words.count
+                )
+            ))
+        } else {
+            // Split into sub-chunks
+            var start = words.startIndex
+            while start < words.endIndex {
+                let end = min(start + maxWordsPerChunk, words.endIndex)
+                let subContent = words[start..<end].joined(separator: " ")
+                chunks.append(ClinicalChunk(
+                    patientId: patientId,
+                    content: subContent,
+                    contextualPrefix: prefix,
+                    metadata: ChunkMetadata(
+                        chunkIndex: chunkIndex,
+                        sourceType: .clinicalRecord,
+                        sectionTitle: sectionTitle,
+                        dateRecorded: dateRecorded,
+                        clinicalCategory: category,
+                        patientName: patientFullName,
+                        wordCount: end - start
+                    )
+                ))
+                chunkIndex += 1
+                start = end
+            }
         }
 
         return chunks
