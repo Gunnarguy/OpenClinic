@@ -8,8 +8,6 @@
 import SwiftUI
 import SwiftData
 import os
-import FirebaseCore
-import FirebaseAnalytics
 
 @main
 struct OpenClinicApp: App {
@@ -17,9 +15,6 @@ struct OpenClinicApp: App {
     let container: ModelContainer
 
     init() {
-        // Initialize Firebase Telemetry
-        FirebaseApp.configure()
-        
         AppLogger.app.info("⚡ OpenClinicApp init — building SwiftData schema")
         let schema = Schema([
             PatientProfile.self,
