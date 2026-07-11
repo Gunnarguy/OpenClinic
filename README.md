@@ -162,8 +162,8 @@ These environment configurations control OpenClinic's local storage and sync beh
 ## Build & Run
 
 ### Prerequisite Toolchain
-* macOS 15.0+ or compatible development workstation.
-* **Xcode 26.3** with iOS 26.2, macOS 26.2, and visionOS 26.2 SDKs installed.
+* macOS 27.0+ or compatible development workstation.
+* **Xcode 26.3** with iOS 26.2, macOS 27.0, and visionOS 26.2 SDKs installed.
 * Apple Developer Account configured in Xcode for physical device testing.
 
 ### Setup Instructions
