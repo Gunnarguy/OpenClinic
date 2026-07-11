@@ -7,6 +7,7 @@ final class ClinicalIntelligenceServiceTests: XCTestCase {
     var container: ModelContainer!
     var context: ModelContext!
 
+    @MainActor
     override func setUp() async throws {
         let schema = Schema([
             PatientProfile.self,
@@ -42,9 +43,11 @@ final class ClinicalIntelligenceServiceTests: XCTestCase {
             medicationName: "Lisinopril",
             writtenBy: "Dr. Smith",
             writtenDate: Date(),
-            quantityInfo: "10mg daily",
+            quantityInfo: "30 tablets",
             refills: 3,
+            dose: "10mg",
             route: "Oral",
+            frequency: "daily",
             status: "Active",
             sourceKind: "Manual",
             sourceSystemName: "Manual",
@@ -57,8 +60,10 @@ final class ClinicalIntelligenceServiceTests: XCTestCase {
         try context.save()
 
         let response = try await service.executeToolQuery(query: "What is patient's prescription refill history?", modelContext: context, patient: patient)
-        XCTAssertTrue(response.contains("Lisinopril"))
-        XCTAssertTrue(response.contains("10mg daily"))
+        print("DEBUG RESPONSE: \(response)")
+        XCTAssertTrue(response.contains("Lisinopril"), "Response was: \(response)")
+        XCTAssertTrue(response.contains("10mg"))
+        XCTAssertTrue(response.contains("daily"))
     }
 
     @MainActor

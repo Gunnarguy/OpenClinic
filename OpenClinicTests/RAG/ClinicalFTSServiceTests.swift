@@ -24,7 +24,7 @@ final class ClinicalFTSServiceTests: XCTestCase {
                 sourceType: .clinicalRecord,
                 sectionTitle: "History",
                 dateRecorded: Date(),
-                clinicalCategory: .condition,
+                clinicalCategory: .chiefComplaint,
                 patientName: "John Doe",
                 wordCount: 12
             )

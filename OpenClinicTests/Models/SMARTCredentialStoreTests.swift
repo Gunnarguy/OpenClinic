@@ -16,8 +16,7 @@ final class SMARTCredentialStoreTests: XCTestCase {
             scope: "patient/*.read",
             patient: "p1",
             idToken: nil,
-            state: "abc",
-            receivedAt: Date()
+            issuedAt: Date()
         )
         let baseURL = URL(string: "https://fhir.example.com")!
         let clientID = "my_client"
@@ -41,8 +40,7 @@ final class SMARTCredentialStoreTests: XCTestCase {
             scope: "patient/*.read",
             patient: "p1",
             idToken: nil,
-            state: "abc",
-            receivedAt: Date()
+            issuedAt: Date()
         )
         let response2 = SMARTTokenResponse(
             accessToken: "token_2",
@@ -51,8 +49,7 @@ final class SMARTCredentialStoreTests: XCTestCase {
             scope: "patient/*.read",
             patient: "p2",
             idToken: nil,
-            state: "xyz",
-            receivedAt: Date()
+            issuedAt: Date()
         )
 
         let url1 = URL(string: "https://server1.com")!
@@ -77,8 +74,7 @@ final class SMARTCredentialStoreTests: XCTestCase {
             scope: "patient/*.read",
             patient: "p1",
             idToken: nil,
-            state: "abc",
-            receivedAt: Date()
+            issuedAt: Date()
         )
         let baseURL = URL(string: "https://fhir.example.com")!
         let clientID = "my_client"
