@@ -388,7 +388,7 @@ final class ClinicalEmbeddingService: @unchecked Sendable {
 
     /// The active provider.
     private var activeProvider: any ClinicalEmbeddingProvider {
-        if #available(iOS 27.0, *) {
+        if #available(macOS 27.0, iOS 27.0, *) {
             if let ai = coreAI as? CoreAIClinicalEmbeddingProvider, ai.isAvailable {
                 return ai
             }
@@ -397,7 +397,7 @@ final class ClinicalEmbeddingService: @unchecked Sendable {
     }
 
     var providerName: String {
-        if #available(iOS 27.0, *) {
+        if #available(macOS 27.0, iOS 27.0, *) {
             if let ai = coreAI as? CoreAIClinicalEmbeddingProvider, ai.isAvailable {
                 return "CoreAI MiniLM-L6-v2 (384D)"
             }
@@ -406,14 +406,14 @@ final class ClinicalEmbeddingService: @unchecked Sendable {
     }
 
     var isAvailable: Bool { 
-        if #available(iOS 27.0, *) {
+        if #available(macOS 27.0, iOS 27.0, *) {
             if let ai = coreAI as? CoreAIClinicalEmbeddingProvider, ai.isAvailable { return true }
         }
         return coreML.isAvailable || nlFallback.isAvailable 
     }
 
     init() {
-        if #available(iOS 27.0, *) {
+        if #available(macOS 27.0, iOS 27.0, *) {
             coreAI = CoreAIClinicalEmbeddingProvider()
         }
         coreML = CoreMLEmbeddingProvider()

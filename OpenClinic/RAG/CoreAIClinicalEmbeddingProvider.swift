@@ -13,7 +13,7 @@ import Accelerate
 import CoreAI
 #endif
 
-@available(iOS 27.0, *)
+@available(macOS 27.0, iOS 27.0, *)
 final class CoreAIClinicalEmbeddingProvider: ClinicalEmbeddingProvider, @unchecked Sendable {
     let dimension: Int = 384
     private let maxSequenceLength: Int
@@ -92,14 +92,30 @@ final class CoreAIClinicalEmbeddingProvider: ClinicalEmbeddingProvider, @uncheck
             inputIds.append(contentsOf: repeatElement(padId, count: padLength))
         }
 
-        let inputTensor = Tensor(shape: [1, maxSequenceLength], data: inputIds.map { Int32($0) })
+        let inputTensor = NDArray(scalars: inputIds.map { Int32($0) }, shape: [1, maxSequenceLength])
 
-        let outputs = try await encodeFunction.execute(["input_ids": inputTensor])
-        guard let embeddingsTensor = outputs["embeddings"] else {
+        var outputs = try await encodeFunction.run(inputs: ["input_ids": inputTensor])
+        let tensorValue = outputs.remove("embeddings") ?? 
+                          outputs.remove("output_0") ?? 
+                          outputs.remove("output") ?? 
+                          outputs.remove("_0")
+        
+        guard let embeddingsTensor = tensorValue?.ndArray else {
             throw EmbeddingError.outputParsingFailed
         }
 
-        return embeddingsTensor.toArray(type: Float.self)
+        let tensorView = embeddingsTensor.view(as: Float.self)
+        
+        var array = [Float]()
+        if let span = tensorView.contiguousElements {
+            array.reserveCapacity(span.count)
+            for i in 0..<span.count {
+                array.append(span[i])
+            }
+        } else {
+            throw EmbeddingError.outputParsingFailed
+        }
+        return array
         #else
         throw EmbeddingError.modelUnavailable
         #endif
