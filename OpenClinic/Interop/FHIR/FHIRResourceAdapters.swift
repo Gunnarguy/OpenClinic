@@ -97,10 +97,14 @@ struct FHIRAppointmentResource: Decodable {
 enum FHIRResourceAdapters {
     private static let iso8601Formatter = ISO8601DateFormatter()
 
-    static func patient(from resource: FHIRPatientResource) -> PatientProfile {
+    static func patient(from resource: FHIRPatientResource, baseURL: URL) -> PatientProfile {
         let firstName = resource.name?.first?.given?.first ?? "Unknown"
         let lastName = resource.name?.first?.family ?? "Patient"
-        let medicalRecordNumber = resource.identifier?.first(where: { $0.value?.isEmpty == false })?.value ?? resource.id
+        
+        let matchingIdentifier = resource.identifier?.first(where: { $0.value?.isEmpty == false })
+        let medicalRecordNumber = matchingIdentifier?.value ?? resource.id
+        let medicalRecordNumberSystem = matchingIdentifier?.system
+        
         let birthDate = dateOnly(resource.birthDate) ?? Date(timeIntervalSince1970: 0)
 
         var emergencyContactName: String? = nil
@@ -117,6 +121,7 @@ enum FHIRResourceAdapters {
 
         return PatientProfile(
             medicalRecordNumber: medicalRecordNumber,
+            medicalRecordNumberSystem: medicalRecordNumberSystem,
             firstName: firstName,
             lastName: lastName,
             dateOfBirth: birthDate,
@@ -124,19 +129,20 @@ enum FHIRResourceAdapters {
             emergencyContactName: emergencyContactName,
             emergencyContactPhone: emergencyContactPhone,
             sourceKind: ClinicalSourceKind.smartFHIR.rawValue,
-            sourceSystemName: "SMART on FHIR",
+            sourceSystemName: baseURL.absoluteString,
             sourceRecordIdentifier: resource.id,
             sourceLastSyncedAt: .now,
             sourceOfTruth: true
         )
     }
 
-    static func clinicalRecord(from resource: FHIRConditionResource) -> LocalClinicalRecord {
+    static func clinicalRecord(from resource: FHIRConditionResource, baseURL: URL) -> LocalClinicalRecord {
         let recordedDate = dateTime(resource.recordedDate) ?? dateTime(resource.onsetDateTime) ?? .now
         let status = normalizedStatus(resource.clinicalStatus?.preferredText) ?? "Final"
+        let qualifiedID = "\(baseURL.absoluteString)/\(resource.id)"
 
         return LocalClinicalRecord(
-            recordID: resource.id,
+            recordID: qualifiedID,
             dateRecorded: recordedDate,
             conditionName: resource.code?.preferredText ?? "Condition",
             status: status,
@@ -144,19 +150,20 @@ enum FHIRResourceAdapters {
             documentationStatus: status == "Final" ? DocumentationLifecycleStatus.signed.rawValue : DocumentationLifecycleStatus.reviewed.rawValue,
             documentationSignedAt: status == "Final" ? recordedDate : nil,
             sourceKind: ClinicalSourceKind.smartFHIR.rawValue,
-            sourceSystemName: "SMART on FHIR",
+            sourceSystemName: baseURL.absoluteString,
             sourceRecordIdentifier: resource.id,
             sourceLastSyncedAt: .now,
             sourceOfTruth: true
         )
     }
 
-    static func medication(from resource: FHIRMedicationRequestResource) -> LocalMedication {
+    static func medication(from resource: FHIRMedicationRequestResource, baseURL: URL) -> LocalMedication {
         let authoredOn = dateTime(resource.authoredOn) ?? .now
         let dosageText = resource.dosageInstruction?.first?.text ?? "See SIG"
+        let qualifiedID = "\(baseURL.absoluteString)/\(resource.id)"
 
         return LocalMedication(
-            rxID: resource.id,
+            rxID: qualifiedID,
             medicationName: resource.medicationCodeableConcept?.preferredText ?? "Medication",
             writtenBy: resource.requester?.display ?? "Unknown clinician",
             writtenDate: authoredOn,
@@ -165,15 +172,16 @@ enum FHIRResourceAdapters {
             route: resource.dosageInstruction?.first?.route?.preferredText,
             status: resource.status?.capitalized,
             sourceKind: ClinicalSourceKind.smartFHIR.rawValue,
-            sourceSystemName: "SMART on FHIR",
+            sourceSystemName: baseURL.absoluteString,
             sourceRecordIdentifier: resource.id,
             sourceLastSyncedAt: .now,
             sourceOfTruth: true
         )
     }
 
-    static func appointment(from resource: FHIRAppointmentResource) -> Appointment {
+    static func appointment(from resource: FHIRAppointmentResource, baseURL: URL) -> Appointment {
         let parsedTime = dateTime(resource.start) ?? .now
+        let qualifiedID = "\(baseURL.absoluteString)/\(resource.id)"
         
         // Shift the year, month, and day of the appointment to today for the demo workflow
         let calendar = Calendar.current
@@ -195,13 +203,13 @@ enum FHIRResourceAdapters {
             .first
 
         return Appointment(
-            appointmentID: resource.id,
+            appointmentID: qualifiedID,
             scheduledTime: scheduledTime,
             reasonForVisit: resource.description ?? "Appointment",
             status: normalizedAppointmentStatus(resource.status) ?? "Scheduled",
             clinicianName: clinicianName,
             sourceKind: ClinicalSourceKind.smartFHIR.rawValue,
-            sourceSystemName: "SMART on FHIR",
+            sourceSystemName: baseURL.absoluteString,
             sourceRecordIdentifier: resource.id,
             sourceLastSyncedAt: .now,
             sourceOfTruth: true

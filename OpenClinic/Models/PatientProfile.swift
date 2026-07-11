@@ -23,6 +23,7 @@ final class PatientProfile {
     var sourceRecordIdentifier: String?
     var sourceLastSyncedAt: Date?
     var sourceOfTruth: Bool
+    var medicalRecordNumberSystem: String?
 
     @Relationship(deleteRule: .cascade, inverse: \LocalClinicalRecord.patient) var clinicalRecords: [LocalClinicalRecord]?
     @Relationship(deleteRule: .cascade, inverse: \LocalMedication.patient) var medications: [LocalMedication]?
@@ -32,6 +33,7 @@ final class PatientProfile {
     init(
         id: UUID = UUID(),
         medicalRecordNumber: String = UUID().uuidString,
+        medicalRecordNumberSystem: String? = nil,
         firstName: String,
         lastName: String,
         dateOfBirth: Date,
@@ -53,6 +55,7 @@ final class PatientProfile {
     ) {
         self.id = id
         self.medicalRecordNumber = medicalRecordNumber
+        self.medicalRecordNumberSystem = medicalRecordNumberSystem
         self.firstName = firstName
         self.lastName = lastName
         self.dateOfBirth = dateOfBirth

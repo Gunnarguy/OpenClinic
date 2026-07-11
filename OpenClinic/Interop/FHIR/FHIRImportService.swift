@@ -34,7 +34,7 @@ final class FHIRImportService {
 
         let patientData = try await client.fetchResource(resourceType: "Patient", id: patientID, baseURL: baseURL)
         let patientResource = try decoder.decode(FHIRPatientResource.self, from: patientData)
-        let (patient, createdNewPatient) = try upsertPatient(from: patientResource, modelContext: modelContext)
+        let (patient, createdNewPatient) = try upsertPatient(from: patientResource, baseURL: baseURL, modelContext: modelContext)
 
         let conditionResources: [FHIRConditionResource] = await resilientBundleFetch(
             resourceType: "Condition",
@@ -68,9 +68,9 @@ final class FHIRImportService {
             warnings: &warnings
         )
 
-        let conditionCount = try syncConditions(conditionResources, to: patient, modelContext: modelContext)
-        let medicationCount = try syncMedications(medicationResources, to: patient, modelContext: modelContext)
-        let appointmentCount = try syncAppointments(appointmentResources, to: patient, modelContext: modelContext)
+        let conditionCount = try syncConditions(conditionResources, to: patient, baseURL: baseURL, modelContext: modelContext, warnings: &warnings)
+        let medicationCount = try syncMedications(medicationResources, to: patient, baseURL: baseURL, modelContext: modelContext, warnings: &warnings)
+        let appointmentCount = try syncAppointments(appointmentResources, to: patient, baseURL: baseURL, modelContext: modelContext, warnings: &warnings)
 
         // Sync allergies
         let allergies = allergyResources.compactMap { $0.code?.preferredText }
@@ -115,13 +115,37 @@ final class FHIRImportService {
         }
     }
 
-    private func upsertPatient(from resource: FHIRPatientResource, modelContext: ModelContext) throws -> (PatientProfile, Bool) {
-        let adapted = FHIRResourceAdapters.patient(from: resource)
+    private func upsertPatient(from resource: FHIRPatientResource, baseURL: URL, modelContext: ModelContext) throws -> (PatientProfile, Bool) {
+        let adapted = FHIRResourceAdapters.patient(from: resource, baseURL: baseURL)
         let existingPatients = try modelContext.fetch(FetchDescriptor<PatientProfile>())
 
-        if let existing = existingPatients.first(where: {
-            $0.sourceRecordIdentifier == resource.id || $0.medicalRecordNumber == adapted.medicalRecordNumber
-        }) {
+        let matched = existingPatients.filter { existing in
+            // Exact FHIR ID + Server URL match
+            if existing.sourceRecordIdentifier == adapted.sourceRecordIdentifier &&
+               existing.sourceSystemName == adapted.sourceSystemName {
+                return true
+            }
+            
+            // MRN + System match
+            let existingMRN = existing.medicalRecordNumber
+            let adaptedMRN = adapted.medicalRecordNumber
+            if !existingMRN.isEmpty,
+               !adaptedMRN.isEmpty,
+               let existingSystem = existing.medicalRecordNumberSystem, !existingSystem.isEmpty,
+               let adaptedSystem = adapted.medicalRecordNumberSystem, !adaptedSystem.isEmpty {
+                return existingMRN == adaptedMRN && existingSystem == adaptedSystem
+            }
+            
+            return false
+        }
+
+        if matched.count > 1 {
+            throw PatientMatchingError.ambiguousMatches(
+                message: "Multiple profiles matched for ID \(resource.id) and MRN \(adapted.medicalRecordNumber)."
+            )
+        }
+
+        if let existing = matched.first {
             existing.firstName = adapted.firstName
             existing.lastName = adapted.lastName
             existing.dateOfBirth = adapted.dateOfBirth
@@ -133,6 +157,7 @@ final class FHIRImportService {
             existing.sourceRecordIdentifier = adapted.sourceRecordIdentifier
             existing.sourceLastSyncedAt = adapted.sourceLastSyncedAt
             existing.sourceOfTruth = adapted.sourceOfTruth
+            existing.medicalRecordNumberSystem = adapted.medicalRecordNumberSystem
             return (existing, false)
         }
 
@@ -140,17 +165,32 @@ final class FHIRImportService {
         return (adapted, true)
     }
 
-    private func syncConditions(_ resources: [FHIRConditionResource], to patient: PatientProfile, modelContext: ModelContext) throws -> Int {
-        let existingRecords = try modelContext.fetch(FetchDescriptor<LocalClinicalRecord>())
-        var importedCount = 0
+    private func syncConditions(
+        _ resources: [FHIRConditionResource],
+        to patient: PatientProfile,
+        baseURL: URL,
+        modelContext: ModelContext,
+        warnings: inout [String]
+    ) throws -> Int {
         if patient.clinicalRecords == nil {
             patient.clinicalRecords = []
         }
 
-        let existingRecordsDict = Dictionary(existingRecords.map { ($0.recordID, $0) }, uniquingKeysWith: { first, _ in first })
+        let existingRecords = patient.clinicalRecords ?? []
+        var existingRecordsDict = Dictionary(existingRecords.map { ($0.recordID, $0) }, uniquingKeysWith: { first, _ in first })
+
+        var importedCount = 0
+        var incomingSeenIDs = Set<String>()
 
         for resource in resources {
-            let adapted = FHIRResourceAdapters.clinicalRecord(from: resource)
+            let adapted = FHIRResourceAdapters.clinicalRecord(from: resource, baseURL: baseURL)
+            
+            if incomingSeenIDs.contains(adapted.recordID) {
+                warnings.append("Duplicate Condition resource with ID \(resource.id) found in incoming feed.")
+                continue
+            }
+            incomingSeenIDs.insert(adapted.recordID)
+
             if let existing = existingRecordsDict[adapted.recordID] {
                 existing.dateRecorded = adapted.dateRecorded
                 existing.conditionName = adapted.conditionName
@@ -168,23 +208,40 @@ final class FHIRImportService {
                 adapted.patient = patient
                 modelContext.insert(adapted)
                 patient.clinicalRecords?.append(adapted)
+                existingRecordsDict[adapted.recordID] = adapted
                 importedCount += 1
             }
         }
 
-        return resources.count
+        return importedCount
     }
 
-    private func syncMedications(_ resources: [FHIRMedicationRequestResource], to patient: PatientProfile, modelContext: ModelContext) throws -> Int {
-        let existingMedications = try modelContext.fetch(FetchDescriptor<LocalMedication>())
+    private func syncMedications(
+        _ resources: [FHIRMedicationRequestResource],
+        to patient: PatientProfile,
+        baseURL: URL,
+        modelContext: ModelContext,
+        warnings: inout [String]
+    ) throws -> Int {
         if patient.medications == nil {
             patient.medications = []
         }
 
-        let existingMedicationsDict = Dictionary(existingMedications.map { ($0.rxID, $0) }, uniquingKeysWith: { first, _ in first })
+        let existingMedications = patient.medications ?? []
+        var existingMedicationsDict = Dictionary(existingMedications.map { ($0.rxID, $0) }, uniquingKeysWith: { first, _ in first })
+
+        var importedCount = 0
+        var incomingSeenIDs = Set<String>()
 
         for resource in resources {
-            let adapted = FHIRResourceAdapters.medication(from: resource)
+            let adapted = FHIRResourceAdapters.medication(from: resource, baseURL: baseURL)
+            
+            if incomingSeenIDs.contains(adapted.rxID) {
+                warnings.append("Duplicate MedicationRequest resource with ID \(resource.id) found in incoming feed.")
+                continue
+            }
+            incomingSeenIDs.insert(adapted.rxID)
+
             if let existing = existingMedicationsDict[adapted.rxID] {
                 existing.medicationName = adapted.medicationName
                 existing.writtenBy = adapted.writtenBy
@@ -204,22 +261,40 @@ final class FHIRImportService {
                 adapted.patient = patient
                 modelContext.insert(adapted)
                 patient.medications?.append(adapted)
+                existingMedicationsDict[adapted.rxID] = adapted
+                importedCount += 1
             }
         }
 
-        return resources.count
+        return importedCount
     }
 
-    private func syncAppointments(_ resources: [FHIRAppointmentResource], to patient: PatientProfile, modelContext: ModelContext) throws -> Int {
-        let existingAppointments = try modelContext.fetch(FetchDescriptor<Appointment>())
+    private func syncAppointments(
+        _ resources: [FHIRAppointmentResource],
+        to patient: PatientProfile,
+        baseURL: URL,
+        modelContext: ModelContext,
+        warnings: inout [String]
+    ) throws -> Int {
         if patient.appointments == nil {
             patient.appointments = []
         }
 
-        let existingAppointmentsDict = Dictionary(existingAppointments.map { ($0.appointmentID, $0) }, uniquingKeysWith: { first, _ in first })
+        let existingAppointments = patient.appointments ?? []
+        var existingAppointmentsDict = Dictionary(existingAppointments.map { ($0.appointmentID, $0) }, uniquingKeysWith: { first, _ in first })
+
+        var importedCount = 0
+        var incomingSeenIDs = Set<String>()
 
         for resource in resources {
-            let adapted = FHIRResourceAdapters.appointment(from: resource)
+            let adapted = FHIRResourceAdapters.appointment(from: resource, baseURL: baseURL)
+            
+            if incomingSeenIDs.contains(adapted.appointmentID) {
+                warnings.append("Duplicate Appointment resource with ID \(resource.id) found in incoming feed.")
+                continue
+            }
+            incomingSeenIDs.insert(adapted.appointmentID)
+
             if let existing = existingAppointmentsDict[adapted.appointmentID] {
                 existing.scheduledTime = adapted.scheduledTime
                 existing.reasonForVisit = adapted.reasonForVisit
@@ -236,10 +311,12 @@ final class FHIRImportService {
                 adapted.patient = patient
                 modelContext.insert(adapted)
                 patient.appointments?.append(adapted)
+                existingAppointmentsDict[adapted.appointmentID] = adapted
+                importedCount += 1
             }
         }
 
-        return resources.count
+        return importedCount
     }
 
     private func attach<T: AnyObject & Identifiable>(_ object: T, to collection: inout [T]?) where T.ID: Equatable {
@@ -248,5 +325,15 @@ final class FHIRImportService {
         }
         guard collection?.contains(where: { $0.id == object.id }) == false else { return }
         collection?.append(object)
+    }
+}
+
+enum PatientMatchingError: Error, LocalizedError {
+    case ambiguousMatches(message: String)
+    
+    var errorDescription: String? {
+        switch self {
+        case .ambiguousMatches(let msg): return msg
+        }
     }
 }
