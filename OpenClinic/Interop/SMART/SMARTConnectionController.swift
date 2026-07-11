@@ -103,13 +103,15 @@ final class SMARTConnectionController: ObservableObject {
     private let importService: FHIRImportService
     private let webAuthenticationCoordinator = SMARTWebAuthenticationCoordinator()
     private let defaults = UserDefaults.standard
+    private let credentialStore: SMARTCredentialStore
     private var cancellables: Set<AnyCancellable> = []
 
-    init(session: SMARTSession? = nil, fhirClient: FHIRClient? = nil) {
+    init(session: SMARTSession? = nil, fhirClient: FHIRClient? = nil, credentialStore: SMARTCredentialStore? = nil) {
         self.session = session ?? SMARTSession()
         let resolvedFHIRClient = fhirClient ?? FHIRClient()
         self.fhirClient = resolvedFHIRClient
         self.importService = FHIRImportService(client: resolvedFHIRClient)
+        self.credentialStore = credentialStore ?? KeychainSMARTCredentialStore.shared
 
         self.session.objectWillChange
             .sink { [weak self] _ in
@@ -511,16 +513,18 @@ final class SMARTConnectionController: ObservableObject {
         defaults.set(patientIDText, forKey: StorageKey.patientIDText)
         defaults.set(clientID, forKey: StorageKey.clientID)
 
-        let keychainService = "com.openclinic.smart"
-        let keychainAccount = "tokenResponse"
+        guard let fhirBaseURL = fhirBaseURL else { return }
 
-        guard let tokenResponse = session.tokenResponse,
-              let encoded = try? JSONEncoder().encode(tokenResponse) else {
-            KeychainHelper.shared.delete(service: keychainService, account: keychainAccount)
+        guard let tokenResponse = session.tokenResponse else {
+            try? credentialStore.deleteTokenResponse(baseURL: fhirBaseURL, clientID: clientID)
             return
         }
 
-        KeychainHelper.shared.save(encoded, service: keychainService, account: keychainAccount)
+        do {
+            try credentialStore.saveTokenResponse(tokenResponse, baseURL: fhirBaseURL, clientID: clientID)
+        } catch {
+            AppLogger.smart.error("Failed to save token to credential store: \(error)")
+        }
     }
 
     private func restorePersistedSession() {
@@ -537,34 +541,43 @@ final class SMARTConnectionController: ObservableObject {
             clientID = savedClientID
         }
 
-        let keychainService = "com.openclinic.smart"
-        let keychainAccount = "tokenResponse"
+        guard let fhirBaseURL = fhirBaseURL, !clientID.isEmpty else { return }
+
         let legacyTokenKey = "smart.savedTokenResponse"
 
         // Migrate legacy token from UserDefaults if it exists
         if let legacyData = defaults.data(forKey: legacyTokenKey) {
-            let status = KeychainHelper.shared.save(legacyData, service: keychainService, account: keychainAccount)
-            if status == errSecSuccess {
-                defaults.removeObject(forKey: legacyTokenKey)
+            do {
+                let tokenResponse = try JSONDecoder().decode(SMARTTokenResponse.self, from: legacyData)
+                try credentialStore.saveTokenResponse(tokenResponse, baseURL: fhirBaseURL, clientID: clientID)
+                // Read verification check
+                if let _ = try credentialStore.readTokenResponse(baseURL: fhirBaseURL, clientID: clientID) {
+                    defaults.removeObject(forKey: legacyTokenKey)
+                }
+            } catch {
+                AppLogger.smart.error("Failed to migrate legacy token response: \(error)")
             }
         }
 
-        guard let data = KeychainHelper.shared.read(service: keychainService, account: keychainAccount),
-              let tokenResponse = try? JSONDecoder().decode(SMARTTokenResponse.self, from: data) else {
-            return
+        do {
+            guard let tokenResponse = try credentialStore.readTokenResponse(baseURL: fhirBaseURL, clientID: clientID) else {
+                return
+            }
+
+            session.applyTokenResponse(tokenResponse)
+            fhirClient.setAccessToken(tokenResponse.accessToken)
+
+            if patientIDText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+               let patient = tokenResponse.patient {
+                patientIDText = patient
+            }
+
+            statusMessage = tokenResponse.isExpired ?
+                "Saved SMART session restored, but the token is expired. Paste a fresh token or sign in with SMART again to continue." :
+                "Saved SMART session restored."
+        } catch {
+            AppLogger.smart.error("Failed to restore token response from credential store: \(error)")
         }
-
-        session.applyTokenResponse(tokenResponse)
-        fhirClient.setAccessToken(tokenResponse.accessToken)
-
-        if patientIDText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
-           let patient = tokenResponse.patient {
-            patientIDText = patient
-        }
-
-        statusMessage = tokenResponse.isExpired ?
-            "Saved SMART session restored, but the token is expired. Paste a fresh token or sign in with SMART again to continue." :
-            "Saved SMART session restored."
     }
 }
 
@@ -648,58 +661,3 @@ private extension Data {
     }
 }
 
-private struct KeychainHelper {
-    static let shared = KeychainHelper()
-
-    @discardableResult
-    func save(_ data: Data, service: String, account: String) -> OSStatus {
-        let query = [
-            kSecValueData: data,
-            kSecClass: kSecClassGenericPassword,
-            kSecAttrService: service,
-            kSecAttrAccount: account,
-            kSecAttrAccessible: kSecAttrAccessibleWhenUnlockedThisDeviceOnly
-        ] as [CFString: Any]
-
-        let status = SecItemAdd(query as CFDictionary, nil)
-
-        if status == errSecDuplicateItem {
-            let query = [
-                kSecAttrService: service,
-                kSecAttrAccount: account,
-                kSecClass: kSecClassGenericPassword,
-            ] as [CFString: Any]
-
-            let attributesToUpdate = [
-                kSecValueData: data,
-                kSecAttrAccessible: kSecAttrAccessibleWhenUnlockedThisDeviceOnly
-            ] as [CFString: Any]
-            return SecItemUpdate(query as CFDictionary, attributesToUpdate as CFDictionary)
-        }
-        return status
-    }
-
-    func read(service: String, account: String) -> Data? {
-        let query = [
-            kSecAttrService: service,
-            kSecAttrAccount: account,
-            kSecClass: kSecClassGenericPassword,
-            kSecReturnData: true
-        ] as [CFString: Any]
-
-        var result: AnyObject?
-        SecItemCopyMatching(query as CFDictionary, &result)
-
-        return (result as? Data)
-    }
-
-    func delete(service: String, account: String) {
-        let query = [
-            kSecAttrService: service,
-            kSecAttrAccount: account,
-            kSecClass: kSecClassGenericPassword,
-        ] as [CFString: Any]
-
-        SecItemDelete(query as CFDictionary)
-    }
-}
