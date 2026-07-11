@@ -6,21 +6,54 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		B77453163001C150A1E2175B /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1369922D070DAAF485D4E1F1 /* Foundation.framework */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		2504F4396B60DA69A8260FE4 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = B0E5CC242F6E215A00788827 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = B0E5CC2B2F6E215A00788827;
+			remoteInfo = OpenClinic;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
+		1369922D070DAAF485D4E1F1 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
+		840B7D9DA1E28AD53F8A55E8 /* OpenClinicTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = OpenClinicTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		845F532186DC7AA72A0D4E87 /* OpenClinic.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; path = OpenClinic.entitlements; sourceTree = "<group>"; };
 		AB3D0EDFF44C59917A538E82 /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		B0E5CC2C2F6E215A00788827 /* OpenClinic.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = OpenClinic.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		8ABD50A77177D06BC8CB82FA /* OpenClinicTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
+			path = OpenClinicTests;
+			sourceTree = "<group>";
+		};
 		B0E5CC2E2F6E215A00788827 /* OpenClinic */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
 			path = OpenClinic;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		10DC52DCCC6E1C4F5EE0E9CC /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B77453163001C150A1E2175B /* Foundation.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		B0E5CC292F6E215A00788827 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -31,6 +64,14 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		5D1EA8E5694FAB36173CA709 /* iOS */ = {
+			isa = PBXGroup;
+			children = (
+				1369922D070DAAF485D4E1F1 /* Foundation.framework */,
+			);
+			name = iOS;
+			sourceTree = "<group>";
+		};
 		B0E5CC232F6E215A00788827 = {
 			isa = PBXGroup;
 			children = (
@@ -38,6 +79,8 @@
 				B0E5CC2D2F6E215A00788827 /* Products */,
 				845F532186DC7AA72A0D4E87 /* OpenClinic.entitlements */,
 				AB3D0EDFF44C59917A538E82 /* Info.plist */,
+				C9D111DD388487535D74655F /* Frameworks */,
+				8ABD50A77177D06BC8CB82FA /* OpenClinicTests */,
 			);
 			sourceTree = "<group>";
 		};
@@ -45,8 +88,17 @@
 			isa = PBXGroup;
 			children = (
 				B0E5CC2C2F6E215A00788827 /* OpenClinic.app */,
+				840B7D9DA1E28AD53F8A55E8 /* OpenClinicTests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		C9D111DD388487535D74655F /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				5D1EA8E5694FAB36173CA709 /* iOS */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -71,6 +123,27 @@
 			productName = OpenClinic;
 			productReference = B0E5CC2C2F6E215A00788827 /* OpenClinic.app */;
 			productType = "com.apple.product-type.application";
+		};
+		C0C24AD8B08AC915266D6339 /* OpenClinicTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 9C3E97BE75C35B05AF14308F /* Build configuration list for PBXNativeTarget "OpenClinicTests" */;
+			buildPhases = (
+				29D9254EB03CC0A5E7E8CA7A /* Sources */,
+				10DC52DCCC6E1C4F5EE0E9CC /* Frameworks */,
+				6FFD9C0DC6BA13F97954C320 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				0211B2FA6AAA601427D3DB76 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				8ABD50A77177D06BC8CB82FA /* OpenClinicTests */,
+			);
+			name = OpenClinicTests;
+			productName = OpenClinicTests;
+			productReference = 840B7D9DA1E28AD53F8A55E8 /* OpenClinicTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
 		};
 /* End PBXNativeTarget section */
 
@@ -102,11 +175,19 @@
 			projectRoot = "";
 			targets = (
 				B0E5CC2B2F6E215A00788827 /* OpenClinic */,
+				C0C24AD8B08AC915266D6339 /* OpenClinicTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		6FFD9C0DC6BA13F97954C320 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		B0E5CC2A2F6E215A00788827 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -117,6 +198,13 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		29D9254EB03CC0A5E7E8CA7A /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		B0E5CC282F6E215A00788827 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -126,7 +214,51 @@
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		0211B2FA6AAA601427D3DB76 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = OpenClinic;
+			target = B0E5CC2B2F6E215A00788827 /* OpenClinic */;
+			targetProxy = 2504F4396B60DA69A8260FE4 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
+		9BB4468F80C1492D5728EBFE /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MACOSX_DEPLOYMENT_TARGET = 26.2;
+				PRODUCT_BUNDLE_IDENTIFIER = Gunndamental.OpenClinicTests;
+				PRODUCT_NAME = OpenClinicTests;
+				SDKROOT = macosx;
+				SUPPORTED_PLATFORMS = macosx;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/OpenClinic.app/Contents/MacOS/OpenClinic";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		A1BD7976853C1C9908365C3B /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MACOSX_DEPLOYMENT_TARGET = 26.2;
+				PRODUCT_BUNDLE_IDENTIFIER = Gunndamental.OpenClinicTests;
+				PRODUCT_NAME = OpenClinicTests;
+				SDKROOT = macosx;
+				SUPPORTED_PLATFORMS = macosx;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/OpenClinic.app/Contents/MacOS/OpenClinic";
+			};
+			name = Debug;
+		};
 		B0E5CC352F6E215C00788827 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -338,6 +470,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		9C3E97BE75C35B05AF14308F /* Build configuration list for PBXNativeTarget "OpenClinicTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				9BB4468F80C1492D5728EBFE /* Release */,
+				A1BD7976853C1C9908365C3B /* Debug */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		B0E5CC272F6E215A00788827 /* Build configuration list for PBXProject "OpenClinic" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
