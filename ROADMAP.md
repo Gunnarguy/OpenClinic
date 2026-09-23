@@ -17,13 +17,13 @@ OpenClinic is a research prototype and system design evaluation workspace for na
 ### Completed
 - [x] **SwiftData Schema:** Persistence structure mapping Patients, Clinical Records, Medications, Appointments, and Photos.
 - [x] **Local RAG Indexer:** Segment clinical records, run local Core ML embeddings (`EmbeddingModel.mlpackage`), index keywords using SQLite FTS5, and serialize vector arrays to the local app sandbox.
-- [x] **9-Gate Safety Validator:** Evaluates retrieval confidence, contradictions, numeric grounding, and patient scope boundaries before displaying LLM outputs.
+- [x] **9-Gate Safety Validator:** Evaluates retrieval confidence, contradictions, numeric grounding, and patient scope boundaries on the retrieved records before the model runs. The checks do not read or block generated text.
 - [x] **SMART on FHIR Client:** ASWebAuthenticationSession integration with well-known configuration and CapabilityStatement discoveries.
 - [x] **Dermatology Workflow:** Anatomical body region mapping, lesion visual timelines, and photo attachments.
 - [x] **PDF Note Export:** Native generation of visit-note PDFs once documentation is signed.
 - [x] **Token Budget Management:** Query-intent classification and batch recursive RAG synthesis to stay within 4096-token limits.
-- [x] **XCTest Suite Integration:** Automated unit tests to validate the 9 verification gates against synthetic inputs.
-- [x] **macOS Catalyst Port:** Full multi-platform compatibility across iOS, iPadOS, and macOS.
+- [x] **XCTest Suite Integration:** Automated unit tests against synthetic inputs.
+- [x] **iOS / iPadOS / macOS / visionOS Port:** Full multi-platform compatibility across iOS, iPadOS, macOS, and visionOS.
 
 ### Active Work
 - [ ] **Multi-Pass "Deep Think" Retrieval:** Optimizing query expansion heuristics to pull broader histories for complex panel questions.

@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <img alt="Swift" src="https://img.shields.io/badge/Swift-6.0-F05138?style=for-the-badge&logo=swift&logoColor=white">
+  <img alt="Swift" src="https://img.shields.io/badge/Swift-5.0-F05138?style=for-the-badge&logo=swift&logoColor=white">
   <img alt="iOS" src="https://img.shields.io/badge/iOS-26.2%2B-111827?style=for-the-badge&logo=apple&logoColor=white">
   <img alt="License" src="https://img.shields.io/badge/License-Proprietary-10B981?style=for-the-badge">
 </p>
@@ -21,7 +21,7 @@
 OpenClinic is a native iOS, iPadOS, macOS, and visionOS clinical workspace designed for healthcare providers. It integrates patient schedules, clinical record logs, visual timelines for dermatological checkups, and a SMART on FHIR synchronization pipeline into a unified SwiftUI experience that keeps chart state local on device.
 
 * **Functional Role:** Aggregates patient demographic profiles, clinical record timelines, medication lists, appointments, and photos.
-* **Clinician Workflow:** Provides offline-capable charting, record lookups, and note completion tools while keeping PHI inside the device sandbox except when explicitly pulling records from configured SMART on FHIR servers.
+* **Clinician Workflow:** Provides offline-capable charting, record lookups, and note completion tools while keeping PHI inside the device sandbox except when explicitly pulling records from configured SMART on FHIR servers and during dictation, which Apple's Speech framework transcribes, so audio may go to Apple.
 * **On-Device LLMs & RAG:** Implements a local retrieval-augmented generation (RAG) pipeline to support chart Q&A, clinical note compilation, and documentation checks without transmitting Patient Health Information (PHI) to third-party cloud APIs.
 * **Engine Lineage:** The clinical retrieval stack adapts OpenIntelligence internals for Core ML embeddings, token budgeting, retrieval shaping, and verification, then specializes those paths for patient-scoped clinical use.
 * **EHR Integration:** Connects to standard EHR sandbox platforms using SMART on FHIR OAuth scopes to import multi-patient records.
@@ -33,7 +33,7 @@ OpenClinic is a native iOS, iPadOS, macOS, and visionOS clinical workspace desig
 
 | Dimension | Detail |
 |---|---|
-| Platform | iOS / iPadOS / macOS Catalyst / visionOS |
+| Platform | iOS / iPadOS / macOS / visionOS |
 | Language | Swift |
 | UI | SwiftUI |
 | Architecture | Container-driven / Actor-isolated RAG |
@@ -46,9 +46,9 @@ OpenClinic is a native iOS, iPadOS, macOS, and visionOS clinical workspace desig
 
 ## Key Capabilities
 
-- **On-Device LLM Integration:** Binds to local Apple Foundation Models (`LanguageModelSession`) to transcribe dictations into structured notes (`ClinicalVisitNote`).
-- **Local Vector Search:** Generates 768-dimensional embeddings using a bundled Core ML model, indexing chunks in a local vector database.
-- **9-Gate Verification:** Runs post-processing safety checks (evaluating evidence coverage, numeric sanity, contradictions, and patient data boundaries) before displaying generated text.
+- **On-Device LLM Integration:** Apple's Speech framework transcribes dictations (audio may go to Apple), and local Apple Foundation Models (`LanguageModelSession`) turn the transcripts into structured notes (`ClinicalVisitNote`).
+- **Local Vector Search:** Generates 384-dimensional embeddings (MiniLM-L6-v2) using a bundled Core ML model, indexing chunks in a local vector database.
+- **9-Gate Retrieval Checks:** Scores the retrieved records on nine checks before the model runs and shows the results with the answer. The checks do not read or block generated text.
 - **FHIR Interoperability:** Uses `ASWebAuthenticationSession` to authorize and sync Patient, Condition, MedicationRequest, and Appointment resources.
 - **Data Provenance:** Attaches sync timestamps and source system attributes to SwiftData entities to preserve the authority of remote records.
 - **OpenIntelligence-Derived Retrieval Internals:** Reuses and adapts embedding, full-text, boosting, and verification patterns from OpenIntelligence, but applies them to patient-scoped clinical workflows instead of general document Q&A.
@@ -95,18 +95,14 @@ flowchart LR
 
 ## Core Workflows
 
-The RAG query engine processes clinician inputs using a hybrid vector-lexical lookup and output validator:
+The RAG query engine processes clinician inputs using a hybrid vector-lexical lookup and checks on the retrieved records:
 
 ```mermaid
 flowchart TD
     A[Clinician Query] --> B[Generate Query Vector]
     B --> C[Hybrid Search: FTS5 + Core ML]
     C --> D[RRF Fusion & MMR Rerank]
-    D --> E[On-Device LLM Synthesis]
-    E --> F[9-Gate Safety Verification]
-    F --> G{Passed?}
-    G -->|Yes| H[Render Verified Response]
-    G -->|No| I[Display Warnings & Block]
+    D --> F[9-Gate Checks on Retrieved Records] --> E[On-Device LLM Synthesis] --> H[Render Response with Gate Results]
 ```
 
 *For details on chunking parameters, cross-encoders, and reciprocal rank fusion, refer to [ARCHITECTURE.md](ARCHITECTURE.md#7-core-retrieval-rag-pipeline).*
@@ -140,7 +136,7 @@ flowchart TD
 | **OAuth Connection** | [SMARTConnectionController.swift](OpenClinic/Interop/SMART/SMARTConnectionController.swift) | Handles authorization endpoint discovery, JWT decoding, and token renewal. |
 | **FHIR Sync Ingestion** | [FHIRImportService.swift](OpenClinic/Interop/FHIR/FHIRImportService.swift) | Connects to external endpoints to pull and parse Patient, Condition, and Medication resources. |
 | **RAG Orchestrator** | [ClinicalRAGService.swift](OpenClinic/RAG/ClinicalRAGService.swift) | Coordinates embeddings, FTS5 keywords, hybrid rankings, and verification gates. |
-| **Response Validation** | [VerificationGates.swift](OpenClinic/RAG/VerificationGates.swift) | Implements the 9-gate safety validator evaluating grounding, completeness, and HIPAA isolation. |
+| **Retrieval Checks** | [VerificationGates.swift](OpenClinic/RAG/VerificationGates.swift) | Implements the 9-gate checks that score the retrieved records for grounding, completeness, and HIPAA isolation before the model runs. |
 
 ---
 
@@ -185,7 +181,7 @@ open OpenClinic.xcodeproj
 
 ## Testing
 
-Verification relies on manual flow checks and diagnostic logging.
+Verification relies on manual flow checks, diagnostic logging, and the `OpenClinicTests` unit test target.
 
 | Validation | Command / Procedure | Expected Result |
 |---|---|---|
@@ -225,10 +221,10 @@ For more details, see [PRIVACY.md](PRIVACY.md) and [SECURITY.md](SECURITY.md).
 ### Completed Milestones
 - [x] SwiftData core models mapping patient charts, clinical notes, medications.
 - [x] On-device vector store and SQLite FTS5 search indexers.
-- [x] 9-Gate verification pipeline evaluating RAG outputs for clinical correctness.
+- [x] 9-Gate retrieval checks scoring the retrieved records before the model runs.
 - [x] SMART on FHIR OAuth discovery and patient record import flows.
 - [x] Reciprocal Rank Fusion (RRF) and MMR search candidate balancing.
-- [x] Multi-platform UI Unification and macOS Catalyst Support.
+- [x] Multi-platform UI Unification and iOS / iPadOS / macOS / visionOS Support.
 - [x] Integration of RAG Evaluation and XCTest Suites.
 
 ### In Progress

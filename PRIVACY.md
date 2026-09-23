@@ -16,7 +16,7 @@ OpenClinic is designed so that **your clinical data stays on your device**. The 
 
 OpenClinic does not collect or track any patient data. 
 * **User-Initiated Synced Data:** If you configure a live connection to a SMART on FHIR server, the app imports patient records, medications, appointments, and allergies directly to your local database context. This data is used solely to render the patient dashboard and intelligence interface.
-* **Clinician Inputs:** Dictation voice recordings, transcribed text, typed notes, and camera-captured photos are processed and stored directly in your local iOS/macOS sandbox.
+* **Clinician Inputs:** Dictation is transcribed by Apple's Speech framework without requiring on-device recognition, so audio may be sent to Apple. Transcripts, notes and photos stay in your local sandbox.
 
 ---
 
@@ -37,6 +37,7 @@ The following data types never leave your physical device:
 OpenClinic only initiates outbound network queries under the following circumstances:
 1. **SMART Discovery & OAuth:** The app queries the FHIR base URL entered by the clinician (e.g. `https://launch.smarthealthit.org/...`) to fetch configuration statements. It opens ASWebAuthenticationSession to authenticate the clinician.
 2. **EHR Data Sync:** When the clinician initiates an import, the app requests patient records from the selected FHIR server.
+3. **Dictation:** audio may go to Apple's speech service.
 
 *No data is sent to OpenAI, Anthropic, or other third-party LLM cloud APIs. All intelligent generations utilize local, on-device Apple Foundation Models.*
 
@@ -66,4 +67,4 @@ For deployment configurations, the privacy characteristics map as follows:
 | **Data Collection** | **No Data Collected** | The app does not transmit any user or patient identifiers to the developer or third-party tracking services. |
 | **Data Linked to User** | **Not Linked** | Any imported FHIR resources or local notes are stored locally and are not linked to the clinician's Apple ID or device identity. |
 | **Data Used for Tracking** | **No** | The app does not contain advertising SDKs, tracking libraries, or analytics scripts. |
-| **Permissions Required** | **Camera, Microphone** | Requested only when the user initiates photo capture or dictation workflows. |
+| **Permissions Required** | **Camera, Microphone, Speech Recognition** | Requested only when the user initiates photo capture or dictation workflows. |

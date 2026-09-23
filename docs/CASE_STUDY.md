@@ -45,7 +45,7 @@ flowchart TD
         EmbedSvc[ClinicalEmbeddingService]
         RRF[Reciprocal Rank Fusion]
         MMR[Diversity Reranking]
-        Gates[9-Gate Safety Validator]
+        Gates[9-Gate Checks on Retrieved Records]
     end
 
     subgraph Models ["On-Device Models"]
@@ -55,7 +55,7 @@ flowchart TD
     SD -->|Asynchronous Extract| Chunker
     Chunker -->|Clinical Text| FTSIndex
     Chunker -->|Tokens| EmbedSvc
-    EmbedSvc -->|768-dim Vectors| VecStore
+    EmbedSvc -->|384-dim MiniLM-L6-v2 Vectors| VecStore
 
     Query[Clinician Query] -->|Embedding Search| VecStore
     Query -->|Keyword Match| FTSIndex
@@ -63,9 +63,9 @@ flowchart TD
     FTSIndex -->|Keyword Candidates| RRF
     VecStore & FTSIndex --> RRF
     RRF --> MMR
-    MMR -->|Grounding Context| FM
-    FM -->|Generated Answer| Gates
-    Gates -->|Verified Response| UI[Clinician Console]
+    MMR -->|Grounding Context| Gates
+    Gates --> FM
+    FM -->|Response with Gate Results| UI[Clinician Console]
 ```
 
 This design separates user-facing UI state on the main actor from background data transformations, vector lookups, and tokenization.
@@ -95,17 +95,17 @@ If token calculations indicate the compact dataset exceeds the available window:
 ### Challenge 3: Eliminating AI Hallucinations and Cross-Patient Mixtures
 Generative models can misrepresent clinical details, alter drug dosages, or incorrectly synthesize details from one patient's record into another's answer.
 
-#### Solution: A Strict 9-Gate Post-Processing Verification Pipeline
-OpenClinic routes all generated responses through a dedicated validator ([VerificationGates.swift](OpenClinic/RAG/VerificationGates.swift)) that evaluates nine safety metrics:
-1. **Gate A (Retrieval Confidence):** Rejects generations if the top RRF candidate score is below a `0.01` threshold.
-2. **Gate B (Evidence Coverage):** Extracts clinical terms from the response and confirms that at least 50% appear in the source chunks.
-3. **Gate C (Numeric Sanity):** Extracts numbers (e.g. `20mg`, `100mg`) and flags discrepancies between response text and source database values.
+#### Solution: 9-Gate Checks on Retrieved Records
+A dedicated validator ([VerificationGates.swift](OpenClinic/RAG/VerificationGates.swift)) scores the retrieved records on nine checks before the model runs and shows the results with the answer. The checks do not read or block generated text. The nine checks:
+1. **Gate A (Retrieval Confidence):** Fails if the top RRF candidate score is below a `0.01` threshold.
+2. **Gate B (Evidence Coverage):** Extracts clinical terms from the retrieved records and confirms that at least 50% appear in the source chunks.
+3. **Gate C (Numeric Sanity):** Extracts numbers (e.g. `20mg`, `100mg`) and flags discrepancies between the retrieved records and source database values.
 4. **Gate D (Contradiction Sweep):** Uses logical checks to flag conflicting statuses (e.g., "active" vs "discontinued" medications) in the same clinical category.
-5. **Gate E (Semantic Grounding):** Computes cosine similarity between the response embedding and the centroid of the retrieved chunks.
+5. **Gate E (Semantic Grounding):** Computes cosine similarity between the embedding of the retrieved records and the centroid of the retrieved chunks.
 6. **Gate F (Quote Faithfulness):** Verifies spelling of clinical codes and drug suffixes.
-7. **Gate G (Generation Quality):** Calculates Shannon entropy and trigram loops to detect looping or repetitive outputs.
+7. **Gate G (Generation Quality):** Calculates Shannon entropy and trigram loops to detect looping or repetitive text in the retrieved records.
 8. **Gate H (Answer Completeness):** Validates that comparison or enumeration queries mention all relevant patient targets.
-9. **Gate I (Patient Isolation):** A HIPAA safety check. If the RAG engine retrieves chunks belonging to multiple different patient UUIDs for a patient-specific query, it flags a violation and blocks the output.
+9. **Gate I (Patient Isolation):** A HIPAA safety check. If the RAG engine retrieves chunks belonging to multiple different patient UUIDs, it flags a violation. Isolation itself is enforced by the `patientScope` filter for patient-scoped queries; `gatePatientIsolation` reports any mixture.
 
 ---
 

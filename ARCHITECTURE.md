@@ -197,7 +197,7 @@ sequenceDiagram
 
 ## 7. Core Retrieval (RAG) Pipeline
 
-OpenClinic implements a local hybrid RAG pipeline that compiles indexed content, scores candidates using Reciprocal Rank Fusion, and validates outputs through safety gates.
+OpenClinic implements a local hybrid RAG pipeline that compiles indexed content, scores candidates using Reciprocal Rank Fusion, and checks the retrieved records through safety gates before the model runs.
 
 ```mermaid
 flowchart TD
@@ -209,7 +209,7 @@ flowchart TD
     subgraph Indexing ["2. Storage & Indexing"]
         Chunks -->|Text| FTS5[SQLite FTS5 Keyword Index]
         Chunks -->|Core ML inference| Embedder[ClinicalEmbeddingService]
-        Embedder -->|768-dim Vector| VecDB[ClinicalVectorStore]
+        Embedder -->|384-dim MiniLM-L6-v2 Vector| VecDB[ClinicalVectorStore]
     end
 
     subgraph Retrieval ["3. Retrieval & Fusion"]
@@ -224,20 +224,18 @@ flowchart TD
         RRF -->|Ranked Candidates| Rerank[Cross-Encoder Reranker]
         Rerank -->|Top Scoring Chunks| MMR[Maximal Marginal Relevance]
         MMR -->|Diverse Chunks| Middle[Lost-in-the-Middle Reordering]
-        Middle -->|Reordered Context| LLM[SystemLanguageModel]
     end
 
     subgraph Verification ["5. 9-Gate Verification"]
-        LLM -->|Synthesized Output| GateEval[ClinicalVerificationGates]
-        GateEval -->|Evaluate Gates A-I| Check{Safety Threshold Passed?}
-        Check -->|Yes| Output[Display with Confidence Level]
-        Check -->|No| Warn[Display Warnings & Block Action]
+        Middle -->|Reordered Context| GateEval[9-Gate Checks on Retrieved Records]
     end
+
+    GateEval --> LLM[On-Device LLM Synthesis] --> Output[Render Response with Gate Results]
 ```
 
 ### Detailed Pipeline Breakdown
 1. **Ingestion:** Clinical records are parsed by the `ClinicalChunker`, separating sections like history (HPI), physical findings, and plans, while appending patient scope markers.
-2. **Indexing:** Chunks are concurrently stored in an FTS5 full-text index for lexical recall and compiled into 768-dimensional float arrays via Core ML for vector similarity.
+2. **Indexing:** Chunks are concurrently stored in an FTS5 full-text index for lexical recall and compiled into 384-dimensional embeddings (MiniLM-L6-v2) via Core ML for vector similarity.
 3. **Retrieval & Fusion:** The query is routed to FTS5 and the Core ML embedding evaluator. The search rankings are combined via Reciprocal Rank Fusion ($k=60$).
 4. **Reranking:** The `ClinicalRAGEngine` runs candidate lists through a cross-encoder and filters redundancies via MMR before reordering context elements to avoid attention degradation.
 5. **9-Gate Verification:** Runs checks evaluating retrieval confidence, coverage, number grounding, contradictions, and patient scope boundaries.

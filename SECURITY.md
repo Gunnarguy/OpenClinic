@@ -36,34 +36,33 @@ OpenClinic requires connection tokens and endpoints to communicate with external
 
 All patient records are kept strictly in the local application sandbox:
 
-* **SwiftData SQL Store:** Patient records are written to a SQLite file in the application's private container (`Library/Application Support/`). This directory is encrypted by default using Apple's File Protection API when the device is locked.
+* **SwiftData SQL Store:** Patient records are written to a SQLite file in the application's private container (`Library/Application Support/`), with no explicit file-protection class.
 * **Vector Store Persistence:** Core ML embeddings generated for patient records are serialized directly to a flat binary file in the app sandbox.
-* **Clinical Photos:** Patient photos imported or captured via camera are stored in the sandbox's cache directory, mapped to specific `ClinicalPhoto` SwiftData model relationships.
-* **Data Leakage Safeguards:** Subsystems are isolated. Patient UUIDs and category tags are attached to every data chunk to prevent cross-patient data mixtures during RAG retrievals (enforced via `gatePatientIsolation` in `VerificationGates.swift`).
+* **Clinical Photos:** Patient photos imported or captured via camera are stored in the sandbox's Documents directory, mapped to specific `ClinicalPhoto` SwiftData model relationships.
+* **Data Leakage Safeguards:** Subsystems are isolated. Patient UUIDs and category tags are attached to every data chunk to prevent cross-patient data mixtures during RAG retrievals (enforced by the `patientScope` filter for patient-scoped queries; `gatePatientIsolation` reports any mixture).
 
 ---
 
 ## 5. Network Boundary & Transmission Security
 
-* **HTTPS Enforcement:** The network client (`FHIRClient`) enforces App Transport Security (ATS) rules. All connections to FHIR server endpoints must utilize TLS 1.3/HTTPS.
+* **HTTPS Enforcement:** The network client (`FHIRClient`) enforces App Transport Security (ATS) rules. All connections to FHIR server endpoints must utilize HTTPS under default App Transport Security.
 * **Authentication Sessions:** Interactive OAuth login uses `ASWebAuthenticationSession`. This presents the sign-in prompt within a system-controlled sandboxed web view, isolating credentials from the main application thread.
-* **Callback Protection:** The app callback scheme (`medmod://smart-callback`) is explicitly registered in the application entitlements and plist to prevent hijack attacks by other local apps.
+* **Callback Protection:** The app callback scheme (`medmod://smart-callback`) is registered in Info.plist to prevent hijack attacks by other local apps.
 
 ---
 
 ## 6. Observability & Logging Policy
 
 System logs are captured using Apple's unified logging system via `os.Logger`. To prevent accidental data leaks in device logs (accessible via Xcode Console or Console.app):
-* All patient names, chief complaints, and history details are marked as `{private}` in OS log templates.
-* Logging of raw JSON network payloads is disabled in release configuration builds.
+* Interpolated values such as patient names are not marked public, so the system redacts them by default.
 * Subsystem categories (such as `AI`, `Data`, `SMART`) are separated to allow granular filtering without exposing PHI.
 
 ---
 
 ## 7. Release-Build Safeguards
 
-* **No Debug Code Paths:** Seeding of mock demo data (Catherine Hartley, Maria Santos, etc.) is bounded to non-production setups and checks if the database is completely empty.
-* **Compiler Hardening:** The Xcode project is configured to enforce strict Swift 6 concurrency safety checks, minimizing data races across actors.
+* **Mock Data Seeding:** Mock data is seeded whenever the patient database is empty, in every build configuration.
+* **Compiler Settings:** The project builds in the Swift 5 language mode with approachable concurrency.
 
 ---
 
