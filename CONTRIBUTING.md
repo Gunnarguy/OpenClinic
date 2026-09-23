@@ -37,7 +37,7 @@ To compile and validate changes:
 
 ## 4. Coding Conventions
 
-* **Safety First:** Enforce Swift 6 strict concurrency checks. Use structured concurrency (`Task`, `TaskGroup`) and actor isolation (e.g. `ClinicalVectorStore`) where database heavy-lifting occurs.
+* **Safety First:** The project builds in the Swift 5 language mode with approachable concurrency. Use structured concurrency (`Task`, `TaskGroup`) and actor isolation (e.g. `ClinicalVectorStore`) where database heavy-lifting occurs.
 * **View Design:** Keep SwiftUI views focused and modular. Separate layouts into reusable subviews, leveraging properties and environment objects rather than nesting everything in monolithic containers.
 * **PII/PHI Safety:** Never write plain-text patient names, medical record numbers, or access keys to system logs or debug consoles. Use private log templates.
 

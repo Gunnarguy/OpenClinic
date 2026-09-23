@@ -29,7 +29,7 @@ List the main files and architectural components modified in this pull request (
 
 Detail the exact steps taken to verify the changes:
 
-1. **Target Platform:** [e.g. iPad Pro Simulator, macOS Catalyst, iOS Physical Device]
+1. **Target Platform:** [e.g. iPad Pro Simulator, macOS, iOS Physical Device]
 2. **Procedure:**
    * Step 1
    * Step 2

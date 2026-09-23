@@ -8,7 +8,7 @@ OpenClinic is a local-first clinical workspace for healthcare providers. We beli
 
 ## 1. Privacy-First Thesis
 
-OpenClinic is designed so that **your clinical data stays on your device**. The application does not utilize a central database, does not sync data to private cloud storage, and does not sell or share patient records. All database processing, indexing, and generative model inference are conducted locally within the application's secure sandbox.
+OpenClinic is designed so that **your clinical data stays on your device**, apart from dictation audio (see section 4). The application does not utilize a central database, does not sync data to private cloud storage, and does not sell or share patient records. All database processing, indexing, and generative model inference are conducted locally within the application's secure sandbox.
 
 ---
 

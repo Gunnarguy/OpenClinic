@@ -80,7 +80,7 @@ flowchart TD
 ## 3. Layer-by-Layer Breakdown
 
 ### UI / View Layer
-OpenClinic's UI is written entirely in SwiftUI, optimized for multi-column split views on iPadOS and macOS Catalyst. 
+OpenClinic's UI is written entirely in SwiftUI, optimized for multi-column split views on iPadOS and macOS. 
 * **Views** are designed to be stateless observers of environment properties and SwiftData query descriptors. They bind user actions (e.g. initiating voice dictation, requesting chart summaries) directly to orchestration services.
 * **ClinicDesignSystem:** (Located in [ClinicDesignSystem.swift](OpenClinic/Views/ClinicDesignSystem.swift)) Dictates color palettes, typography styling, and component styling (e.g. status banners, patient demographic banners, and provenance badge colors).
 
@@ -274,7 +274,7 @@ Subsystem activities are logged using Apple's unified logging system via `os.Log
 * `AI`: Token budgets, vector search times, and verification results.
 * `Exam`: Clinical workspace actions, note signing, and PDF exports.
 
-Log statements use private privacy boundaries (e.g., `\(patient.fullName, privacy: .private)`) to ensure PHI and other sensitive credentials never appear in plain-text system logs or device logs.
+Log statements carry no privacy annotations; interpolated strings such as patient names are not marked public, so the system redacts them by default.
 
 ---
 

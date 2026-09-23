@@ -195,7 +195,7 @@ Verification relies on manual flow checks, diagnostic logging, and the `OpenClin
 
 ## Privacy & Security
 
-OpenClinic runs as a closed system on the doctor's device. No clinical data is synced to third-party databases:
+OpenClinic keeps chart data on the doctor's device, although dictation audio may go to Apple's speech service. No clinical data is synced to third-party databases:
 * **Encryption at Rest:** SwiftData sqlite files inherit default Apple sandbox encryption.
 * **Credentials Storage:** SMART tokens, client secrets, and session parameters are kept in the OS Keychain.
 * **Log Privacy:** System log statements (`os.Logger`) redact patient names and medical record numbers.
