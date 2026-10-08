@@ -48,8 +48,11 @@ data and is not cleared for clinical use. This file is public with the repositor
   time-out the patient session is dropped, because the late call may still be running in it.
 - A debug build launched with -OpenClinicSelfCheck checks itself and prints SELFCHECK lines
   (OpenClinic/Demo/DeviceSelfCheck.swift). They hold counts, timings and demo record numbers, nothing from a chart.
-- The Mac target is sandboxed with no outgoing-network entitlement, so a test that needs the network runs with
-  ENABLE_APP_SANDBOX=NO (verify.sh live does this) and the Mac app itself cannot reach a FHIR server.
+- The Mac target is sandboxed, and OpenClinic.entitlements grants it outgoing network connections and nothing
+  else (com.apple.security.network.client). Xcode leaves that key out of the iOS signature. verify.sh live
+  runs in that sandbox, so it fails if the entitlement is lost.
+- A sign-in asks for offline_access only from a server that says it issues refresh tokens (permission-offline,
+  or the scope in scopes_supported). A refresh token is held in memory and never written to disk.
 - Unit tests never call a language model: ClinicalIntelligenceService.languageModelEnabled is false in tests.
 - A panel question with one correct answer ("which patients ...") is computed by CohortEngine from chart
   facts, never written by the language model. A question the parser does not fully understand returns nil

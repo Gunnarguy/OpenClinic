@@ -22,6 +22,13 @@ struct SMARTConfiguration: Decodable, Sendable {
         case capabilities
         case codeChallengeMethodsSupported = "code_challenge_methods_supported"
     }
+
+    /// True when the server says it issues refresh tokens for `offline_access`: the
+    /// `permission-offline` capability, or the scope in `scopes_supported` (SMART App Launch 2.2.0,
+    /// conformance and scopes pages, read 2026-10-08).
+    var supportsOfflineAccess: Bool {
+        (capabilities ?? []).contains("permission-offline") || (scopesSupported ?? []).contains(SMARTScopeSet.offlineAccess)
+    }
 }
 
 struct FHIRCapabilityStatementSummary: Decodable, Sendable {
@@ -226,6 +233,10 @@ enum SMARTScopeSet {
         "Patient", "Condition", "MedicationRequest", "AllergyIntolerance", "Observation", "Encounter",
         "Procedure", "Immunization", "DiagnosticReport", "DocumentReference", "Appointment",
     ]
+
+    /// Asks for a refresh token. It is added to a sign-in only when the server says it supports it,
+    /// because a server that does not may refuse the whole request as an invalid scope.
+    static let offlineAccess = "offline_access"
 
     static let providerRead = ["openid", "fhirUser", "profile", "launch", "launch/patient"]
         + importedResourceTypes.map { "user/\($0).rs" }

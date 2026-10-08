@@ -24,3 +24,9 @@ xcuserdata/
 # Claude Code machine-local files
 .claude/settings.local.json
 .claude/.state/
+
+# Written by another agent tool as a copy of CLAUDE.md. CLAUDE.md is the one instruction file here;
+# a copy drifts from it, so it is kept out of the repository.
+/AGENTS.md
+/.agents/
+/.codex/

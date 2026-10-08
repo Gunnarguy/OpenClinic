@@ -140,4 +140,34 @@ final class SMARTSessionTests: XCTestCase {
         XCTAssertNil(session.configuration)
         XCTAssertEqual(FHIRR4StubProtocol.requests.map { $0.url?.host }, ["ehr.example"])
     }
+
+    // MARK: - Refresh tokens
+
+    /// `offline_access` is asked for only from a server that says it issues refresh tokens.
+    @MainActor
+    func testARefreshTokenIsAskedForOnlyWhereTheServerSupportsIt() async throws {
+        let base = try XCTUnwrap(URL(string: "https://ehr.example/fhir"))
+        let redirect = try XCTUnwrap(URL(string: callback))
+        func requestedScopes(configuration extra: String) async throws -> [Substring] {
+            FHIRR4StubProtocol.install { _ in
+                FHIRR4StubProtocol.Response(body: Data("""
+                {"authorization_endpoint":"https://ehr.example/auth/authorize","token_endpoint":"https://ehr.example/auth/token"\(extra)}
+                """.utf8))
+            }
+            defer { FHIRR4StubProtocol.reset() }
+            let session = SMARTSession(urlSession: FHIRR4StubProtocol.session())
+            _ = try await session.discoverConfiguration(baseURL: base)
+            let request = try session.makeAuthorizationRequest(clientID: "app", redirectURI: redirect, fhirBaseURL: base)
+            return request.requestedScope.split(separator: " ")
+        }
+
+        let silent = try await requestedScopes(configuration: "")
+        XCTAssertFalse(silent.contains("offline_access"), "a server that does not offer it is not asked")
+
+        let byCapability = try await requestedScopes(configuration: #","capabilities":["launch-standalone","permission-offline"]"#)
+        XCTAssertEqual(byCapability.filter { $0 == "offline_access" }.count, 1)
+
+        let byScopeList = try await requestedScopes(configuration: #","scopes_supported":["openid","offline_access"]"#)
+        XCTAssertTrue(byScopeList.contains("offline_access"))
+    }
 }

@@ -82,8 +82,8 @@ run_build() {
 }
 
 # A real SMART on FHIR sign-in against launch.smarthealthit.org (synthetic patients, no password).
-# It needs the network, so it is not part of the default run. The Mac target is sandboxed with no
-# outgoing-network entitlement, so the sandbox is turned off for this test host only.
+# It needs the network, so it is not part of the default run. The test host is the sandboxed Mac
+# app, so this also shows that the outgoing-network entitlement lets the Mac build reach a server.
 run_live() {
     local log="$LOGS/live.log"
     echo "verify: live SMART sign-in against launch.smarthealthit.org, log: $log"
@@ -93,7 +93,7 @@ run_live() {
         -destination 'platform=macOS' \
         -derivedDataPath "$DERIVED/mac" \
         -only-testing:OpenClinicTests/SMARTLiveSignInTests \
-        CODE_SIGN_IDENTITY=- CODE_SIGNING_REQUIRED=NO ENABLE_APP_SANDBOX=NO \
+        CODE_SIGN_IDENTITY=- CODE_SIGNING_REQUIRED=NO \
         > "$log" 2>&1; then
         grep -E "error:|failed|XCTAssert|SMART LIVE" "$log" | grep -v "Connection\]" | head -40 || true
         fail "live SMART sign-in failed"

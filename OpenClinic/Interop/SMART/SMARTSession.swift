@@ -155,9 +155,13 @@ final class SMARTSession: ObservableObject {
         let codeChallenge = Self.makeCodeChallenge(from: codeVerifier)
         // `launch` asks for the context of an EHR launch, so it is sent only with a launch token.
         // A standalone sign-in asks for its patient with `launch/patient`.
-        let requestedScope = (scope ?? SMARTScopeSet.providerRead)
-            .filter { $0 != "launch" || launch != nil }
-            .joined(separator: " ")
+        var scopes = (scope ?? SMARTScopeSet.providerRead).filter { $0 != "launch" || launch != nil }
+        // A refresh token lets a long import outlast its access token. It is asked for only from a
+        // server that says it issues one, and it is held in memory, never written to disk.
+        if configuration.supportsOfflineAccess, !scopes.contains(SMARTScopeSet.offlineAccess) {
+            scopes.append(SMARTScopeSet.offlineAccess)
+        }
+        let requestedScope = scopes.joined(separator: " ")
 
         var components = URLComponents(url: configuration.authorizationEndpoint, resolvingAgainstBaseURL: false)
         components?.queryItems = [
