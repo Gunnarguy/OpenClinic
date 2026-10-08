@@ -2,7 +2,7 @@
 
 Updated: 2026-10-08
 Branch/worktree: main at ~/Documents/GitHub/OpenClinic
-Last verified commit: 216df62 (pushed 2026-10-08); the commit that carries this file adds the Mac network entitlement and the refresh-token scope, verified the same day: `./Scripts/verify.sh` 266 tests, 0 failures, 0 warnings
+Last verified commit: 81aebd3 (pushed 2026-10-08; `./Scripts/verify.sh` 266 tests, 0 failures, 0 warnings; `./Scripts/verify.sh live` 2 tests, 0 failures)
 
 ## Objective
 Close the open points left at 2aac3b3: launch re-indexing, the unused HealthKit entitlement, SMART sign-in and a
@@ -10,8 +10,9 @@ physical device unverified, the FHIR layer's open points, and text that did not 
 OpenIntelligence engine package is a separate, blocked item (see Blockers).
 
 ## Status
-Committed and pushed to `main` on 2026-10-08 at Gunnar's word. In progress the same day, also at his word:
-embedding the OpenIntelligence engine package (see Blockers).
+Committed and pushed to `main` on 2026-10-08 at Gunnar's word, in two commits (216df62, 81aebd3). Nothing is in
+progress. Embedding the OpenIntelligence engine package was started the same day and stopped at a decision that
+is his (see Blockers).
 
 ## Completed
 - Launch index sync (`ClinicalRAGService.syncIndex`, `ClinicalIndexSync.plan`): only changed chart text is embedded.
@@ -73,13 +74,17 @@ embedding the OpenIntelligence engine package (see Blockers).
 ## Blockers / Unknowns
 - New prompts on the iPhone. Check: unlock the phone, keep it awake, run `./Scripts/verify.sh device`; it must end
   with `SELFCHECK DONE ... failed=0` and a `generation` line that says the model wrote the answers.
-- Embedding the OpenIntelligence engine package needs a change in that repository and a package reference in
-  `project.pbxproj`. Check: `grep -n OpenIntelligenceEngine OpenClinic.xcodeproj/project.pbxproj` prints nothing
-  until that is done.
+- Embedding the OpenIntelligence engine package is blocked on that repository, not on this one. Measured
+  2026-10-08 with Swift 6.4: a package fetched by revision cannot depend on a local package
+  (`... is required using a revision-based requirement and it depends on local package 'swift-transformers',
+  which is not supported`), and the engine's manifest does. So a reference from this project needs a change to
+  the engine's `Package.swift` first, which Gunnar has not named. Check: in a scratch package, depend on
+  `https://github.com/Gunnarguy/OpenIntelligence` by revision and run `swift package resolve`; when it resolves,
+  add the reference to `OpenClinic.xcodeproj/project.pbxproj` (he named that file on 2026-10-08).
 - The last round of fixes (the whole-word rules, the repair pass, identifiers anywhere in the Patient resource)
   is covered by tests and has had no independent review. Check: run the reviewer agent on `git diff 2aac3b3 216df62`.
 
 ## Exact Next Action
-Embed the OpenIntelligence engine: confirm the engine commit OpenClinic is to pin exists on GitHub
-(`git ls-remote https://github.com/Gunnarguy/OpenIntelligence | grep openclinic`), then add the package reference to
-`OpenClinic.xcodeproj/project.pbxproj` (Gunnar named the file on 2026-10-08) and run `./Scripts/verify.sh`.
+None. The previous objective is complete and verified, and the one open item waits on Gunnar: whether the
+OpenIntelligence engine's `Package.swift` may change so the engine can be fetched as a remote package. Ask him, or
+take an item from `ROADMAP.md` section 3. On the phone: unlock it and run `./Scripts/verify.sh device`.
