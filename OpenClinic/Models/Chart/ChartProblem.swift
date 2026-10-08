@@ -18,6 +18,9 @@ final class ChartProblem {
     var abatementDate: Date?
     var recordedDate: Date?
     var encounterReference: String?
+    /// "year" or "month" when the source stated the onset no more exactly than that.
+    var onsetPrecision: String? = nil
+    var abatementPrecision: String? = nil
     /// True when a later sync no longer returned this problem. Kept, and shown as such, instead of deleted.
     var isRemovedAtSource: Bool
     var sourceKind: String

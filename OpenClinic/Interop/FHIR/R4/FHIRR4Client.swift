@@ -23,6 +23,8 @@ nonisolated enum FHIRR4Error: Error, LocalizedError, Sendable, Equatable {
     case server(status: Int, message: String)
     /// A paging link that points at another host. Carries that host, never the full link.
     case nextLinkOutsideServer(String)
+    /// An HTTP redirect to another host, which was not followed. Carries that host only.
+    case redirectOutsideServer(String)
     case transport(String)
 
     var errorDescription: String? {
@@ -35,9 +37,44 @@ nonisolated enum FHIRR4Error: Error, LocalizedError, Sendable, Equatable {
             return "The server answered with status \(status): \(message)"
         case .nextLinkOutsideServer(let host):
             return "The server pointed to a different address (\(host)) for the next page, so the read stopped."
+        case .redirectOutsideServer(let host):
+            return "The server redirected the request to a different address (\(host)), so the read stopped."
         case .transport(let message):
             return message
         }
+    }
+}
+
+/// Decides, for one request, whether an HTTP redirect may be followed. URLSession follows every
+/// redirect unless a delegate says otherwise, and the request it would repeat carries the token.
+nonisolated final class FHIRR4RedirectGuard: NSObject, URLSessionTaskDelegate, @unchecked Sendable {
+    private let base: URL
+    private let refused = OSAllocatedUnfairLock<String?>(initialState: nil)
+
+    init(base: URL) {
+        self.base = base
+    }
+
+    /// The scheme, host and port of a redirect that was refused, when there was one.
+    var refusedOrigin: String? {
+        refused.withLock { $0 }
+    }
+
+    func urlSession(
+        _ session: URLSession,
+        task: URLSessionTask,
+        willPerformHTTPRedirection response: HTTPURLResponse,
+        newRequest request: URLRequest,
+        completionHandler: @escaping @Sendable (URLRequest?) -> Void
+    ) {
+        guard let target = request.url, FHIRR4Client.isSameServer(target, as: base) else {
+            let origin = request.url.map(FHIRR4Client.origin(of:)) ?? "an address with no host"
+            refused.withLock { $0 = origin }
+            // nil ends the request with the redirect response itself as its answer.
+            completionHandler(nil)
+            return
+        }
+        completionHandler(request)
     }
 }
 
@@ -133,7 +170,13 @@ actor FHIRR4Client {
             }
 
             next = nil
-            if let link = bundle.nextLink {
+            if let linkText = bundle.nextLinkText {
+                // A link that cannot be read must not end the search as if the server had run out of pages.
+                // A relative link is read against the page it came on, as any link in an answer is.
+                guard let link = URL(string: linkText, relativeTo: page)?.absoluteURL, link.host != nil else {
+                    fhirR4Log.error("A paging link could not be read.")
+                    throw FHIRR4Error.invalidResponse
+                }
                 // Checked before anything is sent: the next request carries the bearer token.
                 guard Self.isSameServer(link, as: baseURL) else {
                     fhirR4Log.error("A paging link pointed outside the FHIR server and was not followed.")
@@ -172,8 +215,23 @@ actor FHIRR4Client {
 
             let data: Data
             let response: URLResponse
+            // The request carries the bearer token and the patient's id, so a redirect is followed
+            // only when it stays on this server.
+            let redirects = FHIRR4RedirectGuard(base: baseURL)
+            let outcome: Result<(Data, URLResponse), any Error>
             do {
-                (data, response) = try await session.data(for: request)
+                outcome = .success(try await session.data(for: request, delegate: redirects))
+            } catch {
+                outcome = .failure(error)
+            }
+            // A refused redirect ends the request with the redirect response or with an error,
+            // depending on who serves it. Either way it is reported as what it was.
+            if let refused = redirects.refusedOrigin {
+                fhirR4Log.error("A redirect pointed outside the FHIR server and was not followed.")
+                throw FHIRR4Error.redirectOutsideServer(refused)
+            }
+            do {
+                (data, response) = try outcome.get()
             } catch let error as URLError where error.code == .cancelled {
                 // URLSession reports a cancelled task its own way; callers expect Swift's.
                 try Task.checkCancellation()
@@ -257,17 +315,36 @@ actor FHIRR4Client {
         return url
     }
 
-    /// The base URL without a trailing slash, query or fragment.
+    /// The base URL without a trailing slash, query or fragment, with the scheme and host in lower
+    /// case and no default port. Row identifiers are built from it, so one server must have one spelling.
     static func normalized(_ url: URL) -> URL {
         guard var components = URLComponents(url: url, resolvingAgainstBaseURL: true) else { return url }
         components.query = nil
         components.fragment = nil
+        components.scheme = components.scheme?.lowercased()
+        components.host = components.host?.lowercased()
+        if (components.scheme == "https" && components.port == 443) || (components.scheme == "http" && components.port == 80) {
+            components.port = nil
+        }
         var path = components.percentEncodedPath
         while path.hasSuffix("/") {
             path.removeLast()
         }
         components.percentEncodedPath = path
         return components.url ?? url
+    }
+
+    /// `normalized` for an address held as text. Text that is not a URL with a host only loses
+    /// its surrounding white space and trailing slashes.
+    static func normalizedBase(_ text: String) -> String {
+        var trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        if let url = URL(string: trimmed), url.host != nil {
+            return normalized(url).absoluteString
+        }
+        while trimmed.hasSuffix("/") {
+            trimmed.removeLast()
+        }
+        return trimmed
     }
 
     /// True when `url` has the base URL's scheme, host and port. Only then may a paging
@@ -292,7 +369,7 @@ actor FHIRR4Client {
     }
 
     /// Scheme, host and port only. A paging link's query can hold search terms.
-    private static func origin(of url: URL) -> String {
+    static func origin(of url: URL) -> String {
         guard let scheme = url.scheme, let host = url.host(percentEncoded: false) else {
             return "an address with no host"
         }

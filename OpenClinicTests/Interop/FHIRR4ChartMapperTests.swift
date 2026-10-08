@@ -123,6 +123,240 @@ final class FHIRR4ChartMapperTests: XCTestCase {
         XCTAssertThrowsError(try FHIRR4ChartMapper.chart(patient: condition, resources: [], serverBase: base))
     }
 
+    /// Medicare, Medicaid and tax numbers are no more a record number than a Social Security number is
+    /// (v2-0203 codes MC, MA, TAX).
+    func testMedicareMedicaidAndTaxNumbersAreNeverTheRecordNumber() throws {
+        let raw = try FHIRR4Fixture.resource("""
+        {"resourceType":"Patient","id":"p9","identifier":[
+          {"type":{"coding":[{"system":"http://terminology.hl7.org/CodeSystem/v2-0203","code":"MC"}]},"value":"1EG4-TE5-MK73"},
+          {"type":{"coding":[{"system":"http://terminology.hl7.org/CodeSystem/v2-0203","code":"MA"}]},"value":"MEDICAID-1"},
+          {"type":{"text":"Tax ID number"},"value":"TAX-1"},
+          {"system":"urn:example:clinic","value":"CLINIC-9"}
+        ],"name":[{"family":"Example"}]}
+        """)
+        let patient = try FHIRR4ChartMapper.patient(raw, serverBase: base, calendar: utc)
+        XCTAssertEqual(patient.mrn, "CLINIC-9")
+    }
+
+    func testTheStoredPatientLosesTheValueOfEveryGovernmentNumberAndNothingElse() throws {
+        let stored = FHIRR4ChartMapper.resourceForStorage(try FHIRR4Fixture.patient())
+        let text = String(decoding: stored.json, as: UTF8.self)
+
+        // Social Security, driver's license and passport numbers from the capture.
+        for number in ["999-29-3401", "S99934593", "X45898258X"] {
+            XCTAssertFalse(text.contains(number), "\(number) would be stored")
+        }
+        XCTAssertEqual(text.components(separatedBy: FHIRR4ChartMapper.removedIdentifierValue).count - 1, 3,
+                       "each of the three keeps its system and type and loses only its value")
+        XCTAssertTrue(text.contains("f82884e3-7586-4e78-89de-5e682822ed41"), "the record number is kept")
+        XCTAssertEqual(stored.id, FHIRR4Fixture.schroederID)
+
+        // Each identifier is still there with its system; only the three values changed.
+        let object = try XCTUnwrap(try JSONSerialization.jsonObject(with: stored.json) as? [String: Any])
+        let identifiers = try XCTUnwrap(object["identifier"] as? [[String: Any]])
+        XCTAssertEqual(identifiers.count, 5)
+        let socialSecurity = try XCTUnwrap(identifiers.first { $0["system"] as? String == "http://hl7.org/fhir/sid/us-ssn" })
+        XCTAssertEqual(socialSecurity["value"] as? String, FHIRR4ChartMapper.removedIdentifierValue)
+        XCTAssertNotNil(socialSecurity["type"], "the identifier's type is kept")
+
+        // The mapped patient is the same from the stored copy as from the original.
+        XCTAssertEqual(
+            try FHIRR4ChartMapper.patient(stored, serverBase: base, calendar: utc),
+            try FHIRR4ChartMapper.patient(FHIRR4Fixture.patient(), serverBase: base, calendar: utc)
+        )
+
+        // Any other resource is stored as it came.
+        let condition = try XCTUnwrap(FHIRR4Fixture.resources("Condition.schroeder").first)
+        XCTAssertEqual(FHIRR4ChartMapper.resourceForStorage(condition), condition)
+    }
+
+    func testADeceasedFlagWithoutADateStillMeansThePatientDied() throws {
+        let flagged = try FHIRR4Fixture.resource(#"{"resourceType":"Patient","id":"d1","deceasedBoolean":true}"#)
+        let dated = try FHIRR4Fixture.resource(#"{"resourceType":"Patient","id":"d2","deceasedDateTime":"2019-03-03T10:00:00Z"}"#)
+        let living = try FHIRR4Fixture.resource(#"{"resourceType":"Patient","id":"d3","deceasedBoolean":false}"#)
+
+        let first = try FHIRR4ChartMapper.patient(flagged, serverBase: base, calendar: utc)
+        XCTAssertTrue(first.isDeceased)
+        XCTAssertNil(first.deceasedDate)
+
+        let second = try FHIRR4ChartMapper.patient(dated, serverBase: base, calendar: utc)
+        XCTAssertTrue(second.isDeceased)
+        XCTAssertNotNil(second.deceasedDate)
+
+        XCTAssertFalse(try FHIRR4ChartMapper.patient(living, serverBase: base, calendar: utc).isDeceased)
+    }
+
+    func testOneServerHasOneSpellingInEveryRowIdentifier() throws {
+        let condition = try FHIRR4Fixture.resource(#"{"resourceType":"Condition","id":"c1"}"#)
+        let typed = try FHIRR4ChartMapper.problem(condition, serverBase: "HTTPS://R4.SmartHealthIT.org:443/", calendar: utc)
+        let plain = try FHIRR4ChartMapper.problem(condition, serverBase: "https://r4.smarthealthit.org", calendar: utc)
+
+        XCTAssertEqual(typed.source.qualifiedID, "https://r4.smarthealthit.org/Condition/c1")
+        XCTAssertEqual(typed.source.qualifiedID, plain.source.qualifiedID)
+    }
+
+    // MARK: - Dates stated to the year or the month
+
+    func testAPartialDateKeepsItsPrecisionWhereTheChartShowsIt() throws {
+        let resources = try [
+            #"{"resourceType":"Condition","id":"y","code":{"text":"Asthma"},"onsetDateTime":"2015","abatementDateTime":"2016-03"}"#,
+            #"{"resourceType":"Condition","id":"d","code":{"text":"Eczema"},"onsetDateTime":"2015-06-20"}"#,
+            #"{"resourceType":"Procedure","id":"p","status":"completed","code":{"text":"Appendectomy"},"performedDateTime":"1998"}"#,
+            #"{"resourceType":"Procedure","id":"q","status":"completed","code":{"text":"Biopsy"},"performedPeriod":{"start":"2019-06"}}"#,
+            #"{"resourceType":"Immunization","id":"i","status":"completed","vaccineCode":{"text":"Td"},"occurrenceDateTime":"2020-11"}"#,
+        ].map(FHIRR4Fixture.resource)
+
+        let chart = try mappedChart(of: resources)
+
+        let asthma = try XCTUnwrap(chart.problems.first { $0.source.resourceID == "y" })
+        XCTAssertEqual(asthma.onsetPrecision, .year)
+        XCTAssertEqual(asthma.abatementPrecision, .month)
+        XCTAssertEqual(utc.component(.year, from: try XCTUnwrap(asthma.onset)), 2015)
+
+        let eczema = try XCTUnwrap(chart.problems.first { $0.source.resourceID == "d" })
+        XCTAssertNil(eczema.onsetPrecision, "a full date carries no precision note")
+
+        XCTAssertEqual(chart.procedures.first { $0.source.resourceID == "p" }?.performedPrecision, .year)
+        XCTAssertEqual(chart.procedures.first { $0.source.resourceID == "q" }?.performedPrecision, .month)
+        XCTAssertEqual(chart.immunizations.first?.occurrencePrecision, .month)
+        XCTAssertTrue(chart.warnings.isEmpty, "these dates carry their precision, so there is nothing to warn about: \(chart.warnings)")
+    }
+
+    /// A problem's recorded date and a procedure's end have no precision in the chart, so a partial
+    /// one is reported like a partial date on any other type.
+    func testAPartialDateTheChartStoresWholeIsReportedOnEveryType() throws {
+        let resources = try [
+            #"{"resourceType":"Condition","id":"r","code":{"text":"Gout"},"recordedDate":"2012"}"#,
+            #"{"resourceType":"Procedure","id":"e","status":"completed","code":{"text":"Dialysis"},"performedPeriod":{"start":"2019-06-01","end":"2019-07"}}"#,
+        ].map(FHIRR4Fixture.resource)
+
+        let chart = try mappedChart(of: resources)
+
+        XCTAssertEqual(chart.warnings.filter { $0.contains("given only to the year or month") }.count, 2, "\(chart.warnings)")
+        XCTAssertTrue(chart.warnings.contains { $0.hasPrefix("1 Condition resource ") })
+        XCTAssertTrue(chart.warnings.contains { $0.hasPrefix("1 Procedure resource ") })
+    }
+
+    func testADateOfBirthOrDeathStatedToTheYearKeepsThatPrecision() throws {
+        let partial = try FHIRR4Fixture.resource(#"{"resourceType":"Patient","id":"y1","birthDate":"1931","deceasedDateTime":"2019-04"}"#)
+        let full = try FHIRR4Fixture.resource(#"{"resourceType":"Patient","id":"y2","birthDate":"1931-05-06","deceasedDateTime":"2019-04-07T10:00:00Z"}"#)
+
+        let first = try FHIRR4ChartMapper.patient(partial, serverBase: base, calendar: utc)
+        XCTAssertEqual(first.birthDatePrecision, .year)
+        XCTAssertEqual(first.deceasedPrecision, .month)
+        XCTAssertTrue(first.isDeceased)
+
+        let second = try FHIRR4ChartMapper.patient(full, serverBase: base, calendar: utc)
+        XCTAssertNil(second.birthDatePrecision)
+        XCTAssertNil(second.deceasedPrecision)
+    }
+
+    /// A server can repeat a number in the narrative or in a contained resource.
+    func testAGovernmentNumberIsRemovedWhereverThePatientResourceRepeatsIt() throws {
+        let patient = try FHIRR4Fixture.resource("""
+        {"resourceType":"Patient","id":"n1",
+         "text":{"status":"generated","div":"<div>Ada Example, SSN 999-11-2222, MRN CLINIC-77</div>"},
+         "contained":[{"resourceType":"RelatedPerson","id":"rp","identifier":[{"value":"999-11-2222"}]}],
+         "identifier":[
+           {"system":"http://hl7.org/fhir/sid/us-ssn","value":"999-11-2222"},
+           {"type":{"coding":[{"code":"DL"}]},"value":"D12"},
+           {"system":"urn:example:clinic","value":"CLINIC-77"}
+         ]}
+        """)
+
+        XCTAssertEqual(FHIRR4ChartMapper.governmentNumberValues(in: patient), ["999-11-2222", "D12"])
+        let stored = FHIRR4ChartMapper.resourceForStorage(patient)
+        let text = String(decoding: stored.json, as: UTF8.self)
+
+        XCTAssertFalse(text.contains("999-11-2222"), text)
+        XCTAssertFalse(text.contains(#""D12""#), "a short number is removed wherever it is a value")
+        XCTAssertTrue(text.contains("CLINIC-77"), "the record number stays, in the identifier and in the narrative")
+        XCTAssertTrue(text.contains("Ada Example"))
+        XCTAssertTrue(FHIRR4ChartMapper.governmentNumberValues(in: stored).isEmpty, "a stored copy has nothing left to remove")
+    }
+
+    /// Removing a number must not rewrite a field that only happens to contain its digits.
+    func testRemovingANumberLeavesIdsDatesAndReferencesWhole() throws {
+        let patient = try FHIRR4Fixture.resource("""
+        {"resourceType":"Patient","id":"pt-1985-a","birthDate":"1985-03-12",
+         "text":{"status":"generated","div":"<div>Born 1985, card AB1</div>"},
+         "managingOrganization":{"reference":"Organization/1985"},
+         "telecom":[{"system":"phone","value":"555-1985"}],
+         "identifier":[
+           {"type":{"coding":[{"code":"SS"}]},"value":"1985"},
+           {"type":{"coding":[{"code":"MC"}]},"value":"AB1"},
+           {"system":"urn:example:clinic","value":"CLINIC-1985"}
+         ]}
+        """)
+
+        let stored = FHIRR4ChartMapper.resourceForStorage(patient)
+        let object = try XCTUnwrap(try JSONSerialization.jsonObject(with: stored.json) as? [String: Any])
+
+        XCTAssertEqual(stored.id, "pt-1985-a")
+        XCTAssertEqual(object["birthDate"] as? String, "1985-03-12")
+        XCTAssertEqual((object["managingOrganization"] as? [String: Any])?["reference"] as? String, "Organization/1985")
+        XCTAssertEqual((object["telecom"] as? [[String: Any]])?.first?["value"] as? String, "555-1985", "a value that only contains the digits is not the number")
+        let identifiers = try XCTUnwrap(object["identifier"] as? [[String: Any]])
+        XCTAssertEqual(identifiers.map { $0["value"] as? String }, [
+            FHIRR4ChartMapper.removedIdentifierValue, FHIRR4ChartMapper.removedIdentifierValue, "CLINIC-1985",
+        ])
+        let narrative = try XCTUnwrap((object["text"] as? [String: Any])?["div"] as? String)
+        XCTAssertFalse(narrative.contains("1985"), "in the narrative the number is removed where it stands")
+        XCTAssertTrue(narrative.contains("AB1"), "a number under four characters is left in a narrative: \(narrative)")
+    }
+
+    /// An identifier can sit in a contained resource or under `link`, and a narrative's markup holds digits too.
+    func testAGovernmentNumberIsRemovedWhereverItsIdentifierSitsAndMarkupIsLeftAlone() throws {
+        let patient = try FHIRR4Fixture.resource("""
+        {"resourceType":"Patient","id":"c1",
+         "text":{"status":"generated","div":"<div xmlns=\\"http://www.w3.org/1999/xhtml\\">Card 1999 on file, ref A1999B</div>"},
+         "contained":[{"resourceType":"RelatedPerson","id":"rp","identifier":[{"system":"http://hl7.org/fhir/sid/us-ssn","value":"999-77-8888"}]}],
+         "link":[{"other":{"identifier":{"type":{"text":"Driver's license"},"value":"DL-55501"}},"type":"seealso"}],
+         "identifier":[{"type":{"coding":[{"code":"SS"}]},"value":"1999"}]}
+        """)
+
+        XCTAssertEqual(FHIRR4ChartMapper.governmentNumberValues(in: patient), ["1999", "999-77-8888", "DL-55501"])
+        let stored = FHIRR4ChartMapper.resourceForStorage(patient)
+        let text = String(decoding: stored.json, as: UTF8.self)
+        XCTAssertFalse(text.contains("999-77-8888"), "the contained resource's number is removed")
+        XCTAssertFalse(text.contains("DL-55501"), "the linked identifier's number is removed")
+
+        let object = try XCTUnwrap(try JSONSerialization.jsonObject(with: stored.json) as? [String: Any])
+        let narrative = try XCTUnwrap((object["text"] as? [String: Any])?["div"] as? String)
+        XCTAssertTrue(narrative.contains(#"xmlns="http://www.w3.org/1999/xhtml""#), "markup is not text: \(narrative)")
+        XCTAssertTrue(narrative.contains("Card \(FHIRR4ChartMapper.removedIdentifierValue) on file"), narrative)
+        XCTAssertTrue(narrative.contains("A1999B"), "digits inside another token are not the number")
+    }
+
+    /// A server can list one number twice, once as a Social Security number and once as a record number.
+    func testANumberThatIsAlsoAGovernmentNumberIsNeverTheRecordNumber() throws {
+        let patient = try FHIRR4Fixture.resource("""
+        {"resourceType":"Patient","id":"p9","identifier":[
+          {"system":"http://hl7.org/fhir/sid/us-ssn","value":"999-00-1234"},
+          {"type":{"coding":[{"system":"http://terminology.hl7.org/CodeSystem/v2-0203","code":"MR"}]},"system":"urn:example:clinic","value":"999-00-1234"}
+        ]}
+        """)
+
+        let mapped = try FHIRR4ChartMapper.patient(patient, serverBase: base, calendar: utc)
+        XCTAssertEqual(mapped.mrn, "p9", "the chart falls back to the resource id")
+        XCTAssertFalse(String(describing: mapped).contains("999-00-1234"))
+
+        let stored = String(decoding: FHIRR4ChartMapper.resourceForStorage(patient).json, as: UTF8.self)
+        XCTAssertFalse(stored.contains("999-00-1234"), "both entries lose the value")
+    }
+
+    func testAPartialDateOnAnyOtherTypeIsReported() throws {
+        let resources = try [
+            #"{"resourceType":"Observation","id":"o1","status":"final","code":{"text":"Weight"},"effectiveDateTime":"2021"}"#,
+            #"{"resourceType":"Observation","id":"o2","status":"final","code":{"text":"Height"},"effectiveDateTime":"2021-04-02T09:00:00Z"}"#,
+        ].map(FHIRR4Fixture.resource)
+
+        let chart = try mappedChart(of: resources)
+
+        XCTAssertEqual(chart.observations.count, 2)
+        XCTAssertEqual(chart.warnings, ["1 Observation resource had a date given only to the year or month; the chart shows the first day of that period."])
+    }
+
     // MARK: - Schroeder chart
 
     func testProblems() throws {

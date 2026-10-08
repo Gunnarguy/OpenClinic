@@ -23,6 +23,13 @@ nonisolated protocol FHIRR4MappedResource: Decodable, Sendable {
     var isEnteredInError: Bool { get }
     /// Every date the mapper reads, as received, so the unreadable ones can be counted.
     var dateFields: [FHIRR4LenientDateTime?] { get }
+    /// The dates the chart stores as a full date whatever precision the server gave. One stated
+    /// only to the year or month is counted, so the import can say the chart shows its first day.
+    var datesStoredWhole: [FHIRR4LenientDateTime?] { get }
+}
+
+nonisolated extension FHIRR4MappedResource {
+    var datesStoredWhole: [FHIRR4LenientDateTime?] { dateFields }
 }
 
 /// The `value[x]` choices the chart reads, shared by an observation and its components.
@@ -58,6 +65,7 @@ nonisolated struct FHIRR4Patient: FHIRR4MappedResource {
 
     var isEnteredInError: Bool { false }
     var dateFields: [FHIRR4LenientDateTime?] { [birthDate, deceasedDateTime] }
+    var datesStoredWhole: [FHIRR4LenientDateTime?] { [] }
 }
 
 // MARK: - Condition
@@ -77,6 +85,8 @@ nonisolated struct FHIRR4Condition: FHIRR4MappedResource {
 
     var isEnteredInError: Bool { verificationStatus?.hasCode(FHIRR4Code.enteredInError) ?? false }
     var dateFields: [FHIRR4LenientDateTime?] { [onsetDateTime, abatementDateTime, recordedDate] }
+    // Onset and abatement keep their precision in the chart.
+    var datesStoredWhole: [FHIRR4LenientDateTime?] { [recordedDate] }
 }
 
 // MARK: - MedicationRequest
@@ -225,6 +235,8 @@ nonisolated struct FHIRR4Procedure: FHIRR4MappedResource {
 
     var isEnteredInError: Bool { status == FHIRR4Code.enteredInError }
     var dateFields: [FHIRR4LenientDateTime?] { [performedDateTime, performedPeriod?.start, performedPeriod?.end] }
+    // The start keeps its precision in the chart.
+    var datesStoredWhole: [FHIRR4LenientDateTime?] { [performedPeriod?.end] }
 }
 
 // MARK: - Immunization
@@ -240,6 +252,7 @@ nonisolated struct FHIRR4Immunization: FHIRR4MappedResource {
 
     var isEnteredInError: Bool { status == FHIRR4Code.enteredInError }
     var dateFields: [FHIRR4LenientDateTime?] { [occurrenceDateTime] }
+    var datesStoredWhole: [FHIRR4LenientDateTime?] { [] }
 }
 
 // MARK: - DiagnosticReport

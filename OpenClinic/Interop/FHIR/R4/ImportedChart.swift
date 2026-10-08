@@ -44,6 +44,13 @@ nonisolated struct ImportedComponent: Sendable, Hashable, Codable {
     var value: ImportedValue?
 }
 
+/// How much of a date the server stated, when it stated less than a day. FHIR allows "2015" and
+/// "2015-03"; the stored `Date` is then the first day of that period, and this says so.
+nonisolated enum ImportedDatePrecision: String, Sendable, Hashable {
+    case year
+    case month
+}
+
 nonisolated struct ImportedPatient: Sendable, Hashable {
     var source: ImportedSource
     var mrn: String
@@ -61,6 +68,11 @@ nonisolated struct ImportedPatient: Sendable, Hashable {
     var postalCode: String?
     var language: String?
     var maritalStatus: String?
+    /// True when the server says the patient has died, with or without a date.
+    var isDeceased: Bool = false
+    /// Set when the server stated the date of birth or of death only to the year or the month.
+    var birthDatePrecision: ImportedDatePrecision?
+    var deceasedPrecision: ImportedDatePrecision?
 }
 
 nonisolated struct ImportedProblem: Sendable, Hashable {
@@ -76,6 +88,8 @@ nonisolated struct ImportedProblem: Sendable, Hashable {
     var recorded: Date?
     /// Relative reference of the encounter, for example `Encounter/bd501f8d`.
     var encounterReference: String?
+    var onsetPrecision: ImportedDatePrecision? = nil
+    var abatementPrecision: ImportedDatePrecision? = nil
 }
 
 nonisolated struct ImportedMedication: Sendable, Hashable {
@@ -141,6 +155,7 @@ nonisolated struct ImportedProcedure: Sendable, Hashable {
     var performedEnd: Date?
     var reason: String?
     var encounterReference: String?
+    var performedPrecision: ImportedDatePrecision? = nil
 }
 
 nonisolated struct ImportedImmunization: Sendable, Hashable {
@@ -149,6 +164,7 @@ nonisolated struct ImportedImmunization: Sendable, Hashable {
     var status: String
     var occurrence: Date?
     var primarySource: Bool?
+    var occurrencePrecision: ImportedDatePrecision? = nil
 }
 
 nonisolated struct ImportedReport: Sendable, Hashable {

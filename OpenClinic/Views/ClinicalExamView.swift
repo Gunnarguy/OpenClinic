@@ -192,7 +192,7 @@ struct ClinicalExamWorkspace: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(patient.fullName).font(.headline)
                     HStack(spacing: 8) {
-                        Text("Age \(patient.age)")
+                        Text("Age \(patient.ageText)")
                         Text(patient.gender)
                         if patient.isSmoker {
                             Label("Smoker", systemImage: "smoke").foregroundColor(.orange)
@@ -448,7 +448,11 @@ struct ClinicalExamWorkspace: View {
 
             if let note = workflowState.generatedNote {
                 VStack(alignment: .leading, spacing: 10) {
-                    Text("AI Structured Note").font(.headline).foregroundColor(.purple)
+                    Text(noteDraftTitle).font(.headline).foregroundColor(.purple)
+                    Text(noteDraftCaption)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
 
                     clinicalDataRow(title: "Primary Diagnosis", value: note.primaryDiagnosis)
                     clinicalDataRow(title: "CC / HPI", value: note.ccHPI)
@@ -550,23 +554,48 @@ struct ClinicalExamWorkspace: View {
         #endif
 
         workflowState.isProcessing = true
-        var prompt = dictationText
-        if let part = workflowState.selectedAnatomy {
-            prompt = "[Anatomical Focus: \(part)] " + prompt
-        }
+        // The dictation goes as it was said. The selected body site travels beside it, not inside it.
+        let prompt = dictationText
         AppLogger.exam.info("🧪 AI workflow started — prompt length: \(prompt.count) chars, anatomy: \(workflowState.selectedAnatomy ?? "none")")
 
         Task {
             do {
-                let note = try await intelligenceService.generateStructuredNote(
+                let draft = try await intelligenceService.draftNote(
                     from: prompt, patient: patient, selectedAnatomy: workflowState.selectedAnatomy)
+                let note = draft.note
                 workflowState.generatedNote = note
+                workflowState.generatedNoteOrigin = draft.origin
                 AppLogger.exam.info("✅ Structured note generated: \(note.primaryDiagnosis)")
             } catch {
                 AppLogger.exam.error("❌ AI workflow failed: \(error.localizedDescription)")
             }
             workflowState.isProcessing = false
         }
+    }
+
+    /// The draft's heading says who wrote it. A note the keyword rules filled in is not an AI note.
+    private var noteDraftTitle: String {
+        if case .model = workflowState.generatedNoteOrigin { return "AI Structured Note" }
+        return "Draft Note Sorted By Keyword Rules"
+    }
+
+    private var noteDraftCaption: String {
+        switch workflowState.generatedNoteOrigin {
+        case .model?:
+            return "Drafted by the on-device model from the dictation. Check it against what was said before signing."
+        case .keywordRules(let reason)?, .chartListing(let reason)?:
+            return "The app sorted the dictation's own sentences into these sections by keyword rules. No language model wrote this, and the app added nothing. \(reason) Check it against what was said before signing."
+        case nil:
+            return "Check this draft against what was said before signing."
+        }
+    }
+
+    private var savedNoteSourceKind: ClinicalSourceKind {
+        SavedNoteOrigin.sourceKind(for: workflowState.generatedNoteOrigin)
+    }
+
+    private var savedNoteVisitType: String {
+        SavedNoteOrigin.visitType(for: workflowState.generatedNoteOrigin)
     }
 
     private func persistGeneratedNote(note: ClinicalVisitNote, lifecycle: DocumentationLifecycleStatus, generatePDF: Bool) {
@@ -584,7 +613,7 @@ struct ClinicalExamWorkspace: View {
                 conditionName: note.primaryDiagnosis,
                 status: "Preliminary",
                 isHiddenFromPortal: false,
-                visitType: "AI-assisted encounter",
+                visitType: savedNoteVisitType,
                 ccHPI: note.ccHPI,
                 reviewOfSystems: note.reviewOfSystems,
                 examFindings: note.examFindings,
@@ -596,7 +625,7 @@ struct ClinicalExamWorkspace: View {
                 carePlanSummary: note.impressionsAndPlan,
                 documentationStatus: lifecycle.rawValue,
                 documentationSignedAt: lifecycle == .signed ? .now : nil,
-                sourceKind: ClinicalSourceKind.localAI.rawValue,
+                sourceKind: savedNoteSourceKind.rawValue,
                 sourceSystemName: "OpenClinic Encounter Workspace",
                 sourceRecordIdentifier: recordID,
                 sourceLastSyncedAt: .now,
@@ -613,7 +642,7 @@ struct ClinicalExamWorkspace: View {
 
         record.conditionName = note.primaryDiagnosis
         record.status = lifecycle == .signed ? "Final" : "Preliminary"
-        record.visitType = "AI-assisted encounter"
+        record.visitType = savedNoteVisitType
         record.ccHPI = note.ccHPI
         record.reviewOfSystems = note.reviewOfSystems
         record.examFindings = note.examFindings
@@ -626,7 +655,7 @@ struct ClinicalExamWorkspace: View {
         record.documentationStatus = lifecycle.rawValue
         record.documentationSignedAt = lifecycle == .signed ? .now : nil
         record.providerSignature = lifecycle == .signed ? (patient.primaryClinician ?? "\(patient.fullName) Care Team") : nil
-        record.sourceKind = ClinicalSourceKind.localAI.rawValue
+        record.sourceKind = savedNoteSourceKind.rawValue
         record.sourceSystemName = "OpenClinic Encounter Workspace"
         record.sourceRecordIdentifier = record.recordID
         record.sourceLastSyncedAt = .now

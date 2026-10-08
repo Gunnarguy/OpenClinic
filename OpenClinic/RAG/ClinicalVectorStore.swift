@@ -109,6 +109,35 @@ actor ClinicalVectorStore {
         entries[id]?.chunk
     }
 
+    // MARK: - One patient at a time
+
+    /// The chunks indexed for one patient, with their vectors.
+    func entries(for patientId: UUID) -> [ClinicalIndexSync.StoredChunk] {
+        entries.values
+            .filter { $0.chunk.patientId == patientId }
+            .map { ClinicalIndexSync.StoredChunk(chunk: $0.chunk, embedding: $0.embedding) }
+    }
+
+    /// Swaps one patient's chunks for a new set and leaves every other patient's alone.
+    func replace(patientId: UUID, chunks: [ClinicalChunk], embeddings: [[Float]]) {
+        precondition(chunks.count == embeddings.count)
+        hasBeenWritten = true
+        entries = entries.filter { $0.value.chunk.patientId != patientId }
+        for (chunk, embedding) in zip(chunks, embeddings) {
+            entries[chunk.id] = VectorEntry(chunk: chunk, embedding: embedding)
+        }
+    }
+
+    /// Every patient that has at least one chunk in the index.
+    var patientIDs: Set<UUID> {
+        Set(entries.values.map(\.chunk.patientId))
+    }
+
+    /// Every indexed chunk. The keyword index can be rebuilt from these without embedding anything.
+    var allChunks: [ClinicalChunk] {
+        entries.values.map(\.chunk)
+    }
+
     // MARK: - Delete
 
     /// Remove all chunks for a patient.

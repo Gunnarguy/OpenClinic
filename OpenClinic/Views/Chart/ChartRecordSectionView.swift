@@ -71,7 +71,8 @@ struct ChartRecordSectionView: View {
                     title: problem.display,
                     detail: [problem.clinicalStatus.capitalized, problem.code.map { "Code \($0)" }].compactMap { $0 }.joined(separator: " · "),
                     date: problem.sortDate,
-                    trailing: problem.abatementDate.map { "Resolved \($0.formatted(date: .abbreviated, time: .omitted))" },
+                    dateText: problem.sortDateText,
+                    trailing: problem.abatementDateText.map { "Resolved \($0)" },
                     row: problem
                 )
             }
@@ -127,6 +128,7 @@ struct ChartRecordSectionView: View {
                     title: procedure.display,
                     detail: [procedure.status.capitalized, procedure.reason].compactMap { $0 }.joined(separator: " · "),
                     date: procedure.performedStart,
+                    dateText: procedure.performedDateText,
                     trailing: nil,
                     row: procedure
                 )
@@ -137,6 +139,7 @@ struct ChartRecordSectionView: View {
                     title: immunization.vaccine,
                     detail: immunization.status.capitalized,
                     date: immunization.occurrenceDate,
+                    dateText: immunization.occurrenceDateText,
                     trailing: nil,
                     row: immunization
                 )
@@ -221,6 +224,8 @@ private struct RecordRow<Row: ServerSyncedRow>: View {
     let title: String
     let detail: String
     let date: Date?
+    /// The date already written out, for a row whose source stated only a year or a month.
+    var dateText: String? = nil
     let trailing: String?
     let row: Row
 
@@ -246,7 +251,11 @@ private struct RecordRow<Row: ServerSyncedRow>: View {
                 }
 
                 HStack(spacing: 6) {
-                    if let date {
+                    if let dateText {
+                        Text(dateText)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    } else if let date {
                         Text(date, format: .dateTime.month(.abbreviated).day().year())
                             .font(.caption)
                             .foregroundStyle(.secondary)
@@ -352,6 +361,18 @@ struct SourceResourceView: View {
             let id = qualifiedID
             let descriptor = FetchDescriptor<FHIRResourceRecord>(predicate: #Predicate { $0.qualifiedID == id })
             record = try? modelContext.fetch(descriptor).first
+            if record == nil {
+                // A row and its source resource can be stored under two spellings of one server address.
+                let parts = id.split(separator: "/", omittingEmptySubsequences: false)
+                if parts.count >= 3 {
+                    let resourceID = String(parts[parts.count - 1])
+                    let resourceType = String(parts[parts.count - 2])
+                    let wanted = ChartImportApplier.respelled(id)
+                    let sameResource = FetchDescriptor<FHIRResourceRecord>(
+                        predicate: #Predicate { $0.resourceID == resourceID && $0.resourceType == resourceType })
+                    record = (try? modelContext.fetch(sameResource))?.first { ChartImportApplier.respelled($0.qualifiedID) == wanted }
+                }
+            }
             didLoad = true
             if let record {
                 modelContext.insert(AuditEvent(

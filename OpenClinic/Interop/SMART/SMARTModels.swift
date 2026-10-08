@@ -220,21 +220,15 @@ struct SMARTAuthorizationRequest: Sendable {
 }
 
 enum SMARTScopeSet {
-    static let providerRead = [
-        "openid",
-        "fhirUser",
-        "profile",
-        "launch",
-        "launch/patient",
-        "user/Patient.rs",
-        "user/Appointment.rs",
-        "user/Condition.rs",
-        "user/AllergyIntolerance.rs",
-        "user/MedicationRequest.rs",
-        "user/Observation.rs",
-        "user/DiagnosticReport.rs",
-        "user/DocumentReference.rs",
+    /// Read and search access to the patient and to each resource type the record import reads.
+    /// A type that is read without its scope is refused by a server that enforces scopes.
+    static let importedResourceTypes = [
+        "Patient", "Condition", "MedicationRequest", "AllergyIntolerance", "Observation", "Encounter",
+        "Procedure", "Immunization", "DiagnosticReport", "DocumentReference", "Appointment",
     ]
+
+    static let providerRead = ["openid", "fhirUser", "profile", "launch", "launch/patient"]
+        + importedResourceTypes.map { "user/\($0).rs" }
 
     static let patientRead = [
         "openid",

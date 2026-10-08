@@ -36,7 +36,6 @@ enum SMARTConnectionControllerError: LocalizedError {
     case missingClientID
     case invalidBaseURL
     case noPendingAuthorization
-    case stateMismatch
     case missingPatientContext
     case missingAccessToken
     case authenticationSessionFailed
@@ -49,8 +48,6 @@ enum SMARTConnectionControllerError: LocalizedError {
             return "Enter a valid FHIR base URL before connecting."
         case .noPendingAuthorization:
             return "There is no pending SMART authorization request to complete."
-        case .stateMismatch:
-            return "The SMART redirect state did not match the pending authorization request."
         case .missingPatientContext:
             return "No patient context is available yet. Enter a patient ID or launch with a patient context."
         case .missingAccessToken:
@@ -318,28 +315,8 @@ final class SMARTConnectionController: ObservableObject {
                 return
             }
 
-            if let returnedState = components?.queryItems?.first(where: { $0.name == "state" })?.value,
-               returnedState != pendingAuthorizationRequest.state {
-                AppLogger.smart.error("SMART callback state mismatch")
-                throw SMARTConnectionControllerError.stateMismatch
-            }
-
-            if let authorizationError = components?.queryItems?.first(where: { $0.name == "error" })?.value {
-                let authorizationErrorDescription = components?.queryItems?.first(where: { $0.name == "error_description" })?.value
-                if let authorizationErrorDescription, !authorizationErrorDescription.isEmpty {
-                    AppLogger.smart.error("SMART authorization endpoint returned error: \(authorizationError) — \(authorizationErrorDescription)")
-                    throw NSError(
-                        domain: "SMARTAuthorization",
-                        code: 1,
-                        userInfo: [NSLocalizedDescriptionKey: "\(authorizationError): \(authorizationErrorDescription)"]
-                    )
-                }
-
-                AppLogger.smart.error("SMART authorization endpoint returned error: \(authorizationError)")
-                throw NSError(domain: "SMARTAuthorization", code: 1, userInfo: [NSLocalizedDescriptionKey: authorizationError])
-            }
-
-            let code = try session.handleRedirectURL(url)
+            // The state must be present and equal; a callback without one is refused.
+            let code = try SMARTSession.authorizationCode(from: url, expectedState: pendingAuthorizationRequest.state)
             AppLogger.smart.info("SMART callback contained authorization code; starting token exchange")
             let token = try await session.exchangeCodeForToken(
                 code: code,

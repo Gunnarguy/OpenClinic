@@ -42,8 +42,8 @@ extension ClinicalChunker {
         let lines = problems.map { problem -> String in
             var parts = ["\(problem.display): \(problem.clinicalStatus)"]
             if let code = problem.code { parts.append("code \(code)") }
-            if let onset = problem.onsetDate { parts.append("onset \(day(onset))") }
-            if let abatement = problem.abatementDate { parts.append("resolved \(day(abatement))") }
+            if let onset = problem.onsetDate { parts.append("onset \(ChartDateText.text(onset, precision: problem.onsetPrecision))") }
+            if let abatement = problem.abatementDateText { parts.append("resolved \(abatement)") }
             return parts.joined(separator: ", ")
         }
         return listChunks(lines, heading: "Problem list", patient: patient, source: .problem, category: .problemList, date: nil)
@@ -132,7 +132,7 @@ extension ClinicalChunker {
             .filter { !$0.isRemovedAtSource }
             .sorted { ($0.performedStart ?? .distantPast) > ($1.performedStart ?? .distantPast) }
         let lines = procedures.map { procedure -> String in
-            var parts = [procedure.performedStart.map { day($0) } ?? "Date not recorded", procedure.display, procedure.status]
+            var parts = [procedure.performedDateText ?? "Date not recorded", procedure.display, procedure.status]
             if let reason = procedure.reason { parts.append("reason: \(reason)") }
             return parts.joined(separator: ", ")
         }
@@ -144,7 +144,7 @@ extension ClinicalChunker {
             .filter { !$0.isRemovedAtSource }
             .sorted { ($0.occurrenceDate ?? .distantPast) > ($1.occurrenceDate ?? .distantPast) }
         let lines = immunizations.map { immunization in
-            "\(immunization.occurrenceDate.map { day($0) } ?? "Date not recorded"), \(immunization.vaccine), \(immunization.status)"
+            "\(immunization.occurrenceDateText ?? "Date not recorded"), \(immunization.vaccine), \(immunization.status)"
         }
         return listChunks(lines, heading: "Immunizations", patient: patient, source: .immunization, category: .immunizations, date: nil)
     }

@@ -60,6 +60,22 @@ actor ClinicalFTSService {
         return Int(sqlite3_column_int64(stmt, 0))
     }
 
+    /// The id of every chunk in the table that search reads.
+    var chunkIDs: Set<String> {
+        ensureInitialized()
+        guard let db = database else { return [] }
+        var stmt: OpaquePointer?
+        defer { sqlite3_finalize(stmt) }
+        guard sqlite3_prepare_v2(db, "SELECT chunk_id FROM clinical_chunks", -1, &stmt, nil) == SQLITE_OK else { return [] }
+        var ids = Set<String>()
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            if let text = sqlite3_column_text(stmt, 0) {
+                ids.insert(String(cString: text))
+            }
+        }
+        return ids
+    }
+
     // MARK: - Initialization
 
     private func ensureInitialized() {

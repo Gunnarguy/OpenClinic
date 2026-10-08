@@ -147,7 +147,7 @@ final class ChartImportCoordinator {
                 name: "\(patient.givenName) \(patient.familyName)".trimmingCharacters(in: .whitespaces),
                 sex: patient.sex,
                 birthDate: patient.birthDate,
-                isDeceased: patient.deceasedDate != nil
+                isDeceased: patient.isDeceased
             )
         }
     }

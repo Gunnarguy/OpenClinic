@@ -25,6 +25,12 @@ final class PatientProfile {
     var sourceOfTruth: Bool
     var medicalRecordNumberSystem: String?
     var deceasedDate: Date?
+    /// True when the source says the patient has died. The date is not always known.
+    var isDeceased: Bool = false
+    /// "year" or "month" when the source stated the date only that far; nil for a full date. For the
+    /// date of birth, "unknown" when the source gave none (`hasKnownBirthDate`).
+    var dateOfBirthPrecision: String?
+    var deceasedDatePrecision: String?
     var phone: String?
     var addressLine: String?
     var city: String?
@@ -114,9 +120,34 @@ final class PatientProfile {
         age(on: .now)
     }
 
+    /// True when the source says the patient has died, by a flag or by a date of death.
+    var hasDied: Bool {
+        isDeceased || deceasedDate != nil
+    }
+
+    /// False when the source gave no date of birth. `dateOfBirth` then holds a placeholder that no
+    /// screen shows and no age is computed from.
+    var hasKnownBirthDate: Bool {
+        dateOfBirthPrecision != ChartDateText.unknown
+    }
+
+    /// The age as text: "33", "about 33" when the source gave only the year of birth, or "not recorded".
+    var ageText: String {
+        guard hasKnownBirthDate else { return "not recorded" }
+        return dateOfBirthPrecision == "year" ? "about \(age)" : "\(age)"
+    }
+
+    /// "33y" for a living patient; "died at 96" or "deceased" for one who has died.
+    var shortAgeText: String {
+        guard hasKnownBirthDate else { return hasDied ? "deceased" : "age not recorded" }
+        guard hasDied else { return "\(ageText)y" }
+        return deceasedDate == nil ? "deceased" : "died at \(ageText)"
+    }
+
+    /// Age in whole years on `date`. A patient with a recorded date of death stops ageing on it.
     func age(on date: Date, calendar: Calendar = .current) -> Int {
         let birthDay = calendar.startOfDay(for: dateOfBirth)
-        let day = calendar.startOfDay(for: date)
+        let day = calendar.startOfDay(for: min(date, deceasedDate ?? date))
         return max(calendar.dateComponents([.year], from: birthDay, to: day).year ?? 0, 0)
     }
 }

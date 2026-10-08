@@ -33,6 +33,15 @@ struct PatientDemographicsBanner: View {
                             .font(.headline)
                             .foregroundColor(.primary)
                             .layoutPriority(1)
+
+                        if profile.hasDied {
+                            Text("Deceased")
+                                .font(.system(size: 10, weight: .semibold))
+                                .padding(.horizontal, 5)
+                                .padding(.vertical, 1.5)
+                                .background(Color.primary.opacity(0.12), in: RoundedRectangle(cornerRadius: 4))
+                                .foregroundColor(.primary)
+                        }
                         
                         Text("MRN: \(profile.medicalRecordNumber)")
                             .font(.system(size: 10, weight: .semibold, design: .monospaced))
@@ -47,7 +56,7 @@ struct PatientDemographicsBanner: View {
                     HStack(spacing: 8) {
                         Text(profile.gender)
                         Text("•")
-                        Text("Age \(profile.age) (\(formattedDate(profile.dateOfBirth)))")
+                        Text(ageLine)
                         if let blood = profile.bloodType {
                             Text("•")
                             Text("Type \(blood)")
@@ -196,6 +205,25 @@ struct PatientDemographicsBanner: View {
         .liquidGlassCard(cornerRadius: 16)
     }
     
+    /// "Age 33 (Mar 12, 1993)", or the date and age of death for a patient who has died.
+    private var ageLine: String {
+        // With no date of birth at the source there is no age to show, and no date is made up.
+        guard profile.hasKnownBirthDate else {
+            guard profile.hasDied else { return "Date of birth not recorded at source" }
+            guard let died = profile.deceasedDate else { return "Deceased. Dates of birth and death not recorded at source" }
+            return "Died \(formattedDate(died, precision: profile.deceasedDatePrecision)). Date of birth not recorded at source"
+        }
+        let born = formattedDate(profile.dateOfBirth, precision: profile.dateOfBirthPrecision)
+        guard profile.hasDied else { return "Age \(profile.ageText) (\(born))" }
+        guard let died = profile.deceasedDate else { return "Deceased, date not recorded (born \(born))" }
+        return "Died \(formattedDate(died, precision: profile.deceasedDatePrecision)) at age \(profile.ageText) (born \(born))"
+    }
+
+    /// A date the source stated only to the year or month is written that way, never as its first day.
+    private func formattedDate(_ date: Date, precision: String?) -> String {
+        precision == nil ? formattedDate(date) : ChartDateText.text(date, precision: precision)
+    }
+
     private func formattedDate(_ date: Date) -> String {
         let formatter = DateFormatter()
         formatter.dateStyle = .medium

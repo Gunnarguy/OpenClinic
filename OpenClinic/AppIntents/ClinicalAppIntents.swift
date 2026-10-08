@@ -86,10 +86,8 @@ struct AskClinicalAssistantIntent: AppIntent {
             let context = ModelContext(container)
             
             // Ensure RAG is indexed
-            let indexedCount = await MainActor.run { ragService.indexedChunkCount }
-            if indexedCount == 0 {
-                await ragService.indexAllData(modelContext: context)
-            }
+            // Cheap when nothing changed: only new or edited chart text is embedded.
+            await ragService.syncIndex(modelContext: context)
             
             var patientProfile: PatientProfile? = nil
             if let patientId = patient?.id {
@@ -97,11 +95,12 @@ struct AskClinicalAssistantIntent: AppIntent {
                 patientProfile = try context.fetch(descriptor).first
             }
             
+            // A dialog has no badge, so the text itself ends with who wrote it.
             let response: String
             if let p = patientProfile {
-                response = try await intelService.executeToolQuery(query: question, modelContext: context, patient: p)
+                response = AnswerDialog.text(try await intelService.answerPatientQuestion(query: question, modelContext: context, patient: p))
             } else {
-                response = try await intelService.executePanelQuery(query: question, modelContext: context)
+                response = AnswerDialog.text(try await intelService.answerPanelQuestion(question, modelContext: context))
             }
             
             return .result(
@@ -140,10 +139,8 @@ struct SummarizePatientIntent: AppIntent {
             let container = AppStore.shared.container
             let context = ModelContext(container)
             
-            let indexedCount = await MainActor.run { ragService.indexedChunkCount }
-            if indexedCount == 0 {
-                await ragService.indexAllData(modelContext: context)
-            }
+            // Cheap when nothing changed: only new or edited chart text is embedded.
+            await ragService.syncIndex(modelContext: context)
             
             let patientId = patient.id
             let descriptor = FetchDescriptor<PatientProfile>(predicate: #Predicate<PatientProfile> { $0.id == patientId })
@@ -152,7 +149,7 @@ struct SummarizePatientIntent: AppIntent {
                 return .result(dialog: IntentDialog(stringLiteral: "Patient not found."))
             }
             
-            let response = try await intelService.executeToolQuery(query: "Summarize this patient's medical history, active medications, and upcoming appointments.", modelContext: context, patient: patientProfile)
+            let response = AnswerDialog.text(try await intelService.answerPatientQuestion(query: "Summarize this patient's medical history, active medications, and upcoming appointments.", modelContext: context, patient: patientProfile))
             
             return .result(
                 dialog: IntentDialog(stringLiteral: response)

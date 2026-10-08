@@ -12,6 +12,8 @@ final class ChartProcedure {
     var status: String
     var performedStart: Date?
     var performedEnd: Date?
+    /// "year" or "month" when the source stated the date no more exactly than that.
+    var performedPrecision: String? = nil
     var reason: String?
     var encounterReference: String?
     /// True when a later sync no longer returned this row. Kept, and shown as such, instead of deleted.

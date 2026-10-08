@@ -31,6 +31,8 @@ nonisolated struct PatientFacts: Sendable, Identifiable {
     let diagnoses: [DiagnosisFact]
     let medications: [MedicationFact]
     let appointments: [AppointmentFact]
+    /// False when the source gave no date of birth: `age` is then not a fact, and no age question matches.
+    var ageIsKnown = true
 
     /// Allergy entries that name an allergen. "No known drug allergies" is a
     /// charted negative, not an allergy.
@@ -51,6 +53,12 @@ nonisolated struct DiagnosisFact: Sendable, Hashable {
 
     var isSigned: Bool {
         documentationStatus.lowercased() == "signed"
+    }
+
+    /// False for a note whose dictation named no diagnosis. It is still a note (it can await a
+    /// signature), and its title is not a diagnosis a question can match.
+    var namesADiagnosis: Bool {
+        !DictationSorter.isUndictated(diagnosis: name)
     }
 }
 
@@ -116,6 +124,7 @@ extension PatientFacts {
         self.mrn = patient.medicalRecordNumber
         self.name = patient.fullName
         self.age = patient.age
+        self.ageIsKnown = patient.hasKnownBirthDate
         self.sex = patient.gender
         self.isSmoker = patient.isSmoker
         self.allergies = patient.allergies

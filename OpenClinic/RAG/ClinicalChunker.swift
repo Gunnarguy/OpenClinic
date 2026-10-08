@@ -23,7 +23,19 @@ struct ClinicalChunker {
     static func chunkPatient(_ patient: PatientProfile) -> [ClinicalChunk] {
         var sections: [String] = []
 
-        sections.append("Patient: \(patient.fullName), \(patient.age) y/o \(patient.gender)")
+        if patient.hasDied {
+            var died = patient.deceasedDate.map { "died \(ChartDateText.text($0, precision: patient.deceasedDatePrecision))" } ?? "deceased, date not recorded"
+            if !patient.hasKnownBirthDate {
+                died += ", date of birth not recorded at source"
+            } else if patient.deceasedDate != nil {
+                died += " at age \(patient.ageText)"
+            }
+            sections.append("Patient: \(patient.fullName), \(patient.gender), \(died)")
+        } else if patient.hasKnownBirthDate {
+            sections.append("Patient: \(patient.fullName), \(patient.ageText) y/o \(patient.gender)")
+        } else {
+            sections.append("Patient: \(patient.fullName), \(patient.gender), date of birth not recorded at source")
+        }
         sections.append("MRN: \(patient.medicalRecordNumber)")
         if patient.isSmoker { sections.append("Smoking status: Current smoker") }
         if let clinician = patient.primaryClinician { sections.append("Primary clinician: \(clinician)") }

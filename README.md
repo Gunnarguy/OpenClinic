@@ -59,12 +59,12 @@ Everything shown is synthetic: the bundled demo panel, or Synthea patients read 
 
 ## Key Capabilities
 
-- **On-Device LLM Integration:** Apple's Speech framework transcribes dictations (audio may go to Apple), and local Apple Foundation Models (`LanguageModelSession`) turn the transcripts into structured notes (`ClinicalVisitNote`).
+- **On-Device LLM Integration:** Apple's Speech framework transcribes dictations (audio may go to Apple), and local Apple Foundation Models (`LanguageModelSession`) turn the transcripts into structured notes (`ClinicalVisitNote`). The model declines some requests; the app then lists the patient's own chart rows, or sorts the dictation's own sentences into the note's sections (`DictationSorter`, which adds no finding, plan or order), and labels the text as written by the app.
 - **Local Vector Search:** Generates 384-dimensional embeddings (MiniLM-L6-v2) using a bundled Core ML model, indexing chunks in a local vector database.
 - **Computed Panel Answers:** A set question such as "which patients have melanoma history" is parsed into a structured query and computed from chart facts by `CohortEngine`, with the record, prescription, or appointment behind every match. No language model takes part, and a question the parser does not fully understand is not computed.
 - **9-Gate Retrieval Checks:** Scores the retrieved records on nine checks before the model runs and shows the results with the answer. The checks do not read or block generated text. Model-written answers are labeled as unchecked in the app.
 - **FHIR Interoperability:** Imports a patient's full record from a FHIR R4 server: Patient plus Condition, MedicationRequest, AllergyIntolerance, Observation, Encounter, Procedure, Immunization, DiagnosticReport, DocumentReference, and Appointment, with paging and retries. Servers that need authorization use SMART on FHIR through `ASWebAuthenticationSession`; the open SMART Health IT sandbox imports with no sign-in.
-- **Source Fidelity:** Every imported resource is stored exactly as the server sent it, beside the chart row mapped from it. A row the server stops returning is marked, never deleted, and a failed search is never read as an empty chart.
+- **Source Fidelity:** Every imported resource is stored as the server sent it, beside the chart row mapped from it; the one change is that a Patient's government numbers (Social Security, driver's license, passport, Medicare, Medicaid, tax) lose their values before storage: in an identifier anywhere in the resource, in any other value equal to one, and in the text of the narrative. A row the server stops returning is marked, never deleted, and a failed search is never read as an empty chart.
 - **Data Provenance:** Attaches sync timestamps and source system attributes to SwiftData entities to preserve the authority of remote records.
 - **OpenIntelligence-Derived Retrieval Internals:** Reuses and adapts embedding, full-text, boosting, and verification patterns from OpenIntelligence, but applies them to patient-scoped clinical workflows instead of general document Q&A.
 - **Main-Thread Concurrency:** Isolates database inserts, vector queries, and full-text indexing inside background Actors.
@@ -220,14 +220,26 @@ The script refuses to run when iCloud conflict copies are in the tree or less th
 | `FHIRR4*Tests` | The FHIR R4 read layer against responses captured from the SMART Health IT sandbox: paging, retries, a refused cross-host paging link, entered-in-error resources left out. |
 | `ChartImportApplierTests`, `ChartModelPersistenceTests` | A captured sandbox record through the mapper and into the store: importing twice changes nothing, a row the server stops returning is kept and marked, a failed or truncated search removes nothing, and every model saves. |
 | `ProblemListTests` | The problem list a chart shows: charted problems, then diagnoses only a note names, with examination visits (ICD-10-CM Z00 to Z13) left off. |
+| `SMARTSessionTests` | A callback with a missing or wrong `state` is refused, an authorization error is reported in the server's words, the scopes cover every resource type the import reads, `launch` is asked for only with a launch token, a token request follows no redirect, and discovery follows none to another server. |
+| `SMARTLiveSignInTests` | Opt-in (`./Scripts/verify.sh live`): the app's own sign-in code against the SMART Health IT launcher, including a wrong PKCE verifier that the server must refuse. |
+| `ClinicalIndexSyncTests`, `ClinicalVectorStoreTests` | The plan the launch index sync follows embeds only new text and keeps the vector of a chunk that only moved, and a stale file is never merged into a rebuilt index. The sync itself (`syncIndex`) is checked by the device self-check, not by a unit test. |
+| `ChartDateTextTests` | A date the source stated only to the year or month is written that way. |
+| `ClinicalIntelligenceServiceTests`, `VisitNoteTextTests` | Text the app lists or fills in is reported as that and never as model-written (on screen, in a Shortcut's dialog and in a saved note's source kind), a model call is given up on at its time limit, and the plain-text form of a note reads back into its sections. |
 | `ClinicalChunkerTests`, `ClinicalFTSServiceTests`, `SMARTCredentialStoreTests`, others | Chunking, FTS5 search and its injection guard, Keychain credential storage, anatomical regions, patient education links. |
 
 Checks that still need a person and a device:
 
 | Check | Procedure | Expected result |
 |---|---|---|
-| **SMART sandbox sign-in** | Settings -> Live EHR Import -> SMART R4 Preset -> Connect | The sandbox sign-in sheet appears, authorizes, and the record imports. |
-| **Model-written answers** | Ask a free-form question about one patient in the Intelligence tab on a device with Apple Intelligence | An answer labeled as written by the on-device model, with the retrieved sources under it. |
+| **SMART sign-in sheet** | Settings -> Live EHR Import -> SMART R4 Preset -> Connect | The system sign-in sheet appears, authorizes, and the record imports. The protocol under the sheet (discovery, PKCE, token exchange, authorized read, refresh) is checked by `./Scripts/verify.sh live`. |
+| **Model-written answers on screen** | Ask a free-form question about one patient in the Intelligence tab on a device with Apple Intelligence | An answer labeled as written by the on-device model, with the retrieved sources under it. `./Scripts/verify.sh device` times one such answer without the screen. |
+
+Two more modes of the script reach outside the Mac and are not part of the default run:
+
+```bash
+./Scripts/verify.sh live      # a real SMART on FHIR sign-in against launch.smarthealthit.org (synthetic patients, no password)
+./Scripts/verify.sh device    # build, install and self-check on a connected, unlocked iPhone or iPad
+```
 
 ---
 

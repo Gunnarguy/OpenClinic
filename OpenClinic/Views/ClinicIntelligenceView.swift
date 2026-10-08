@@ -15,6 +15,8 @@ private struct ChatMessage: Identifiable {
     let cohort: CohortResult?
     /// True for language-model text that was not checked against the chart.
     let isUnverifiedGeneration: Bool
+    /// Set when the app listed chart rows because the model did not write an answer: why it did not.
+    let listingReason: String?
 
     init(
         id: UUID = UUID(),
@@ -24,7 +26,8 @@ private struct ChatMessage: Identifiable {
         thinkingSteps: [ThinkingStep] = [],
         sourceDescriptor: ClinicalSourceDescriptor? = nil,
         cohort: CohortResult? = nil,
-        isUnverifiedGeneration: Bool = false
+        isUnverifiedGeneration: Bool = false,
+        listingReason: String? = nil
     ) {
         self.id = id
         self.isUser = isUser
@@ -34,6 +37,7 @@ private struct ChatMessage: Identifiable {
         self.sourceDescriptor = sourceDescriptor
         self.cohort = cohort
         self.isUnverifiedGeneration = isUnverifiedGeneration
+        self.listingReason = listingReason
     }
 }
 
@@ -369,12 +373,12 @@ struct ClinicIntelligenceView: View {
         if let p = selectedPatient {
             let medCount = p.medications?.count ?? 0
             let recordCount = p.clinicalRecords?.count ?? 0
-            chatHistory.append(ChatMessage(isUser: false, text: "Focused on \(p.fullName)'s chart — \(recordCount) records, \(medCount) medications. Ask me anything about their history, meds, appointments, risks, or care plan.", sourceDescriptor: intelligenceSourceDescriptor))
+            chatHistory.append(ChatMessage(isUser: false, text: "Focused on \(p.fullName)'s chart — \(recordCount) records, \(medCount) medications. Ask me anything about their history, meds, appointments, risks, or care plan."))
         } else {
             let recordCount = patients.reduce(0) { $0 + ($1.clinicalRecords?.count ?? 0) }
             let medCount = patients.reduce(0) { $0 + ($1.medications?.count ?? 0) }
             let ragLabel = ragService.indexedChunkCount > 0 ? " RAG: \(ragService.indexedChunkCount) chunks indexed." : ""
-            chatHistory.append(ChatMessage(isUser: false, text: "Panel intelligence ready — \(patients.count) patients, \(recordCount) records, \(medCount) medications.\(ragLabel) Ask about schedules, conditions, medications, risks, or patterns across your panel.", sourceDescriptor: intelligenceSourceDescriptor))
+            chatHistory.append(ChatMessage(isUser: false, text: "Panel intelligence ready — \(patients.count) patients, \(recordCount) records, \(medCount) medications.\(ragLabel) Ask about schedules, conditions, medications, risks, or patterns across your panel."))
         }
     }
 
@@ -394,9 +398,12 @@ struct ClinicIntelligenceView: View {
         Task {
             do {
                 if let patient = selectedPatient {
-                    let response = try await intelligenceService.executeToolQuery(query: q, modelContext: modelContext, patient: patient)
-                    AppLogger.intel.info("✅ Response: \(response.count) chars")
-                    appendGenerated(response)
+                    let answer = try await intelligenceService.answerPatientQuestion(query: q, modelContext: modelContext, patient: patient)
+                    AppLogger.intel.info("✅ Response: \(answer.text.count) chars")
+                    switch answer.origin {
+                    case .model: appendGenerated(answer.text)
+                    case .chartListing(let reason), .keywordRules(let reason): appendListed(answer.text, reason: reason)
+                    }
                 } else {
                     switch try await intelligenceService.answerPanelQuestion(q, modelContext: modelContext) {
                     case .computed(let result):
@@ -410,11 +417,14 @@ struct ClinicIntelligenceView: View {
                     case .generated(let response):
                         AppLogger.intel.info("✅ Generated panel answer: \(response.count) chars")
                         appendGenerated(response)
+                    case .listed(let response, let reason):
+                        AppLogger.intel.info("✅ Listed panel answer: \(response.count) chars")
+                        appendListed(response, reason: reason)
                     }
                 }
             } catch {
                 AppLogger.intel.error("❌ Query failed: \(error.localizedDescription)")
-                chatHistory.append(ChatMessage(isUser: false, text: "Error: \(error.localizedDescription)", sourceDescriptor: intelligenceSourceDescriptor))
+                chatHistory.append(ChatMessage(isUser: false, text: "Error: \(error.localizedDescription)"))
             }
             isProcessing = false
         }
@@ -431,6 +441,19 @@ struct ClinicIntelligenceView: View {
             thinkingSteps: ragService.thinkingSteps,
             sourceDescriptor: intelligenceSourceDescriptor,
             isUnverifiedGeneration: true
+        ))
+    }
+
+    /// Adds text the app listed from chart rows because the model did not write an answer.
+    /// No language model wrote it, and the bubble says that and why.
+    private func appendListed(_ response: String, reason: String) {
+        chatHistory.append(ChatMessage(
+            isUser: false,
+            text: response,
+            metadata: intelligenceService.ragMetadata,
+            thinkingSteps: ragService.thinkingSteps,
+            sourceDescriptor: computedSourceDescriptor,
+            listingReason: reason
         ))
     }
 }
@@ -547,6 +570,16 @@ private struct AIResponseView: View {
                             glowColor: bubbleGlow
                         )
                 )
+
+                if let listingReason = message.listingReason {
+                    Label(
+                        "Listed from the chart by the app. No language model wrote this. \(listingReason)",
+                        systemImage: "list.bullet.rectangle"
+                    )
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
 
                 if message.isUnverifiedGeneration {
                     Label(

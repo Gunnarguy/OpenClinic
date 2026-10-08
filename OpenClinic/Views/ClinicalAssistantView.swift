@@ -9,13 +9,16 @@ private struct AssistantMessage: Identifiable {
     let text: String
     let sourceDescriptor: ClinicalSourceDescriptor?
     let thinkingSteps: [ThinkingStep]?
+    /// Who wrote the text: the on-device model, or the app listing chart rows.
+    let originNote: String?
 
-    init(id: UUID = UUID(), isUser: Bool, text: String, sourceDescriptor: ClinicalSourceDescriptor? = nil, thinkingSteps: [ThinkingStep]? = nil) {
+    init(id: UUID = UUID(), isUser: Bool, text: String, sourceDescriptor: ClinicalSourceDescriptor? = nil, thinkingSteps: [ThinkingStep]? = nil, originNote: String? = nil) {
         self.id = id
         self.isUser = isUser
         self.text = text
         self.sourceDescriptor = sourceDescriptor
         self.thinkingSteps = thinkingSteps
+        self.originNote = originNote
     }
 }
 
@@ -133,6 +136,13 @@ struct ClinicalAssistantView: View {
                                         }
 
                                         ChatFormattedText(text: message.text)
+
+                                        if let originNote = message.originNote {
+                                            Text(originNote)
+                                                .font(.caption2)
+                                                .foregroundStyle(.secondary)
+                                                .fixedSize(horizontal: false, vertical: true)
+                                        }
                                     }
                                     .padding(.horizontal, 14)
                                     .padding(.vertical, 12)
@@ -195,7 +205,7 @@ struct ClinicalAssistantView: View {
         #endif
         .onAppear {
             if chatHistory.isEmpty {
-                chatHistory.append(AssistantMessage(isUser: false, text: "I'm your on-device clinical assistant for \(patient.fullName). I can summarize visits, medications, allergies, risk flags, and upcoming follow-up directly from the local chart.", sourceDescriptor: ClinicalSourceDescriptor(kind: .localAI, systemName: patient.sourceDescriptor.systemName ?? "Local Chart Cache", authoritative: false, lastSyncedAt: patient.sourceDescriptor.lastSyncedAt)))
+                chatHistory.append(AssistantMessage(isUser: false, text: "I'm your on-device clinical assistant for \(patient.fullName). I can summarize visits, medications, allergies, risk flags, and upcoming follow-up directly from the local chart."))
             }
         }
     }
@@ -214,13 +224,21 @@ struct ClinicalAssistantView: View {
 
         Task {
             do {
-                let response = try await intelligenceService.executeToolQuery(query: query, modelContext: modelContext, patient: patient)
+                let answer = try await intelligenceService.answerPatientQuestion(query: query, modelContext: modelContext, patient: patient)
+                let response = answer.text
                 AppLogger.assistant.info("✅ Assistant response: \(response.count) chars")
-                chatHistory.append(AssistantMessage(isUser: false, text: response, sourceDescriptor: ClinicalSourceDescriptor(kind: .localAI, systemName: patient.sourceDescriptor.systemName ?? "Local Chart Cache", authoritative: false, lastSyncedAt: patient.sourceDescriptor.lastSyncedAt), thinkingSteps: intelligenceService.ragMetadata?.thinkingSteps))
+                // The AI badge goes only on text the model wrote. A listing carries the chart's own source.
+                let descriptor: ClinicalSourceDescriptor
+                if case .model = answer.origin {
+                    descriptor = ClinicalSourceDescriptor(kind: .localAI, systemName: patient.sourceDescriptor.systemName ?? "Local Chart Cache", authoritative: false, lastSyncedAt: patient.sourceDescriptor.lastSyncedAt)
+                } else {
+                    descriptor = patient.sourceDescriptor
+                }
+                chatHistory.append(AssistantMessage(isUser: false, text: response, sourceDescriptor: descriptor, thinkingSteps: intelligenceService.ragMetadata?.thinkingSteps, originNote: answer.origin.note))
                 isProcessing = false
             } catch {
                 AppLogger.assistant.error("❌ Assistant query failed: \(error.localizedDescription)")
-                chatHistory.append(AssistantMessage(isUser: false, text: "Error: \(error.localizedDescription)", sourceDescriptor: ClinicalSourceDescriptor(kind: .localAI, systemName: patient.sourceDescriptor.systemName ?? "Local Chart Cache", authoritative: false, lastSyncedAt: patient.sourceDescriptor.lastSyncedAt)))
+                chatHistory.append(AssistantMessage(isUser: false, text: "Error: \(error.localizedDescription)"))
                 isProcessing = false
             }
         }

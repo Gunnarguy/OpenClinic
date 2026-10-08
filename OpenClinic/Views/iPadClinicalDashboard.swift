@@ -254,7 +254,7 @@ private struct PatientRosterRow: View {
             }
 
             HStack(spacing: 10) {
-                Text("\(patient.age)y")
+                Text(patient.shortAgeText)
                 Text(patient.gender)
                 Text("\(activeMedicationCount) active Rx")
                 Text(problemCount == 1 ? "1 problem" : "\(problemCount) problems")

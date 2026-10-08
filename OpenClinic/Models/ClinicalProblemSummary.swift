@@ -10,7 +10,8 @@ struct ClinicalProblemSummary: Identifiable {
 
 extension Sequence where Element == LocalClinicalRecord {
     func groupedProblemSummaries() -> [ClinicalProblemSummary] {
-        let grouped = Dictionary(grouping: self) { record in
+        // A note whose dictation named no diagnosis is a visit, not a problem.
+        let grouped = Dictionary(grouping: self.filter { !DictationSorter.isUndictated(diagnosis: $0.conditionName) }) { record in
             record.problemGroupingKey
         }
 
@@ -84,6 +85,8 @@ struct ProblemListEntry: Identifiable {
     let isOpen: Bool
     /// Onset, else the recorded date, for a charted problem; the latest note's date for a note diagnosis.
     let date: Date?
+    /// `date` as the source stated it: "2015" when only the year of onset is known.
+    let dateText: String?
     /// How many of the patient's notes carry this diagnosis.
     let noteCount: Int
     let origin: Origin
@@ -119,7 +122,7 @@ enum ProblemList {
             }
             if let match {
                 notesByProblem[match.qualifiedID, default: []].append(note)
-            } else if !isExaminationEncounter(noteCode) {
+            } else if !isExaminationEncounter(noteCode), !DictationSorter.isUndictated(diagnosis: note.conditionName) {
                 unmatched.append(note)
             }
         }
@@ -133,6 +136,7 @@ enum ProblemList {
                 statusLabel: problem.clinicalStatus.capitalized,
                 isOpen: problem.isActive,
                 date: problem.sortDate,
+                dateText: problem.sortDateText,
                 noteCount: linked.count,
                 origin: .charted,
                 source: problem.sourceDescriptor,
@@ -148,6 +152,7 @@ enum ProblemList {
                 statusLabel: nil,
                 isOpen: true,
                 date: summary.latestDate,
+                dateText: ChartDateText.text(summary.latestDate, precision: nil),
                 noteCount: summary.occurrenceCount,
                 origin: .note,
                 source: summary.latestRecord.sourceDescriptor,

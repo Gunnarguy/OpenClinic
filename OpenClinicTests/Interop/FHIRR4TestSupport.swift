@@ -119,6 +119,8 @@ final class FHIRR4StubProtocol: URLProtocol {
         var status = 200
         var headers: [String: String] = ["Content-Type": "application/fhir+json"]
         var body = Data()
+        /// When set, the answer is a redirect to this address and `status` should be a 3xx.
+        var redirect: URL?
     }
 
     typealias Handler = @Sendable (URLRequest) throws -> Response
@@ -193,6 +195,15 @@ final class FHIRR4StubProtocol: URLProtocol {
                 headerFields: stubbed.headers
             ) else {
                 throw URLError(.badServerResponse)
+            }
+            if let target = stubbed.redirect {
+                // The loading system asks the task's delegate, and runs a new load when it agrees.
+                // This load ends here either way, the way Apple's CustomHTTPProtocol sample ends it.
+                var next = request
+                next.url = target
+                client?.urlProtocol(self, wasRedirectedTo: next, redirectResponse: response)
+                client?.urlProtocol(self, didFailWithError: NSError(domain: NSCocoaErrorDomain, code: NSUserCancelledError))
+                return
             }
             client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
             client?.urlProtocol(self, didLoad: stubbed.body)

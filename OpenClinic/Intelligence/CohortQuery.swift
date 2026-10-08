@@ -176,7 +176,7 @@ nonisolated struct PanelVocabulary: Sendable {
 
     init(snapshot: PanelSnapshot) {
         for patient in snapshot.patients {
-            for diagnosis in patient.diagnoses {
+            for diagnosis in patient.diagnoses where diagnosis.namesADiagnosis {
                 let name = Self.diagnosisName(diagnosis.name)
                 guard !name.isEmpty else { continue }
                 if name.count >= 6 { diagnosisTerms[name] = name }

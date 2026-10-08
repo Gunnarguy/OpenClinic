@@ -118,7 +118,7 @@ private struct PatientListRow: View {
                     Text(patient.fullName)
                         .font(.headline)
                         .foregroundColor(.primary)
-                    Text("\(patient.age)y • \(patient.gender) • MRN \(patient.medicalRecordNumber)")
+                    Text("\(patient.shortAgeText) • \(patient.gender) • MRN \(patient.medicalRecordNumber)")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
@@ -753,9 +753,9 @@ struct PatientChartPageView: View {
     /// "Last note Oct 7, 2026 · Code D49.2" for a diagnosis only a note names.
     private func problemDetailLine(_ entry: ProblemListEntry) -> String {
         var parts: [String] = []
-        if let date = entry.date {
+        if let dateText = entry.dateText {
             let label = entry.origin == .note ? "Last note" : "Onset"
-            parts.append("\(label) \(date.formatted(date: .abbreviated, time: .omitted))")
+            parts.append("\(label) \(dateText)")
         }
         if let code = entry.code, !code.isEmpty {
             parts.append("Code \(code)")

@@ -60,7 +60,11 @@ nonisolated struct FHIRR4RawResource: Sendable, Hashable {
 nonisolated struct FHIRR4Bundle: Sendable {
     let total: Int?
     /// The server's link to the following page, exactly as sent. The client decides whether to follow it.
-    let nextLink: URL?
+    let nextLinkText: String?
+    /// The same link as a URL, or nil when there is none or it is not an absolute URL.
+    var nextLink: URL? {
+        nextLinkText.flatMap { URL(string: $0) }.flatMap { $0.host == nil ? nil : $0 }
+    }
     let resources: [FHIRR4RawResource]
 
     /// Throws `FHIRR4Error.invalidResponse` when the data is not a FHIR Bundle.
@@ -73,10 +77,10 @@ nonisolated struct FHIRR4Bundle: Sendable {
         total = root["total"] as? Int
 
         let links = (root["link"] as? [Any] ?? []).compactMap { $0 as? [String: Any] }
-        nextLink = links
+        nextLinkText = links
             .first { $0["relation"] as? String == "next" }
             .flatMap { $0["url"] as? String }
-            .flatMap { URL(string: $0) }
+            .flatMap(FHIRR4Text.nonEmpty)
 
         // An entry can be a search outcome with no resource, and a server can put an
         // OperationOutcome among the matches to explain itself. Neither is chart data.

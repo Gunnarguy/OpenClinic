@@ -174,4 +174,35 @@ final class ProblemListTests: XCTestCase {
         let noteOnly = patients.flatMap(\.problemList).filter { $0.origin == .note }
         XCTAssertEqual(noteOnly.count, 1)
     }
+
+    /// A note sorted by the keyword rules from a dictation that named no diagnosis names no problem.
+    @MainActor
+    func testANoteWhoseDiagnosisWasNotDictatedIsNotAProblem() {
+        let entries = ProblemList.entries(problems: [], notes: [
+            note("N1", DictationSorter.diagnosisNotDictated, icd10: nil, daysAgo: 0),
+            note("N2", "Rosacea", icd10: nil, daysAgo: 1),
+        ])
+
+        XCTAssertEqual(entries.map(\.title), ["Rosacea"])
+    }
+
+    /// The same note is no diagnosis for a panel question either, while it still counts as a note
+    /// awaiting a signature.
+    func testANoteWhoseDiagnosisWasNotDictatedMatchesNoDiagnosisQuestion() throws {
+        let facts = PatientFacts(
+            id: UUID(), mrn: "T-9", name: "Dee Draft", age: 40, sex: "Female", isSmoker: false,
+            allergies: [], riskFlags: [],
+            diagnoses: [DiagnosisFact(recordID: "N1", name: DictationSorter.diagnosisNotDictated, icd10: nil, date: Date(), documentationStatus: "draft")],
+            medications: [], appointments: [])
+        let snapshot = PanelSnapshot(patients: [facts])
+        let vocabulary = PanelVocabulary(snapshot: snapshot)
+
+        XCTAssertTrue(vocabulary.diagnosisTerms.isEmpty, "\(vocabulary.diagnosisTerms)")
+        let parser = CohortQueryParser(vocabulary: vocabulary)
+        if let named = parser.parse("Which patients have dictated?") {
+            XCTAssertTrue(CohortEngine.run(named, on: snapshot).matches.isEmpty, "the placeholder is not a diagnosis a question can match")
+        }
+        let unsigned = try XCTUnwrap(parser.parse("Which notes are unsigned?"))
+        XCTAssertEqual(CohortEngine.run(unsigned, on: snapshot).matchedMRNs, ["T-9"], "it is still a note that awaits a signature")
+    }
 }

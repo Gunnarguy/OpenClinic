@@ -54,12 +54,6 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
-	<key>NSHealthShareUsageDescription</key>
-	<string>We need access to your health data to provide personalized medical insights.</string>
-	<key>NSHealthUpdateUsageDescription</key>
-	<string>We need access to update your health data.</string>
-	<key>NSHealthClinicalHealthRecordsShareUsageDescription</key>
-	<string>We need local access to your FHIR clinical health records to power the offline-first EHR.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>Speech recognition is used for voice-to-text clinical dictation during patient encounters.</string>
 	<key>NSMicrophoneUsageDescription</key>

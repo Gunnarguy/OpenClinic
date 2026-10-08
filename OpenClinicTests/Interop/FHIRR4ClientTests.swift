@@ -86,6 +86,96 @@ final class FHIRR4ClientTests: XCTestCase {
         )
     }
 
+    /// One server, one spelling: row identifiers are built from the base address.
+    func testBaseURLIsLowerCasedAndLosesADefaultPort() throws {
+        let client = try makeClient(base: "HTTPS://R4.SmartHealthIT.org:443/Fhir/")
+        XCTAssertEqual(client.baseURL.absoluteString, "https://r4.smarthealthit.org/Fhir", "the path keeps its case")
+
+        XCTAssertEqual(FHIRR4Client.normalizedBase("  https://R4.SMARTHEALTHIT.ORG/  "), "https://r4.smarthealthit.org")
+        XCTAssertEqual(FHIRR4Client.normalizedBase("http://Example.org:80/fhir//"), "http://example.org/fhir")
+        XCTAssertEqual(FHIRR4Client.normalizedBase("https://example.org:8443/fhir"), "https://example.org:8443/fhir", "another port is part of the address")
+        XCTAssertEqual(FHIRR4Client.normalizedBase("not an address/"), "not an address")
+    }
+
+    // MARK: - Redirects
+
+    func testARedirectToAnotherServerIsRefusedAndNothingIsSentThere() async throws {
+        let elsewhere = try XCTUnwrap(URL(string: "https://elsewhere.example/Patient/\(FHIRR4Fixture.schroederID)"))
+        let patient = try FHIRR4Fixture.data("Patient.schroeder")
+        FHIRR4StubProtocol.install { request in
+            request.url?.host == "elsewhere.example"
+                ? FHIRR4StubProtocol.Response(body: patient)
+                : FHIRR4StubProtocol.Response(status: 302, redirect: elsewhere)
+        }
+        let client = try makeClient(tokenProvider: { _ in "token-for-tests" })
+
+        await fhirR4AssertThrows(.redirectOutsideServer("https://elsewhere.example")) {
+            _ = try await client.read("Patient", id: FHIRR4Fixture.schroederID)
+        }
+
+        XCTAssertEqual(FHIRR4StubProtocol.requests.map { $0.url?.host }, ["r4.smarthealthit.org"],
+                       "the request with the token and the patient's id never reached the other server")
+    }
+
+    func testARedirectOnTheSameServerIsFollowed() async throws {
+        let moved = try XCTUnwrap(URL(string: "https://r4.smarthealthit.org/moved/Patient/\(FHIRR4Fixture.schroederID)"))
+        let patient = try FHIRR4Fixture.data("Patient.schroeder")
+        FHIRR4StubProtocol.install { request in
+            request.url?.path.hasPrefix("/moved/") == true
+                ? FHIRR4StubProtocol.Response(body: patient)
+                : FHIRR4StubProtocol.Response(status: 307, redirect: moved)
+        }
+        let client = try makeClient()
+
+        let resource = try await client.read("Patient", id: FHIRR4Fixture.schroederID)
+
+        XCTAssertEqual(resource.id, FHIRR4Fixture.schroederID)
+        XCTAssertEqual(FHIRR4StubProtocol.requests.count, 2)
+    }
+
+    // MARK: - Paging links
+
+    func testARelativeNextLinkIsResolvedAgainstThePageItCameOn() async throws {
+        let first = page(id: "o1", next: "?_getpages=abc&_getpagesoffset=1")
+        let second = page(id: "o2")
+        FHIRR4StubProtocol.install { request in
+            FHIRR4StubProtocol.Response(body: FHIRR4StubProtocol.query(of: request)["_getpages"] == "abc" ? second : first)
+        }
+        let client = try makeClient()
+
+        let result = try await client.search("Observation", parameters: patientQuery)
+
+        XCTAssertEqual(result.resources.map(\.id), ["o1", "o2"])
+        XCTAssertEqual(FHIRR4StubProtocol.requests.last?.url?.host, "r4.smarthealthit.org")
+        XCTAssertEqual(FHIRR4StubProtocol.requests.last?.url?.path, "/Observation", "a link that is only a query keeps the page's path")
+    }
+
+    /// With a base that has a path, a link such as "Observation?page=2" belongs under that path.
+    func testARelativeNextLinkStaysUnderABaseThatHasAPath() async throws {
+        let first = page(id: "o1", next: "Observation?page=2")
+        let second = page(id: "o2")
+        FHIRR4StubProtocol.install { request in
+            FHIRR4StubProtocol.Response(body: FHIRR4StubProtocol.query(of: request)["page"] == "2" ? second : first)
+        }
+        let client = try makeClient(base: "https://launch.example/v/r4/fhir")
+
+        let result = try await client.search("Observation", parameters: patientQuery)
+
+        XCTAssertEqual(result.resources.map(\.id), ["o1", "o2"])
+        XCTAssertEqual(FHIRR4StubProtocol.requests.last?.url?.path, "/v/r4/fhir/Observation")
+    }
+
+    func testANextLinkThatIsNotAnAddressIsAnErrorNotTheEndOfTheSearch() async throws {
+        let first = page(id: "o1", next: "mailto:next-page")
+        FHIRR4StubProtocol.install { _ in FHIRR4StubProtocol.Response(body: first) }
+        let client = try makeClient()
+
+        await fhirR4AssertThrows(.invalidResponse) {
+            _ = try await client.search("Observation", parameters: self.patientQuery)
+        }
+        XCTAssertEqual(FHIRR4StubProtocol.requests.count, 1)
+    }
+
     func testAnIDCannotNameAnotherPath() async throws {
         FHIRR4StubProtocol.install { _ in FHIRR4StubProtocol.Response(status: 404) }
         let client = try makeClient()

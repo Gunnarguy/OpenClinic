@@ -7,6 +7,10 @@ enum SMARTSessionError: LocalizedError {
     case missingConfiguration
     case invalidAuthorizationURL
     case redirectMissingCode
+    /// The callback's `state` is missing or is not the one this app sent.
+    case redirectStateMismatch
+    /// The authorization server answered with an OAuth error instead of a code.
+    case authorizationDenied(error: String, description: String?)
     case invalidBaseURL
     case invalidResponse
     case requestFailed(statusCode: Int, responseBody: String)
@@ -14,6 +18,8 @@ enum SMARTSessionError: LocalizedError {
     case tokenExchangeRejected(statusCode: Int, error: String, errorDescription: String?)
     case tokenResponseInvalid
     case noRefreshToken
+    /// The server answered a request with a redirect this app does not follow.
+    case redirectRefused
 
     var errorDescription: String? {
         switch self {
@@ -23,6 +29,13 @@ enum SMARTSessionError: LocalizedError {
             return "Unable to construct a valid SMART authorization URL."
         case .redirectMissingCode:
             return "The SMART redirect did not contain an authorization code."
+        case .redirectStateMismatch:
+            return "The SMART redirect state did not match the pending authorization request."
+        case let .authorizationDenied(error, description):
+            if let description, !description.isEmpty {
+                return "\(error): \(description)"
+            }
+            return error
         case .invalidBaseURL:
             return "A valid FHIR server base URL is required."
         case .invalidResponse:
@@ -41,6 +54,8 @@ enum SMARTSessionError: LocalizedError {
             return "SMART token exchange returned a response that could not be read."
         case .noRefreshToken:
             return "The server did not issue a refresh token. Sign in again to continue."
+        case .redirectRefused:
+            return "The SMART server answered with a redirect to another address, which was not followed."
         }
     }
 }
@@ -52,6 +67,28 @@ private struct SMARTTokenErrorResponse: Decodable, Sendable {
     enum CodingKeys: String, CodingKey {
         case error
         case errorDescription = "error_description"
+    }
+}
+
+/// Refuses every redirect of one request. A token request carries the authorization code, the PKCE
+/// verifier and sometimes a client secret or a refresh token in its body, and a 307 or 308 would
+/// send that body again to wherever the answer points.
+nonisolated final class SMARTRedirectRefusal: NSObject, URLSessionTaskDelegate, @unchecked Sendable {
+    private let refused = OSAllocatedUnfairLock(initialState: false)
+
+    var didRefuse: Bool {
+        refused.withLock { $0 }
+    }
+
+    func urlSession(
+        _ session: URLSession,
+        task: URLSessionTask,
+        willPerformHTTPRedirection response: HTTPURLResponse,
+        newRequest request: URLRequest,
+        completionHandler: @escaping @Sendable (URLRequest?) -> Void
+    ) {
+        refused.withLock { $0 = true }
+        completionHandler(nil)
     }
 }
 
@@ -116,7 +153,11 @@ final class SMARTSession: ObservableObject {
 
         let codeVerifier = Self.makeCodeVerifier()
         let codeChallenge = Self.makeCodeChallenge(from: codeVerifier)
-        let requestedScope = (scope ?? SMARTScopeSet.providerRead).joined(separator: " ")
+        // `launch` asks for the context of an EHR launch, so it is sent only with a launch token.
+        // A standalone sign-in asks for its patient with `launch/patient`.
+        let requestedScope = (scope ?? SMARTScopeSet.providerRead)
+            .filter { $0 != "launch" || launch != nil }
+            .joined(separator: " ")
 
         var components = URLComponents(url: configuration.authorizationEndpoint, resolvingAgainstBaseURL: false)
         components?.queryItems = [
@@ -169,7 +210,7 @@ final class SMARTSession: ObservableObject {
         request.httpBody = Self.formEncodedData(fields.merging(clientSecret.map { ["client_secret": $0] } ?? [:]) { current, _ in current })
 
         AppLogger.smart.info("Exchanging SMART authorization code against \(configuration.tokenEndpoint.absoluteString)")
-        let (data, response) = try await urlSession.data(for: request)
+        let (data, response) = try await sendTokenRequest(request)
         guard let httpResponse = response as? HTTPURLResponse else {
             throw SMARTSessionError.invalidResponse
         }
@@ -225,7 +266,7 @@ final class SMARTSession: ObservableObject {
         if let clientSecret { fields["client_secret"] = clientSecret }
         request.httpBody = Self.formEncodedData(fields)
 
-        let (data, response) = try await urlSession.data(for: request)
+        let (data, response) = try await sendTokenRequest(request)
         guard let httpResponse = response as? HTTPURLResponse else {
             throw SMARTSessionError.invalidResponse
         }
@@ -260,9 +301,20 @@ final class SMARTSession: ObservableObject {
         return merged
     }
 
-    func handleRedirectURL(_ url: URL) throws -> String {
-        guard let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
-              let code = components.queryItems?.first(where: { $0.name == "code" })?.value else {
+    /// Reads the authorization code from a callback, after checking that the callback answers the
+    /// request this app sent. A callback with no `state` is refused like one with the wrong `state`:
+    /// the value is what ties the code to this sign-in (RFC 6749, section 10.12).
+    nonisolated static func authorizationCode(from url: URL, expectedState: String) throws -> String {
+        let items = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []
+        func value(_ name: String) -> String? { items.first { $0.name == name }?.value }
+
+        guard let state = value("state"), state == expectedState else {
+            throw SMARTSessionError.redirectStateMismatch
+        }
+        if let error = value("error") {
+            throw SMARTSessionError.authorizationDenied(error: error, description: value("error_description"))
+        }
+        guard let code = value("code"), !code.isEmpty else {
             throw SMARTSessionError.redirectMissingCode
         }
         return code
@@ -320,19 +372,46 @@ final class SMARTSession: ObservableObject {
         return body.data(using: .utf8)
     }
 
+    /// Sends a token request. No redirect is followed.
+    private func sendTokenRequest(_ request: URLRequest) async throws -> (Data, URLResponse) {
+        let refusal = SMARTRedirectRefusal()
+        let outcome: Result<(Data, URLResponse), any Error>
+        do {
+            outcome = .success(try await urlSession.data(for: request, delegate: refusal))
+        } catch {
+            outcome = .failure(error)
+        }
+        if refusal.didRefuse {
+            AppLogger.smart.error("A SMART token request was answered with a redirect, which was not followed.")
+            throw SMARTSessionError.redirectRefused
+        }
+        return try outcome.get()
+    }
+
+    /// Reads the discovery document or the capability statement. A redirect is followed only when
+    /// it stays on the server that was asked: the answer names where the sign-in and the code go.
     private func requestData(from url: URL, accept: String) async throws -> Data {
         var request = URLRequest(url: url)
         request.setValue(accept, forHTTPHeaderField: "Accept")
 
-        let (data, response) = try await urlSession.data(for: request)
+        let redirects = FHIRR4RedirectGuard(base: url)
+        let outcome: Result<(Data, URLResponse), any Error>
+        do {
+            outcome = .success(try await urlSession.data(for: request, delegate: redirects))
+        } catch {
+            outcome = .failure(error)
+        }
+        if redirects.refusedOrigin != nil {
+            AppLogger.smart.error("A SMART discovery request was redirected to another server, which was not followed.")
+            throw SMARTSessionError.redirectRefused
+        }
+        let (data, response) = try outcome.get()
         guard let httpResponse = response as? HTTPURLResponse else {
             throw SMARTSessionError.invalidResponse
         }
         guard 200..<300 ~= httpResponse.statusCode else {
-            throw SMARTSessionError.requestFailed(
-                statusCode: httpResponse.statusCode,
-                responseBody: String(data: data, encoding: .utf8) ?? "<non-UTF8 body>"
-            )
+            // The body is not kept: an error carries a status, never what a server sent.
+            throw SMARTSessionError.requestFailed(statusCode: httpResponse.statusCode, responseBody: "")
         }
 
         return data

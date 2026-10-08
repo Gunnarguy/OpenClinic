@@ -41,49 +41,51 @@ enum PlatformLanguageModel {
 @available(iOS 26.0, macOS 26.0, visionOS 26.0, *)
 @Generable
 struct ClinicalVisitNote {
-    @Guide(description: "Primary diagnosis or assessment title for the encounter.")
+    // Each guide asks for what the dictation says and nothing more. The earlier wording asked for
+    // recommendations, and the note it produced could hold orders nobody dictated.
+    @Guide(description: "The condition the dictation names as the subject of the visit.")
     let primaryDiagnosis: String
 
-    @Guide(description: "Chief complaint and history of present illness in clinician-ready form.")
+    @Guide(description: "The reason for the visit and its history, as dictated.")
     let ccHPI: String
 
-    @Guide(description: "Review of systems using only findings supported by the dictation and chart context.")
+    @Guide(description: "Symptoms the dictation says are present or absent.")
     let reviewOfSystems: String
 
-    @Guide(description: "Physical exam findings with anatomical specificity when available.")
+    @Guide(description: "What the dictation says was seen on examination, with body sites.")
     let examFindings: String
 
-    @Guide(description: "Assessment and plan written as concise clinical prose.")
+    @Guide(description: "The assessment and the plan, as dictated.")
     let impressionsAndPlan: String
 
-    @Guide(description: "Patient-facing after-visit instructions.")
+    @Guide(description: "What the dictation says the patient was told to do.")
     let patientInstructions: String
 
-    @Guide(description: "Explicit follow-up recommendation including timeframe when possible.")
+    @Guide(description: "When the dictation says the patient returns.")
     let followUpPlan: String
 
-    @Guide(description: "Orders, referrals, labs, or procedures recommended for this encounter.")
+    @Guide(description: "Tests, referrals or procedures the dictation says were ordered.")
     let recommendedOrders: [String]
 
-    @Guide(description: "Medication changes started, stopped, or continued during this encounter.")
+    @Guide(description: "Medicines the dictation says were started, stopped or continued.")
     let medicationChanges: [String]
 
-    @Guide(description: "Anatomical zones referenced by the encounter.")
+    @Guide(description: "Body sites the dictation names.")
     let affectedAnatomicalZones: [String]
 }
 
+/// The model's answer to a question about a record: the answer and the lines it rests on.
+/// It has no field for advice. The model reports what the record says; it is not asked what to do.
 @available(iOS 26.0, macOS 26.0, visionOS 26.0, *)
 @Generable
-struct ClinicalAssistantAnswer {
-    @Guide(description: "Direct answer to the clinician's question using only chart-supported facts.")
+struct ChartAnswer {
+    @Guide(description: "Direct answer to the question using only facts stated in the record.")
     let answer: String
 
-    @Guide(description: "Short factual bullets from the chart that support the answer.")
+    @Guide(description: "Short lines from the record that support the answer.")
     let supportingFacts: [String]
-
-    @Guide(description: "Operational next steps or follow-up actions if appropriate.")
-    let recommendedActions: [String]
 }
+
 #else
 struct ClinicalVisitNote: Codable {
     let primaryDiagnosis: String
@@ -98,11 +100,6 @@ struct ClinicalVisitNote: Codable {
     let affectedAnatomicalZones: [String]
 }
 
-struct ClinicalAssistantAnswer: Codable {
-    let answer: String
-    let supportingFacts: [String]
-    let recommendedActions: [String]
-}
 #endif
 
 /// How a panel question was answered.
@@ -111,6 +108,91 @@ nonisolated enum PanelAnswer: Sendable {
     case computed(CohortResult)
     /// Written by the language model from a chart summary. Not checked against the chart.
     case generated(String)
+    /// Listed from chart rows by the app because the model did not write an answer. `reason` says why.
+    case listed(String, reason: String)
+}
+
+/// Where the words of an answer came from. The screen says which, because text listed by the app
+/// from chart rows and text written by a language model deserve different trust.
+nonisolated enum AnswerOrigin: Sendable, Equatable {
+    /// Written by the on-device language model.
+    case model
+    /// Listed from chart rows by the app. `reason` says why the model did not write the answer.
+    case chartListing(reason: String)
+    /// A note filled in by the app's keyword rules. `reason` says why the model did not draft it.
+    case keywordRules(reason: String)
+
+    static let modelUnavailable = "The on-device model is not available."
+
+    /// The system's own wording of why the model did not answer. It describes the model, not the chart.
+    static func modelDidNotAnswer(_ error: any Error) -> String {
+        "The on-device model did not answer: \(error.localizedDescription)"
+    }
+
+    /// The line shown, or spoken by Shortcuts, with the text it describes.
+    var note: String {
+        switch self {
+        case .model:
+            return "Written by the on-device model. This text has not been checked against the chart."
+        case .chartListing(let reason):
+            return "Listed from the chart by the app. No language model wrote this. \(reason)"
+        case .keywordRules(let reason):
+            return "Sorted from the dictation by the app's keyword rules. No language model wrote this. \(reason)"
+        }
+    }
+}
+
+/// What a saved visit note records about its own origin. Only a draft the model wrote is marked as
+/// AI; one sorted by the keyword rules holds the clinician's own sentences and nothing else.
+nonisolated enum SavedNoteOrigin {
+    static func sourceKind(for origin: AnswerOrigin?) -> ClinicalSourceKind {
+        if case .model? = origin { return .localAI }
+        return .clinicianCaptured
+    }
+
+    static func visitType(for origin: AnswerOrigin?) -> String {
+        if case .model? = origin { return "AI-assisted encounter" }
+        return "Dictated encounter"
+    }
+}
+
+/// What a Shortcut says back: the answer, then who wrote it. A dialog has no badge to carry that.
+nonisolated enum AnswerDialog {
+    static func text(_ answer: PatientAnswer) -> String {
+        "\(answer.text)\n\n\(answer.origin.note)"
+    }
+
+    static func text(_ answer: PanelAnswer) -> String {
+        switch answer {
+        case .computed(let result):
+            return "\(CohortAnswerFormatter.text(for: result))\n\nComputed from chart data by the app. No language model wrote this."
+        case .generated(let text):
+            return "\(text)\n\n\(AnswerOrigin.model.note)"
+        case .listed(let text, let reason):
+            return "\(text)\n\n\(AnswerOrigin.chartListing(reason: reason).note)"
+        }
+    }
+}
+
+/// The on-device model was given up on because it took too long.
+nonisolated struct ModelTimeLimitError: LocalizedError, Sendable {
+    let limit: Duration
+
+    var errorDescription: String? {
+        "no answer within \(limit.components.seconds) seconds."
+    }
+}
+
+/// A visit note drafted from a dictation, and who drafted it.
+struct NoteDraft {
+    let note: ClinicalVisitNote
+    let origin: AnswerOrigin
+}
+
+/// An answer to a question about one patient.
+nonisolated struct PatientAnswer: Sendable {
+    let text: String
+    let origin: AnswerOrigin
 }
 
 @MainActor
@@ -137,14 +219,11 @@ final class ClinicalIntelligenceService: ObservableObject {
         get { _patientSession as? LanguageModelSession }
         set { _patientSession = newValue }
     }
-    @available(iOS 26.0, macOS 26.0, visionOS 26.0, *)
-    private var panelSession: LanguageModelSession? {
-        get { _panelSession as? LanguageModelSession }
-        set { _panelSession = newValue }
-    }
     #endif
     private var _patientSession: Any?
-    private var _panelSession: Any?
+    /// True once the model has declined a structured answer about this patient and written the
+    /// plain-text one. Later questions about the patient ask for plain text at once.
+    private var patientAnswersInPlainText = false
     private var currentPatientID: UUID?
     private var lastRAGMetadata: ResponseMetadata?
 
@@ -155,31 +234,30 @@ final class ClinicalIntelligenceService: ObservableObject {
     func resetSessions() {
         AppLogger.ai.info("🔄 Resetting AI sessions")
         _patientSession = nil
-        _panelSession = nil
+        patientAnswersInPlainText = false
         currentPatientID = nil
         lastRAGMetadata = nil
     }
 
-    private let documentationInstructions = """
-    You are an on-device clinical documentation assistant.
-    Generate chart-ready medical documentation using only the supplied dictation and patient chart context.
-    Do not fabricate symptoms, orders, medications, or diagnoses.
-    If information is uncertain, stay conservative and reflect the uncertainty in clinically appropriate language.
+    // On 2026-10-07 the on-device model refused every structured answer asked for as a "clinical
+    // chart assistant" (6 of 6, "May contain sensitive content") and answered every one asked for
+    // as below (6 of 6), on the same record and question.
+    private let assistantInstructions = """
+    You answer questions about a record that is given to you. Use only what the record and the tools state.
+    If they do not state the answer, say so. Give dates, names and amounts as the record gives them.
     """
 
-    private let assistantInstructions = """
-    You are an on-device clinical chart assistant.
-    Answer the clinician's question using only tool output and chart context from this device.
-    Do not invent missing facts.
-    Prefer concise answers with concrete dates, medications, diagnoses, and follow-up details when available.
+    private let dictationInstructions = """
+    You sort a dictated summary of a visit into the sections of a visit note. Write only what the dictation states, in the dictation's own terms. Leave a section empty rather than add anything that was not said.
     """
 
     private let panelAssistantInstructions = """
-    You are an on-device clinical intelligence assistant for a dermatology practice.
-    You have access to the full patient panel — all patients, their medications, diagnoses, visit histories, and today's schedule.
-    Answer queries by correlating data across multiple patients when asked.
-    Use only chart-supported facts from tool output. Do not fabricate data.
-    Be concise, specific, and clinically actionable. Include patient names, dates, and concrete details.
+    You answer questions about records that are given to you, one line per person. Use only what the records state.
+    If they do not state the answer, say so. Name each person the answer is about, with dates and amounts as the records give them.
+    """
+
+    private let panelMergeInstructions = """
+    You merge partial answers to one question into a single answer. Keep every name, date and amount. Add nothing that the partial answers do not state.
     """
 
     var engineStatusLabel: String {
@@ -204,41 +282,107 @@ final class ClinicalIntelligenceService: ObservableObject {
         return "Local fallback workflow active\(ragStatus)"
     }
 
-    func generateStructuredNote(from dictation: String, patient: PatientProfile? = nil, selectedAnatomy: String? = nil) async throws -> ClinicalVisitNote {
-        AppLogger.ai.info("🧠 generateStructuredNote called — dictation: \(dictation.count) chars, patient: \(patient?.fullName ?? "nil"), anatomy: \(selectedAnatomy ?? "nil")")
+    /// Drafts a visit note from a dictation. The on-device model is asked twice, in the two forms it
+    /// accepts; when it writes neither, the app sorts the dictation's sentences into the sections by
+    /// keyword, and `origin` says so. `patient` is not read: a note says what was dictated at this visit.
+    func draftNote(from dictation: String, patient: PatientProfile? = nil, selectedAnatomy: String? = nil) async throws -> NoteDraft {
+        AppLogger.ai.info("🧠 draftNote called — dictation: \(dictation.count) chars, anatomy: \(selectedAnatomy ?? "nil")")
+        var reason = AnswerOrigin.modelUnavailable
         #if canImport(FoundationModels)
         if #available(iOS 26.0, macOS 26.0, visionOS 26.0, *) {
             let estimatedTokens = Self.estimateTokens(dictation) + 1500 // Base summary estimate
             if let model = resolveModel(for: estimatedTokens) {
-                AppLogger.ai.info("✨ Foundation Model available — using AI")
                 do {
-                    let note = try await generateStructuredNoteWithFoundationModel(
-                        from: dictation,
-                        patient: patient,
-                        selectedAnatomy: selectedAnatomy,
-                        model: model
-                    )
-                    AppLogger.ai.info("✅ Foundation Model note generated: \(note.primaryDiagnosis)")
-                    return note
+                    let note = try await generateStructuredNoteWithFoundationModel(from: dictation, selectedAnatomy: selectedAnatomy, model: model)
+                    AppLogger.ai.info("✅ Note drafted by the model, structured")
+                    return NoteDraft(note: note, origin: .model)
                 } catch {
-                    AppLogger.ai.error("❌ Foundation Model failed, falling back: \(error.localizedDescription)")
-                    return generateFallbackStructuredNote(from: dictation, patient: patient, selectedAnatomy: selectedAnatomy)
+                    AppLogger.ai.error("❌ Structured note refused or failed, asking for plain sections: \(error.localizedDescription)")
+                    reason = AnswerOrigin.modelDidNotAnswer(error)
+                }
+                do {
+                    let note = try await generateNoteAsPlainSections(from: dictation, selectedAnatomy: selectedAnatomy, model: model)
+                    AppLogger.ai.info("✅ Note drafted by the model, plain sections")
+                    return NoteDraft(note: note, origin: .model)
+                } catch {
+                    AppLogger.ai.error("❌ Plain-section note refused or failed: \(error.localizedDescription)")
+                    reason = AnswerOrigin.modelDidNotAnswer(error)
                 }
             }
         }
         #endif
 
-        AppLogger.ai.info("📦 Using fallback note generation")
-        return generateFallbackStructuredNote(from: dictation, patient: patient, selectedAnatomy: selectedAnatomy)
+        AppLogger.ai.info("📦 Using keyword rules for the note")
+        let note = generateFallbackStructuredNote(from: dictation, selectedAnatomy: selectedAnatomy)
+        return NoteDraft(note: note, origin: .keywordRules(reason: reason))
     }
 
+    /// How long the on-device model may take to write one answer. The framework's call has no limit
+    /// of its own, and a call that never returns would leave nothing on screen but a spinner.
+    var modelTimeLimit: Duration = .seconds(60)
+
+    /// Runs one model call and gives up on it after `modelTimeLimit`. The caller then lists chart
+    /// rows and says the model did not answer in time. The wait ends at the limit even when the
+    /// call ignores cancellation and keeps running.
+    func withModelTimeLimit<Result: Sendable>(_ operation: @escaping @MainActor () async throws -> Result) async throws -> Result {
+        let limit = modelTimeLimit
+        let once = ResumeOnce()
+        return try await withTaskCancellationHandler {
+            try await withCheckedThrowingContinuation { continuation in
+                let work = Task { @MainActor in
+                    do {
+                        let result = try await operation()
+                        if once.claim() { continuation.resume(returning: result) }
+                    } catch {
+                        if once.claim() { continuation.resume(throwing: error) }
+                    }
+                }
+                once.cancelWork = { work.cancel() }
+                once.timer = Task { @MainActor in
+                    try? await Task.sleep(for: limit)
+                    guard !Task.isCancelled, once.claim() else { return }
+                    work.cancel()
+                    continuation.resume(throwing: ModelTimeLimitError(limit: limit))
+                }
+            }
+        } onCancel: {
+            // The caller gave up (a view went away): the model call is told, and the timer still
+            // ends the wait if the call does not listen.
+            Task { @MainActor in once.cancelWork?() }
+        }
+    }
+
+    /// Lets exactly one of two tasks answer a continuation, and stops the timer when the work wins.
+    @MainActor
+    private final class ResumeOnce {
+        private var claimed = false
+        var timer: Task<Void, Never>?
+        var cancelWork: (() -> Void)?
+
+        func claim() -> Bool {
+            guard !claimed else { return false }
+            claimed = true
+            timer?.cancel()
+            return true
+        }
+    }
+
+    /// The answer as plain text, for Shortcuts and tests. Screens use `answerPatientQuestion`, which
+    /// also says whether the model or the app wrote the text.
     func executeToolQuery(query: String, modelContext: ModelContext, patient: PatientProfile? = nil) async throws -> String {
+        try await answerPatientQuestion(query: query, modelContext: modelContext, patient: patient).text
+    }
+
+    /// Answers a question about one patient. The on-device model writes the answer when it is
+    /// available and willing; otherwise the app lists the matching chart rows, and `origin` says so.
+    func answerPatientQuestion(query: String, modelContext: ModelContext, patient: PatientProfile? = nil) async throws -> PatientAnswer {
         AppLogger.ai.info("🔍 executeToolQuery — query: \(query.prefix(60)), patient: \(patient?.fullName ?? "nil"), RAG: \(self.ragEnabled)")
 
         // Reset session if patient changed
         if let pid = patient?.id, pid != currentPatientID {
             AppLogger.ai.info("👤 Patient context changed — resetting patient session")
             _patientSession = nil
+            patientAnswersInPlainText = false
             currentPatientID = pid
         }
 
@@ -262,27 +406,29 @@ final class ClinicalIntelligenceService: ObservableObject {
             }
         }
 
-        ragService.addStep(.generation, "Generating with Apple Intelligence", "On-device Foundation Model", icon: "apple.logo")
-
         #if canImport(FoundationModels)
         if #available(iOS 26.0, macOS 26.0, visionOS 26.0, *) {
             let estimatedTokens = Self.estimateTokens(query) + (ragContext.map { Self.estimateTokens($0) } ?? 0) + 1000 // Base context tools estimate
             if let model = resolveModel(for: estimatedTokens) {
                 AppLogger.ai.info("✨ Foundation Model tool query")
+                ragService.addStep(.generation, "Asking the on-device model", "Apple Intelligence", icon: "apple.logo")
                 do {
                     let result = try await executeFoundationModelQuery(query: query, modelContext: modelContext, patient: patient, model: model, ragContext: ragContext)
                     AppLogger.ai.info("✅ Tool query response: \(result.count) chars")
-                    return result
+                    return PatientAnswer(text: result, origin: .model)
                 } catch {
                     AppLogger.ai.error("❌ Foundation Model tool query failed: \(error.localizedDescription)")
-                    return try await executeFallbackQuery(query: query, modelContext: modelContext, patient: patient)
+                    ragService.addStep(.generation, "The model did not answer", "The app lists chart rows instead", icon: "list.bullet.rectangle")
+                    let listing = try await executeFallbackQuery(query: query, modelContext: modelContext, patient: patient)
+                    return PatientAnswer(text: listing, origin: .chartListing(reason: AnswerOrigin.modelDidNotAnswer(error)))
                 }
             }
         }
         #endif
 
         AppLogger.ai.info("📦 Using fallback tool query")
-        return try await executeFallbackQuery(query: query, modelContext: modelContext, patient: patient)
+        let listing = try await executeFallbackQuery(query: query, modelContext: modelContext, patient: patient)
+        return PatientAnswer(text: listing, origin: .chartListing(reason: AnswerOrigin.modelUnavailable))
     }
 
     /// Answers a cross-patient question.
@@ -305,7 +451,7 @@ final class ClinicalIntelligenceService: ObservableObject {
         }
 
         AppLogger.ai.info("🗣️ Panel question not parsed as a cohort query, using the language model")
-        return .generated(try await generatePanelAnswer(query: query, allPatients: allPatients, modelContext: modelContext))
+        return try await generatePanelAnswer(query: query, allPatients: allPatients, modelContext: modelContext)
     }
 
     /// Cross-patient panel query as plain text, for Shortcuts and evaluation runs.
@@ -313,11 +459,13 @@ final class ClinicalIntelligenceService: ObservableObject {
         switch try await answerPanelQuestion(query, modelContext: modelContext) {
         case .computed(let result): return CohortAnswerFormatter.text(for: result)
         case .generated(let text): return text
+        case .listed(let text, _): return text
         }
     }
 
-    /// Language-model path for panel questions the cohort parser does not cover.
-    private func generatePanelAnswer(query: String, allPatients: [PatientProfile], modelContext: ModelContext) async throws -> String {
+    /// Language-model path for panel questions the cohort parser does not cover. Returns
+    /// `.generated` for model text and `.listed` when the app listed chart rows instead.
+    private func generatePanelAnswer(query: String, allPatients: [PatientProfile], modelContext: ModelContext) async throws -> PanelAnswer {
         AppLogger.ai.info("🏥 generatePanelAnswer — \(allPatients.count) patients, query: \(query.prefix(60)), RAG: \(self.ragEnabled)")
 
         // RAG context retrieval (panel-wide, no patient scope)
@@ -340,27 +488,33 @@ final class ClinicalIntelligenceService: ObservableObject {
             }
         }
 
-        ragService.addStep(.generation, "Generating with Apple Intelligence", "On-device Foundation Model (panel)", icon: "apple.logo")
-
         #if canImport(FoundationModels)
         if #available(iOS 26.0, macOS 26.0, visionOS 26.0, *) {
             let estimatedTokens = Self.estimateTokens(query) + (ragContext.map { Self.estimateTokens($0) } ?? 0) + (allPatients.count * 20)
             if let model = resolveModel(for: estimatedTokens) {
                 AppLogger.ai.info("✨ Foundation Model panel query")
+                ragService.addStep(.generation, "Asking the on-device model", "Apple Intelligence (panel)", icon: "apple.logo")
                 do {
                     let result = try await executePanelFoundationModelQuery(query: query, patients: allPatients, modelContext: modelContext, model: model, ragContext: ragContext)
                     AppLogger.ai.info("✅ Panel response: \(result.count) chars")
-                    return result
+                    return .generated(result)
                 } catch {
                     AppLogger.ai.error("❌ Foundation Model panel query failed: \(error.localizedDescription)")
-                    return executePanelFallbackQuery(query: query, patients: allPatients, modelContext: modelContext)
+                    ragService.addStep(.generation, "The model did not answer", "The app lists chart rows instead", icon: "list.bullet.rectangle")
+                    return .listed(
+                        executePanelFallbackQuery(query: query, patients: allPatients, modelContext: modelContext),
+                        reason: AnswerOrigin.modelDidNotAnswer(error)
+                    )
                 }
             }
         }
         #endif
 
         AppLogger.ai.info("📦 Using fallback panel query")
-        return executePanelFallbackQuery(query: query, patients: allPatients, modelContext: modelContext)
+        return .listed(
+            executePanelFallbackQuery(query: query, patients: allPatients, modelContext: modelContext),
+            reason: AnswerOrigin.modelUnavailable
+        )
     }
 
     #if canImport(FoundationModels)
@@ -377,49 +531,79 @@ final class ClinicalIntelligenceService: ObservableObject {
         return model.isAvailable ? .system(model) : nil
     }
 
+    private func dictationSession(_ model: PlatformLanguageModel) -> LanguageModelSession {
+        switch model {
+        case .system(let m):
+            return LanguageModelSession(model: m, instructions: dictationInstructions)
+        case .privateCloudCompute(let m):
+            return LanguageModelSession(model: m, instructions: dictationInstructions)
+        }
+    }
+
+    /// The prompt holds the dictation and the body site, and nothing from the chart: the model
+    /// refuses a structured note when the record is in the prompt, and a note should say what was
+    /// dictated at this visit, not what the chart already holds.
     @available(iOS 26.0, macOS 26.0, visionOS 26.0, *)
     private func generateStructuredNoteWithFoundationModel(
         from dictation: String,
-        patient: PatientProfile?,
         selectedAnatomy: String?,
         model: PlatformLanguageModel
     ) async throws -> ClinicalVisitNote {
-        AppLogger.ai.info("🚀 Building Foundation Model prompt for structured note")
-        let session: LanguageModelSession
-        switch model {
-        case .system(let m):
-            session = LanguageModelSession(model: m, instructions: documentationInstructions)
-        case .privateCloudCompute(let m):
-            session = LanguageModelSession(model: m, instructions: documentationInstructions)
-        }
-        let context = ClinicalChartFormatter.patientSummary(patient: patient)
-        let history = ClinicalChartFormatter.recordSummary(records: (patient?.clinicalRecords ?? []).sorted { $0.dateRecorded > $1.dateRecorded })
-        let medications = ClinicalChartFormatter.medicationSummary(medications: (patient?.medications ?? []).sorted { $0.writtenDate > $1.writtenDate })
-        let appointments = ClinicalChartFormatter.appointmentSummary(appointments: (patient?.appointments ?? []).sorted { $0.scheduledTime < $1.scheduledTime })
-
+        let session = dictationSession(model)
         let prompt = """
-        Patient chart summary:
-        \(context)
+        Body site in focus: \(selectedAnatomy ?? "not specified")
 
-        Active medications:
-        \(medications)
-
-        Recent and prior clinical history:
-        \(history)
-
-        Upcoming schedule:
-        \(appointments)
-
-        Selected anatomical focus: \(selectedAnatomy ?? "not specified")
-
-        Physician dictation:
+        Dictation:
         \(dictation)
 
-        Return a fully structured encounter note suitable for same-day charting.
+        Sort the dictation into the sections of the note.
         """
+        let note = try await withModelTimeLimit {
+            try await session.respond(to: prompt, generating: ClinicalVisitNote.self).content
+        }
+        return normalize(note: note, selectedAnatomy: selectedAnatomy)
+    }
 
-        let response = try await session.respond(to: prompt, generating: ClinicalVisitNote.self)
-        return normalize(note: response.content, selectedAnatomy: selectedAnatomy)
+    /// The second form: the same note as labeled lines of plain text, which the model writes when it
+    /// has declined to fill the structure.
+    @available(iOS 26.0, macOS 26.0, visionOS 26.0, *)
+    private func generateNoteAsPlainSections(
+        from dictation: String,
+        selectedAnatomy: String?,
+        model: PlatformLanguageModel
+    ) async throws -> ClinicalVisitNote {
+        let session = dictationSession(model)
+        let prompt = """
+        Body site in focus: \(selectedAnatomy ?? "not specified")
+
+        Dictation:
+        \(dictation)
+
+        \(VisitNoteText.request)
+        """
+        let text = try await withModelTimeLimit {
+            try await session.respond(to: prompt).content
+        }
+        guard let sections = VisitNoteText.parse(text) else {
+            throw VisitNoteTextError.notANote
+        }
+        return normalize(note: ClinicalVisitNote(
+            primaryDiagnosis: sections.diagnosis,
+            ccHPI: sections.history,
+            reviewOfSystems: sections.symptoms,
+            examFindings: sections.exam,
+            impressionsAndPlan: sections.plan,
+            patientInstructions: sections.instructions,
+            followUpPlan: sections.followUp,
+            recommendedOrders: sections.orders,
+            medicationChanges: sections.medicationChanges,
+            affectedAnatomicalZones: sections.bodySites
+        ), selectedAnatomy: selectedAnatomy)
+    }
+
+    private enum VisitNoteTextError: LocalizedError {
+        case notANote
+        var errorDescription: String? { "the model's text did not hold the sections of a note." }
     }
 
     @available(iOS 26.0, macOS 26.0, visionOS 26.0, *)
@@ -461,31 +645,76 @@ final class ClinicalIntelligenceService: ObservableObject {
             AppointmentLookupTool(summary: appointmentSummary)
         ]
 
+        func makeSession() -> LanguageModelSession {
+            switch model {
+            case .system(let m):
+                return LanguageModelSession(model: m, tools: tools, instructions: assistantInstructions)
+            case .privateCloudCompute(let m):
+                return LanguageModelSession(model: m, tools: tools, instructions: assistantInstructions)
+            }
+        }
+
         // Reuse or create patient session for conversational continuity
         let session: LanguageModelSession
         if let existing = self.patientSession {
             session = existing
             AppLogger.ai.info("♻️ Reusing existing patient session")
         } else {
-            switch model {
-            case .system(let m):
-                session = LanguageModelSession(model: m, tools: tools, instructions: assistantInstructions)
-            case .privateCloudCompute(let m):
-                session = LanguageModelSession(model: m, tools: tools, instructions: assistantInstructions)
-            }
+            session = makeSession()
             self.patientSession = session
             AppLogger.ai.info("🆕 Created new patient session")
         }
 
         let prompt = """
-        Active chart patient: \(patient?.fullName ?? "No specific patient selected")
-        \(ragContext.map { "Retrieved clinical context (from RAG search):\n\($0)\n" } ?? "")
-        Clinician question: \(query)
-        Answer using tool output, retrieved context, and chart facts only.
+        Record of \(patient?.fullName ?? "the patient"):
+        \(ragContext.map { "\($0)\n" } ?? "The tools return the record.\n")
+        Question: \(query)
         """
 
-        let response = try await session.respond(to: prompt, generating: ClinicalAssistantAnswer.self)
-        return ClinicalChartFormatter.format(answer: response.content)
+        if patientAnswersInPlainText {
+            do {
+                return try await withModelTimeLimit {
+                    try await session.respond(to: prompt).content
+                }
+            } catch let late as ModelTimeLimitError {
+                self.patientSession = nil
+                throw late
+            } catch {
+                // A long conversation can fill a session. One more try in a new one; if that fails
+                // too, the caller lists chart rows.
+                self.patientSession = nil
+                let fresh = makeSession()
+                let text = try await withModelTimeLimit {
+                    try await fresh.respond(to: prompt).content
+                }
+                self.patientSession = fresh
+                return text
+            }
+        }
+
+        do {
+            let answer = try await withModelTimeLimit {
+                try await session.respond(to: prompt, generating: ChartAnswer.self).content
+            }
+            return ClinicalChartFormatter.format(answer: answer.answer, supportingFacts: answer.supportingFacts)
+        } catch let late as ModelTimeLimitError {
+            // The call may still be running inside this session, so the next question gets a new one.
+            self.patientSession = nil
+            throw late
+        } catch {
+            // The model declines some structured answers and writes the same answer as plain text.
+            // A session that has declined keeps the refusal in its transcript, so the retry starts a new one.
+            AppLogger.ai.error("❌ Structured answer refused or failed, asking for plain text: \(error.localizedDescription)")
+            self.patientSession = nil
+            let fresh = makeSession()
+            let text = try await withModelTimeLimit {
+                try await fresh.respond(to: prompt).content
+            }
+            // The conversation goes on in the form the model answers, without the declined try each time.
+            self.patientSession = fresh
+            self.patientAnswersInPlainText = true
+            return text
+        }
     }
 
     @available(iOS 26.0, macOS 26.0, visionOS 26.0, *)
@@ -537,32 +766,36 @@ final class ClinicalIntelligenceService: ObservableObject {
 
         AppLogger.ai.info("📏 Compact context: \(compactContext.count) chars ≈ \(contextTokens) tokens")
 
+        func makeSession(_ instructions: String) -> LanguageModelSession {
+            switch model {
+            case .system(let m):
+                return LanguageModelSession(model: m, instructions: instructions)
+            case .privateCloudCompute(let m):
+                return LanguageModelSession(model: m, instructions: instructions)
+            }
+        }
+
         // ── Single-Pass (fits in budget) ───────────────────────────────
         // Skip tools entirely — put compact data directly in prompt.
         // Reclaims ~1000 tokens that tool schemas would consume.
         if contextTokens <= availableTokens {
             ragService.addStep(.generation, "Single-pass mode", "\(contextTokens)/\(availableTokens) tokens — fits", icon: "checkmark.seal")
 
-            let session: LanguageModelSession
-            switch model {
-            case .system(let m):
-                session = LanguageModelSession(model: m, instructions: panelAssistantInstructions)
-            case .privateCloudCompute(let m):
-                session = LanguageModelSession(model: m, instructions: panelAssistantInstructions)
-            }
+            let session = makeSession(panelAssistantInstructions)
             let trimmedRAG = ragContext.map { String($0.prefix(1200)) }
 
             let prompt = """
-            Patient panel (\(patients.count) patients):
+            Records of \(patients.count) patients:
             \(compactContext)
-            \(trimmedRAG.map { "\nRetrieved clinical context:\n\($0)" } ?? "")
+            \(trimmedRAG.map { "\nRelated record text:\n\($0)" } ?? "")
 
-            Clinician question: \(query)
-            Answer using ONLY the patient data above. Include patient names. Be specific and concise.
+            Question: \(query)
             """
 
-            let response = try await session.respond(to: prompt, generating: ClinicalAssistantAnswer.self)
-            return ClinicalChartFormatter.format(answer: response.content)
+            let answer = try await withModelTimeLimit {
+                try await session.respond(to: prompt, generating: ChartAnswer.self).content
+            }
+            return ClinicalChartFormatter.format(answer: answer.answer, supportingFacts: answer.supportingFacts)
         }
 
         // ── Recursive RAG (overflow) ───────────────────────────────────
@@ -596,36 +829,27 @@ final class ClinicalIntelligenceService: ObservableObject {
         ragService.addStep(.generation, "Recursive RAG: \(batches.count) passes", "\(patients.count) patients exceed single-pass budget", icon: "arrow.triangle.2.circlepath")
         AppLogger.ai.info("🔄 Recursive RAG: \(batches.count) passes for \(patients.count) patients")
 
+        // Every pass has to be written by the model. A pass it declines is thrown, and the caller
+        // then lists chart rows for the whole question: an answer is never part model, part app.
         var passResults: [String] = []
         for (i, batch) in batches.enumerated() {
             let batchPts = batchPatients[i]
-            let names = batchPts.prefix(3).map(\.fullName).joined(separator: ", ") + (batchPts.count > 3 ? " + \(batchPts.count - 3) more" : "")
-            ragService.addStep(.generation, "Pass \(i + 1)/\(batches.count)", names, icon: "brain")
+            ragService.addStep(.generation, "Pass \(i + 1)/\(batches.count)", "\(batchPts.count) patients", icon: "brain")
 
-            do {
-                let session: LanguageModelSession
-                switch model {
-                case .system(let m):
-                    session = LanguageModelSession(model: m, instructions: panelAssistantInstructions)
-                case .privateCloudCompute(let m):
-                    session = LanguageModelSession(model: m, instructions: panelAssistantInstructions)
-                }
-                let batchContext = batch.joined(separator: "\n")
-                let prompt = """
-                Patient batch \(i + 1)/\(batches.count) (\(batchPts.count) patients):
-                \(batchContext)
+            let session = makeSession(panelAssistantInstructions)
+            let batchContext = batch.joined(separator: "\n")
+            let prompt = """
+            Records of \(batchPts.count) patients (part \(i + 1) of \(batches.count)):
+            \(batchContext)
 
-                Clinician question: \(query)
-                Answer for these patients only. Include all patient names.
-                """
-                let response = try await session.respond(to: prompt, generating: ClinicalAssistantAnswer.self)
-                passResults.append(response.content.answer)
-                AppLogger.ai.info("✅ Pass \(i + 1): \(response.content.answer.count) chars")
-            } catch {
-                AppLogger.ai.warning("⚠️ Pass \(i + 1) failed: \(error.localizedDescription)")
-                let fallback = batchPts.map { "\($0.fullName): data unavailable" }.joined(separator: "\n")
-                passResults.append(fallback)
+            Question: \(query)
+            Answer for these people only.
+            """
+            let answer = try await withModelTimeLimit {
+                try await session.respond(to: prompt, generating: ChartAnswer.self).content
             }
+            passResults.append(answer.answer)
+            AppLogger.ai.info("✅ Pass \(i + 1): \(answer.answer.count) chars")
         }
 
         // ── Synthesis ──────────────────────────────────────────────────
@@ -637,31 +861,26 @@ final class ClinicalIntelligenceService: ObservableObject {
         if combinedTokens <= availableTokens {
             // Fits — synthesize with FM
             do {
-                let session: LanguageModelSession
-                switch model {
-                case .system(let m):
-                    session = LanguageModelSession(model: m, instructions: "Merge partial clinical answers into one cohesive response. Preserve all patient names and data. Be concise.")
-                case .privateCloudCompute(let m):
-                    session = LanguageModelSession(model: m, instructions: "Merge partial clinical answers into one cohesive response. Preserve all patient names and data. Be concise.")
-                }
+                let session = makeSession(panelMergeInstructions)
                 let prompt = """
-                Original question: \(query)
+                Question: \(query)
 
                 Partial answers:
                 \(String(combined.prefix(availableChars)))
 
-                Combine into a single complete answer.
+                Merge them into one answer.
                 """
-                let response = try await session.respond(to: prompt, generating: ClinicalAssistantAnswer.self)
-                return ClinicalChartFormatter.format(answer: response.content)
+                let answer = try await withModelTimeLimit {
+                    try await session.respond(to: prompt, generating: ChartAnswer.self).content
+                }
+                return ClinicalChartFormatter.format(answer: answer.answer, supportingFacts: answer.supportingFacts)
             } catch {
                 AppLogger.ai.warning("⚠️ Synthesis FM failed — concatenating directly")
             }
         }
 
-        // Either too large for FM synthesis or FM failed — format directly
-        let header = "Panel query across \(patients.count) patients:\n\n"
-        return header + passResults.joined(separator: "\n\n")
+        // Too large to merge, or the merge was declined: the model's own partial answers, in order.
+        return passResults.joined(separator: "\n\n")
     }
 
     // MARK: - Token Estimation
@@ -732,7 +951,7 @@ final class ClinicalIntelligenceService: ObservableObject {
         func compactLine(for patient: PatientProfile) -> String {
             switch self {
             case .demographics:
-                return "\(patient.fullName) | \(patient.age)y \(patient.gender) | MRN: \(patient.medicalRecordNumber.prefix(8)) | Blood: \(patient.bloodType ?? "—")"
+                return "\(patient.fullName) | \(patient.shortAgeText) \(patient.gender) | MRN: \(patient.medicalRecordNumber.prefix(8)) | Blood: \(patient.bloodType ?? "—")"
 
             case .medications:
                 let meds = (patient.medications ?? [])
@@ -765,43 +984,29 @@ final class ClinicalIntelligenceService: ObservableObject {
                 let allergies = patient.allergies.isEmpty ? "none" : patient.allergies.prefix(3).joined(separator: ",")
                 let nextAppt = (patient.appointments ?? []).sorted { $0.scheduledTime < $1.scheduledTime }.first
                 let apptStr = nextAppt.map { $0.scheduledTime.formatted(date: .abbreviated, time: .shortened) } ?? "—"
-                return "\(patient.fullName) | \(patient.age)y \(patient.gender) | Dx: \(topCondition) | \(medCount) meds | Allg: \(allergies) | Next: \(apptStr)"
+                return "\(patient.fullName) | \(patient.shortAgeText) \(patient.gender) | Dx: \(topCondition) | \(medCount) meds | Allg: \(allergies) | Next: \(apptStr)"
             }
         }
     }
     #endif
 
-    private func generateFallbackStructuredNote(from dictation: String, patient: PatientProfile?, selectedAnatomy: String?) -> ClinicalVisitNote {
-        let lower = dictation.lowercased()
-        let profile = ClinicalHeuristics.profile(for: lower, patient: patient)
-        let zones = inferredZones(from: lower, selectedAnatomy: selectedAnatomy)
-        let zoneLabel = zones.map { AnatomicalRegion.displayName(for: $0) }.joined(separator: ", ")
-        let patientPrefix = patient.map { "\($0.fullName), age \($0.age)," } ?? "Patient"
-
-        let historyContext: String
-        if let patient, let lastRecord = (patient.clinicalRecords ?? []).sorted(by: { $0.dateRecorded > $1.dateRecorded }).first {
-            historyContext = " Recent chart history includes \(lastRecord.conditionName.lowercased())."
-        } else {
-            historyContext = ""
-        }
-
-        let hpi = "\(patientPrefix) presents for evaluation of \(profile.name.lowercased()) involving \(zoneLabel.isEmpty ? "the documented area" : zoneLabel).\(historyContext) Dictation notes: \(dictation.trimmingCharacters(in: .whitespacesAndNewlines))."
-
-        let exam = zoneLabel.isEmpty
-            ? profile.examTemplate
-            : "\(profile.examTemplate) Focused examination localizes findings to \(zoneLabel)."
-
+    /// The draft when the model writes none: the dictation's own sentences, sorted into sections by
+    /// keyword (`DictationSorter`). The app adds no finding, plan or order of its own, and nothing
+    /// from the chart: a section the dictation did not cover says "Not dictated." The body sites are
+    /// the one the clinician selected and any the dictation names.
+    private func generateFallbackStructuredNote(from dictation: String, selectedAnatomy: String?) -> ClinicalVisitNote {
+        let sections = DictationSorter.sort(dictation)
         return ClinicalVisitNote(
-            primaryDiagnosis: profile.name,
-            ccHPI: hpi,
-            reviewOfSystems: profile.reviewOfSystems,
-            examFindings: exam,
-            impressionsAndPlan: profile.plan,
-            patientInstructions: profile.patientInstructions,
-            followUpPlan: profile.followUp,
-            recommendedOrders: profile.orders,
-            medicationChanges: profile.medicationChanges,
-            affectedAnatomicalZones: zones
+            primaryDiagnosis: sections.diagnosis,
+            ccHPI: sections.history,
+            reviewOfSystems: sections.symptoms,
+            examFindings: sections.exam,
+            impressionsAndPlan: sections.plan,
+            patientInstructions: sections.instructions,
+            followUpPlan: sections.followUp,
+            recommendedOrders: [],
+            medicationChanges: [],
+            affectedAnatomicalZones: inferredZones(from: dictation.lowercased(), selectedAnatomy: selectedAnatomy)
         )
     }
 
@@ -904,10 +1109,15 @@ final class ClinicalIntelligenceService: ObservableObject {
             zones.insert(selectedAnatomy)
         }
 
+        // Whole words only: "itching" names no chin and "diagnosed" no nose.
         for (zone, label) in AnatomicalRegion.regionNames {
-            if dictation.contains(zone.replacingOccurrences(of: "_", with: " ")) || dictation.contains(label.lowercased()) {
-                zones.insert(zone)
+            let names = [zone.replacingOccurrences(of: "_", with: " "), label.lowercased()]
+            let named = names.contains { name in
+                !name.isEmpty && dictation.range(
+                    of: #"\b"# + NSRegularExpression.escapedPattern(for: name) + #"\b"#,
+                    options: [.regularExpression, .caseInsensitive]) != nil
             }
+            if named { zones.insert(zone) }
         }
 
         return zones.isEmpty ? (selectedAnatomy.map { [$0] } ?? []) : Array(zones).sorted()
@@ -936,110 +1146,6 @@ private struct ClinicalHistoryEntry: Sendable {
 }
 
 private enum ClinicalHeuristics {
-    struct Profile {
-        let name: String
-        let reviewOfSystems: String
-        let examTemplate: String
-        let plan: String
-        let patientInstructions: String
-        let followUp: String
-        let orders: [String]
-        let medicationChanges: [String]
-    }
-
-    static func profile(for dictation: String, patient: PatientProfile?) -> Profile {
-        let knownConditions = (patient?.clinicalRecords ?? []).map { $0.conditionName.lowercased() }
-
-        if dictation.contains("melanoma") || knownConditions.contains(where: { $0.contains("melanoma") }) {
-            return Profile(
-                name: "Pigmented Lesion Under Melanoma Evaluation",
-                reviewOfSystems: "Denies constitutional symptoms unless otherwise documented. Monitor for evolving pigment change, bleeding, or rapid enlargement.",
-                examTemplate: "Pigmented lesion demonstrates asymmetry or other concerning morphology requiring formal lesion assessment.",
-                plan: "Pigmented lesion is clinically concerning. Recommend biopsy or definitive excision based on lesion morphology, pathology review, and oncology surveillance history.",
-                patientInstructions: "Photograph the lesion only if instructed, avoid manipulating the site, and report bleeding or rapid growth immediately.",
-                followUp: "Expedited pathology review with oncology-focused dermatology follow-up within 1 to 2 weeks.",
-                orders: ["Dermatopathology review", "Lesion photography"],
-                medicationChanges: []
-            )
-        }
-
-        if dictation.contains("psoriasis") || dictation.contains("plaque") || knownConditions.contains(where: { $0.contains("psoriasis") }) {
-            return Profile(
-                name: "Plaque Psoriasis",
-                reviewOfSystems: "Assess itching, morning stiffness, nail changes, fatigue, and any joint swelling or dactylitis symptoms.",
-                examTemplate: "Well-demarcated erythematous plaques with scale are present in the documented distribution.",
-                plan: "Psoriasis flare requires topical optimization and reassessment for systemic therapy need, particularly if joint symptoms or functional limitation are present.",
-                patientInstructions: "Use topical therapy exactly as prescribed, moisturize daily, and report worsening joint pain, fever, or mouth sores if systemic therapy is started.",
-                followUp: "Clinical and safety-lab follow-up in 4 to 6 weeks.",
-                orders: ["CBC", "CMP", "Rheumatology review if joint symptoms persist"],
-                medicationChanges: ["Continue or optimize psoriasis-directed therapy"]
-            )
-        }
-
-        if dictation.contains("eczema") || dictation.contains("dermatitis") || knownConditions.contains(where: { $0.contains("dermatitis") }) {
-            return Profile(
-                name: "Eczematous Dermatitis",
-                reviewOfSystems: "Assess itch severity, sleep disruption, trigger exposure, superinfection symptoms, and asthma or allergy flare if relevant.",
-                examTemplate: "Exam shows eczematous erythema with scale, excoriation, or lichenification in the affected distribution.",
-                plan: "Dermatitis is being managed with barrier repair, trigger avoidance, and anti-inflammatory therapy adjusted to severity and anatomical location.",
-                patientInstructions: "Continue emollients aggressively, avoid known triggers, and watch for drainage, crusting, or signs of infection.",
-                followUp: "Reassess symptom control in 2 to 8 weeks depending on severity.",
-                orders: ["Patch testing if contact dermatitis remains possible"],
-                medicationChanges: ["Continue dermatitis regimen with topical adjustment as needed"]
-            )
-        }
-
-        if dictation.contains("rosacea") || dictation.contains("flushing") || knownConditions.contains(where: { $0.contains("rosacea") }) {
-            return Profile(
-                name: "Rosacea",
-                reviewOfSystems: "Assess flushing triggers, ocular irritation, burning, stinging, and any worsening nasal skin thickening.",
-                examTemplate: "Centrofacial erythema and inflammatory change are present in the documented distribution.",
-                plan: "Rosacea management should address inflammatory lesions, trigger mitigation, and ocular involvement when present.",
-                patientInstructions: "Use daily sunscreen, avoid known triggers such as heat and alcohol, and report worsening eye symptoms promptly.",
-                followUp: "Follow-up in 4 to 6 weeks to reassess inflammatory control and ocular symptoms.",
-                orders: ["Ophthalmology referral if ocular symptoms are present"],
-                medicationChanges: ["Continue rosacea-directed topical therapy"]
-            )
-        }
-
-        if dictation.contains("wart") || dictation.contains("verruca") {
-            return Profile(
-                name: "Verruca Vulgaris",
-                reviewOfSystems: "Review treatment response, lesion spread, pain with pressure, and new satellite lesions.",
-                examTemplate: "Verrucous papule is present with morphology consistent with common wart.",
-                plan: "Treat with procedural destruction and adjunct topical therapy if persistent or multifocal.",
-                patientInstructions: "Keep treated sites clean, avoid picking, and minimize autoinoculation with hand hygiene.",
-                followUp: "Procedure follow-up in 3 to 4 weeks if lesion persists.",
-                orders: ["Repeat cryotherapy if needed"],
-                medicationChanges: ["Continue or initiate wart-directed topical therapy"]
-            )
-        }
-
-        if dictation.contains("basal cell") || dictation.contains("bcc") || knownConditions.contains(where: { $0.contains("basal cell") }) {
-            return Profile(
-                name: "Basal Cell Carcinoma",
-                reviewOfSystems: "Assess bleeding, crusting, itch, tenderness, lesion growth, and new suspicious lesions elsewhere.",
-                examTemplate: "Lesion morphology is compatible with non-melanoma skin cancer and warrants definitive treatment planning.",
-                plan: "Likely basal cell carcinoma. Recommend tissue confirmation when needed and definitive destruction or excision with margin management based on location and subtype.",
-                patientInstructions: "Protect the area from additional trauma or sun exposure and report any rapid change before the procedure date.",
-                followUp: "Dermatologic procedure follow-up within 2 to 6 weeks depending on treatment selection.",
-                orders: ["Biopsy or excision planning", "Pathology review"],
-                medicationChanges: []
-            )
-        }
-
-        return Profile(
-            name: "Dermatologic Evaluation",
-            reviewOfSystems: "No additional system concerns are documented beyond the presenting complaint unless specified in dictation.",
-            examTemplate: "Focused skin examination demonstrates the clinician-documented findings without evidence of acute systemic compromise.",
-            plan: "Complete diagnostic workup and treatment planning using the documented morphology, anatomical distribution, and prior chart history.",
-            patientInstructions: "Follow wound care or medication instructions as discussed and return sooner for rapid change, pain, bleeding, or signs of infection.",
-            followUp: "Clinical follow-up based on pathology, symptom severity, and treatment response.",
-            orders: [],
-            medicationChanges: []
-        )
-    }
-
     static func filter(records: [LocalClinicalRecord], for query: String) -> [LocalClinicalRecord] {
         let tokens = query
             .components(separatedBy: CharacterSet.alphanumerics.inverted)
@@ -1065,15 +1171,16 @@ private enum ClinicalHeuristics {
 
 private enum ClinicalChartFormatter {
     static func medications(modelContext: ModelContext, patient: PatientProfile?) throws -> [LocalMedication] {
-        if let patient, let medications = patient.medications, !medications.isEmpty {
-            return medications.sorted { $0.writtenDate > $1.writtenDate }
+        // With a patient in view the answer is that patient's rows, and none when there are none.
+        if let patient {
+            return (patient.medications ?? []).sorted { $0.writtenDate > $1.writtenDate }
         }
         return try modelContext.fetch(FetchDescriptor<LocalMedication>()).sorted { $0.writtenDate > $1.writtenDate }
     }
 
     static func records(modelContext: ModelContext, patient: PatientProfile?) throws -> [LocalClinicalRecord] {
-        if let patient, let records = patient.clinicalRecords, !records.isEmpty {
-            return records.sorted { $0.dateRecorded > $1.dateRecorded }
+        if let patient {
+            return (patient.clinicalRecords ?? []).sorted { $0.dateRecorded > $1.dateRecorded }
         }
         return try modelContext.fetch(FetchDescriptor<LocalClinicalRecord>()).sorted { $0.dateRecorded > $1.dateRecorded }
     }
@@ -1089,7 +1196,7 @@ private enum ClinicalChartFormatter {
         return """
         Patient: \(patient.fullName)
         MRN: \(patient.medicalRecordNumber)
-        Age/Sex: \(patient.age) / \(patient.gender)
+        Age/Sex: \(patient.ageText) / \(patient.gender)
         Smoking: \(patient.isSmoker ? "Current smoker" : "Non-smoker")
         Primary clinician: \(patient.primaryClinician ?? "Not assigned")
         Preferred pharmacy: \(patient.preferredPharmacy ?? "Not documented")
@@ -1171,19 +1278,12 @@ private enum ClinicalChartFormatter {
         .joined(separator: "\n")
     }
 
-    static func format(answer: ClinicalAssistantAnswer) -> String {
-        var sections: [String] = [answer.answer]
-
-        if !answer.supportingFacts.isEmpty {
-            sections.append("Support:\n- " + answer.supportingFacts.joined(separator: "\n- "))
-        }
-
-        if !answer.recommendedActions.isEmpty {
-            sections.append("Next actions:\n- " + answer.recommendedActions.joined(separator: "\n- "))
-        }
-
-        return sections.joined(separator: "\n\n")
+    /// A model answer and the record lines it rests on.
+    static func format(answer: String, supportingFacts: [String]) -> String {
+        guard !supportingFacts.isEmpty else { return answer }
+        return answer + "\n\nSupport:\n- " + supportingFacts.joined(separator: "\n- ")
     }
+
 }
 
 #if canImport(FoundationModels)

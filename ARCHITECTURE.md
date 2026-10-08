@@ -148,7 +148,7 @@ The primary SwiftData models are configured in `OpenClinic/Models/`:
 * **`Appointment`:** Represents scheduled slots, reasons for visit, and clinical workflow status (`Scheduled`, `Checked In`, `In Exam`, `Ready for Checkout`, `Completed`).
 * **`ClinicalPhoto`:** Stores clinical images, lesion tracking logs, and coordinates mapping to the 3D body grid.
 * **`ChartProblem`, `ChartAllergy`, `ChartObservation`, `ChartEncounter`, `ChartProcedure`, `ChartImmunization`, `ChartDiagnosticReport`, `ChartDocument`:** The structured chart, one model per FHIR resource type it mirrors. Vital signs and laboratory results are `ChartObservation` rows; a value on screen always comes from one. Each row has `isRemovedAtSource`, set when a later import no longer returns it.
-* **`FHIRResourceRecord`:** Each imported resource exactly as the server sent it, keyed the same way as the chart row mapped from it, so any imported value can be traced to its source JSON.
+* **`FHIRResourceRecord`:** Each imported resource as the server sent it (a Patient's government numbers lose their values first), keyed the same way as the chart row mapped from it, so any imported value can be traced to its source JSON.
 * **`AuditEvent`:** The access log. It records the action and the identifier of the record touched, never clinical content.
 
 `OpenClinicSchema` lists every model once. The app, the App Intents, and the tests all build their container from it, and `StoreBootstrap` moves an unreadable store aside instead of deleting it.
@@ -269,9 +269,9 @@ OpenClinic should be described as a clinical workspace prototype, not a producti
 ## 9. Error Handling Model
 
 The application follows a structured, type-safe error management approach:
-* **`SMARTConnectionControllerError`:** Standardizes connectivity errors (such as state mismatch, missing credentials, or discovery failure) and provides localized user-facing alerts.
+* **`SMARTConnectionControllerError` and `SMARTSessionError`:** Standardize connectivity errors (missing credentials, a callback whose `state` does not match, a redirect that was not followed, a rejected token exchange) and provide localized user-facing alerts.
 * **Resilient Sync Pipelines:** If one resource type's search fails (for example a server that does not support `AllergyIntolerance`), the fetcher records the type in `failedTypes`, adds a warning the clinician sees, and continues with the other types. Only a failed Patient read stops the import.
-* **RAG Fallback Path:** If Apple Intelligence or Core ML indexing fails, the RAG query pipeline automatically switches to a localized heuristic lookup wrapper, extracting text fragments based on static category filters without crashing the UI.
+* **When The Model Does Not Answer:** If the on-device model is unavailable, declines or runs past its time limit, the app lists the selected patient's own chart rows that match the question and labels the text as listed by the app. A dictated note is then drafted by `DictationSorter`: the history is the whole dictation, the other sections hold the dictation's own sentences chosen by whole-word keyword rules, and no finding, plan or order is added.
 
 ---
 
@@ -285,13 +285,13 @@ Subsystem activities are logged using Apple's unified logging system via `os.Log
 * `AI`: Token budgets, vector search times, and verification results.
 * `Exam`: Clinical workspace actions, note signing, and PDF exports.
 
-Log statements carry no privacy annotations; interpolated strings such as patient names are not marked public, so the system redacts them by default.
+Interpolated strings such as patient names are not marked public, so the system redacts them by default. Counts and status codes that are safe to read are marked `privacy: .public` where they are logged.
 
 ---
 
 ## 11. Architectural Tradeoffs
 
-1. **Launch-time RAG Reindexing:** The application reindexes all patient files on every app launch. Measured in the iOS 27.0 Simulator on 2026-10-07: 291 chunks in 55 s and 568 chunks in 71 s; it has not been timed on a device. A record import re-indexes only the imported patient (47 chunks in 7.2 s in the same simulator). A production EHR environment will require delta-based background indexing for edits as well.
+1. **Index Sync at Launch:** `ClinicalRAGService.syncIndex` chunks each chart, compares the chunks with what the saved index holds, and embeds only text that is new (`ClinicalIndexSync.plan`). Measured in the iOS 27.0 Simulator on 2026-10-07: 1.07 s for an unchanged 615-chunk index, against 118.7 s for the full rebuild it replaced; a record import re-indexes only the imported patient (47 chunks in 7.2 s). On an iPhone 16 Pro Max the first index of the demo panel (291 chunks) took 3.2 s and a later launch 0.3 s. An edit made in the app is not indexed until the next launch, import or "Reindex".
 2. **Import-Only FHIR Pipeline:** The FHIR layer is import-only. Outbound changes (like newly signed notes or updated medication requests) stay local and are not written back to the EHR server, leaving writeback as a future capability.
 3. **Flat Vector Index:** The vector store uses a flat array-based linear scan for cosine similarity. This keeps dependencies minimal, but must be migrated to an HNSW or SQLite-based vector extension for panel databases exceeding 10,000 chunks.
 

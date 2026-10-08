@@ -84,6 +84,32 @@ final class ClinicalVectorStoreTests: XCTestCase {
         XCTAssertEqual(count, 0)
     }
 
+    func testReplacingOnePatientsChunksLeavesTheOthers() async {
+        let first = UUID()
+        let second = UUID()
+        let store = ClinicalVectorStore(persistenceURL: fileURL)
+        await store.insertBatch(
+            chunks: [chunk("old first note", patient: first), chunk("second patient note", patient: second)],
+            embeddings: [[1, 0, 0], [0, 1, 0]]
+        )
+
+        await store.replace(
+            patientId: first,
+            chunks: [chunk("new first note", patient: first), chunk("another first note", patient: first)],
+            embeddings: [[0, 0, 1], [1, 1, 0]]
+        )
+
+        let firstEntries = await store.entries(for: first)
+        XCTAssertEqual(Set(firstEntries.map(\.chunk.content)), ["new first note", "another first note"])
+        XCTAssertEqual(firstEntries.first { $0.chunk.content == "new first note" }?.embedding, [0, 0, 1])
+        let secondEntries = await store.entries(for: second)
+        XCTAssertEqual(secondEntries.map(\.chunk.content), ["second patient note"])
+        let patients = await store.patientIDs
+        XCTAssertEqual(patients, [first, second])
+        let all = await store.allChunks
+        XCTAssertEqual(all.count, 3)
+    }
+
     func testDeletingOnePatientLeavesTheOthers() async {
         let first = UUID()
         let second = UUID()

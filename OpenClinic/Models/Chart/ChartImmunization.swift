@@ -11,6 +11,8 @@ final class ChartImmunization {
     var code: String?
     var status: String
     var occurrenceDate: Date?
+    /// "year" or "month" when the source stated the date no more exactly than that.
+    var occurrencePrecision: String? = nil
     /// True when the record came from the person who gave the vaccine.
     var primarySource: Bool?
     /// True when a later sync no longer returned this row. Kept, and shown as such, instead of deleted.

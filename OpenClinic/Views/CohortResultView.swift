@@ -118,7 +118,7 @@ private struct CohortMatchRow: View {
                     Text(match.mrn)
                         .font(.caption.monospaced())
                         .foregroundStyle(.secondary)
-                    Text("\(match.age)y \(match.sex)")
+                    Text(match.ageIsKnown ? "\(match.age)y \(match.sex)" : "age not recorded, \(match.sex)")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     Spacer(minLength: 0)

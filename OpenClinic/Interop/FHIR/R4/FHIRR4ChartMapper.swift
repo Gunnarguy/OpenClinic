@@ -35,6 +35,8 @@ nonisolated enum FHIRR4ChartMapper {
         if hasUnreadableDate(patientResource) {
             warnings.append("The patient record had a date that could not be read; that date was left empty.")
         }
+        // A date of birth or death stated to the year or month keeps that precision in the chart,
+        // so there is nothing to warn about.
         var chart = ImportedChart(
             patient: self.patient(patientResource, source: source(for: patient, serverBase: serverBase))
         )
@@ -151,15 +153,12 @@ nonisolated enum FHIRR4ChartMapper {
         appointment(try decoded(raw, calendar: calendar), source: source(for: raw, serverBase: serverBase))
     }
 
-    /// Where a value came from. The server base loses any trailing slash so that
-    /// `qualifiedID` is the same however the address was typed.
+    /// Where a value came from. The server base is put in its one spelling (lower-case scheme and
+    /// host, no default port, no trailing slash) so that `qualifiedID` is the same however the
+    /// address was typed.
     static func source(for raw: FHIRR4RawResource, serverBase: String) -> ImportedSource {
-        var base = serverBase.trimmingCharacters(in: .whitespacesAndNewlines)
-        while base.hasSuffix("/") {
-            base.removeLast()
-        }
-        return ImportedSource(
-            serverBase: base,
+        ImportedSource(
+            serverBase: FHIRR4Client.normalizedBase(serverBase),
             resourceType: raw.resourceType,
             resourceID: raw.id,
             versionID: raw.versionID,
@@ -201,7 +200,11 @@ nonisolated enum FHIRR4ChartMapper {
             state: FHIRR4Text.nonEmpty(address?.state),
             postalCode: FHIRR4Text.nonEmpty(address?.postalCode),
             language: patient.communication?.first?.language?.bestDisplay,
-            maritalStatus: patient.maritalStatus?.bestDisplay
+            maritalStatus: patient.maritalStatus?.bestDisplay,
+            // A date of death that cannot be read still says the patient died.
+            isDeceased: patient.deceasedBoolean == true || patient.deceasedDateTime != nil,
+            birthDatePrecision: partialPrecision(patient.birthDate),
+            deceasedPrecision: partialPrecision(patient.deceasedDateTime)
         )
     }
 
@@ -218,7 +221,13 @@ nonisolated enum FHIRR4ChartMapper {
     /// government number. Government numbers are dropped before anything is chosen, so
     /// one can never be picked, even when a server labels it a record number.
     private static func medicalRecordNumber(in identifiers: [FHIRR4Identifier]) -> (value: String, system: String?)? {
-        let usable = identifiers.filter { FHIRR4Text.nonEmpty($0.value) != nil && !isGovernmentNumber($0) }
+        // A number is a government number wherever it appears: an entry that calls the same value a
+        // record number is left out too.
+        let governmentValues = Set(identifiers.filter(isGovernmentNumber).compactMap { FHIRR4Text.nonEmpty($0.value) })
+        let usable = identifiers.filter { identifier in
+            guard let value = FHIRR4Text.nonEmpty(identifier.value) else { return false }
+            return !isGovernmentNumber(identifier) && !governmentValues.contains(value)
+        }
         guard let chosen = usable.first(where: isMedicalRecordNumber) ?? usable.first,
               let value = FHIRR4Text.nonEmpty(chosen.value) else {
             return nil
@@ -234,23 +243,152 @@ nonisolated enum FHIRR4ChartMapper {
         return typedMR || identifier.type?.text?.lowercased() == "medical record number"
     }
 
-    /// Social Security, driver's license and passport numbers, recognized by system, by
-    /// v2-0203 type code (SS, DL, PPN) or by the type's wording.
     private static func isGovernmentNumber(_ identifier: FHIRR4Identifier) -> Bool {
-        let system = identifier.system?.lowercased() ?? ""
+        isGovernmentNumber(
+            system: identifier.system,
+            typeCodes: (identifier.type?.coding ?? []).compactMap(\.code),
+            typeWording: [identifier.type?.text] + (identifier.type?.coding ?? []).map(\.display)
+        )
+    }
+
+    /// v2-0203 identifier types that are never a record number and never stored: Social Security,
+    /// driver's license, passport, Medicare, Medicaid, tax, national individual, social beneficiary
+    /// and bank card numbers (terminology.hl7.org CodeSystem v2-0203, version 5.0.0, read 2026-10-07).
+    static let governmentNumberTypeCodes: Set<String> = ["SS", "DL", "PPN", "MC", "MA", "TAX", "NI", "SB", "BC"]
+
+    /// A government or financial number, recognized by its system, its v2-0203 type code or the
+    /// type's wording.
+    static func isGovernmentNumber(system: String?, typeCodes: [String], typeWording: [String?]) -> Bool {
+        let system = system?.lowercased() ?? ""
         if system == "http://hl7.org/fhir/sid/us-ssn"
+            || system == "http://hl7.org/fhir/sid/us-medicare"
+            || system == "http://hl7.org/fhir/sid/us-mbi"
             || system == "urn:oid:2.16.840.1.113883.4.1"
             || system.hasPrefix("urn:oid:2.16.840.1.113883.4.3.")
             || system.contains("passport") {
             return true
         }
-        let codes: Set<String> = ["SS", "DL", "PPN"]
-        if identifier.type?.coding?.contains(where: { codes.contains($0.code ?? "") }) ?? false {
+        if typeCodes.contains(where: governmentNumberTypeCodes.contains) {
             return true
         }
-        let wording = ([identifier.type?.text] + (identifier.type?.coding ?? []).map(\.display))
-            .compactMap { $0?.lowercased() }
-        return wording.contains { $0.contains("social security") || $0.contains("driver") || $0.contains("passport") }
+        let phrases = ["social security", "driver", "passport", "medicare", "medicaid", "tax id", "taxpayer"]
+        return typeWording.compactMap { $0?.lowercased() }.contains { wording in
+            phrases.contains { wording.contains($0) }
+        }
+    }
+
+    /// What replaces a government number's value in the stored copy of a Patient resource.
+    static let removedIdentifierValue = "[removed before storage]"
+
+    /// The resource as it is stored. A Patient keeps every identifier's system and type, and loses
+    /// the value of each government number, wherever the identifier sits in the resource and
+    /// wherever else the number is repeated; every other resource is returned as it came.
+    static func resourceForStorage(_ raw: FHIRR4RawResource) -> FHIRR4RawResource {
+        guard raw.resourceType == "Patient",
+              let object = (try? JSONSerialization.jsonObject(with: raw.json)) as? [String: Any] else {
+            return raw
+        }
+        let numbers = governmentNumbers(in: object)
+        guard !numbers.isEmpty else { return raw }
+        let scrubbed = (replacing(numbers, in: object, key: nil) as? [String: Any]) ?? object
+        return (try? FHIRR4RawResource(jsonObject: scrubbed)) ?? raw
+    }
+
+    /// The values of the government numbers a Patient resource states, as the server wrote them.
+    static func governmentNumberValues(in raw: FHIRR4RawResource) -> Set<String> {
+        guard raw.resourceType == "Patient",
+              let object = (try? JSONSerialization.jsonObject(with: raw.json)) as? [String: Any] else {
+            return []
+        }
+        return governmentNumbers(in: object)
+    }
+
+    /// Walks the whole resource: an identifier can sit in a contained resource or under `link`.
+    private static func governmentNumbers(in value: Any) -> Set<String> {
+        var found = Set<String>()
+        if let object = value as? [String: Any] {
+            if let number = object["value"] as? String, number != removedIdentifierValue, isGovernmentIdentifier(object) {
+                found.insert(number)
+            }
+            for member in object.values {
+                found.formUnion(governmentNumbers(in: member))
+            }
+        } else if let list = value as? [Any] {
+            for member in list {
+                found.formUnion(governmentNumbers(in: member))
+            }
+        }
+        return found
+    }
+
+    /// True for a JSON object that is an identifier of a government or financial number.
+    private static func isGovernmentIdentifier(_ object: [String: Any]) -> Bool {
+        let type = object["type"] as? [String: Any]
+        let codings = (type?["coding"] as? [Any] ?? []).compactMap { $0 as? [String: Any] }
+        return isGovernmentNumber(
+            system: object["system"] as? String,
+            typeCodes: codings.compactMap { $0["code"] as? String },
+            typeWording: [type?["text"] as? String] + codings.map { $0["display"] as? String }
+        )
+    }
+
+    /// The resource with the given numbers taken out: a `value` or `valueString` that is exactly one
+    /// of them, and any occurrence in the text of a narrative (`div`). No other field is rewritten,
+    /// so an id, a date or a reference that happens to contain the digits stays whole.
+    private static func replacing(_ numbers: Set<String>, in value: Any, key: String?) -> Any {
+        if let text = value as? String {
+            if key == "value" || key == "valueString" {
+                return numbers.contains(text) ? removedIdentifierValue : text
+            }
+            return key == "div" ? removing(numbers, fromNarrative: text) : text
+        }
+        if let list = value as? [Any] {
+            return list.map { replacing(numbers, in: $0, key: key) }
+        }
+        if let object = value as? [String: Any] {
+            var copy: [String: Any] = [:]
+            for (name, member) in object {
+                copy[name] = replacing(numbers, in: member, key: name)
+            }
+            return copy
+        }
+        return value
+    }
+
+    /// A narrative with the numbers removed from its text. Markup is left alone (an `xmlns` holds
+    /// "1999"), a number is matched only where no letter or digit touches it, and a number shorter
+    /// than four characters is left in place because removing it would damage unrelated text.
+    private static func removing(_ numbers: Set<String>, fromNarrative div: String) -> String {
+        // Longest first, so a number that contains another is removed whole.
+        let ordered = numbers.filter { $0.count >= 4 }.sorted { ($0.count, $0) > ($1.count, $1) }
+        guard !ordered.isEmpty else { return div }
+        let replacement = NSRegularExpression.escapedTemplate(for: removedIdentifierValue)
+        func cleaned(_ text: String) -> String {
+            var result = text
+            for number in ordered where result.contains(number) {
+                let pattern = "(?<![A-Za-z0-9])" + NSRegularExpression.escapedPattern(for: number) + "(?![A-Za-z0-9])"
+                result = result.replacingOccurrences(of: pattern, with: replacement, options: .regularExpression)
+            }
+            return result
+        }
+
+        var result = ""
+        var text = ""
+        var insideTag = false
+        for character in div {
+            if character == "<" {
+                result += cleaned(text)
+                text = ""
+                insideTag = true
+                result.append(character)
+            } else if insideTag {
+                if character == ">" { insideTag = false }
+                result.append(character)
+            } else {
+                text.append(character)
+            }
+        }
+        return result + cleaned(text)
     }
 
     // MARK: - Condition
@@ -265,7 +403,9 @@ nonisolated enum FHIRR4ChartMapper {
             onset: condition.onsetDateTime?.date,
             abatement: condition.abatementDateTime?.date,
             recorded: condition.recordedDate?.date,
-            encounterReference: condition.encounter?.relativeReference
+            encounterReference: condition.encounter?.relativeReference,
+            onsetPrecision: partialPrecision(condition.onsetDateTime),
+            abatementPrecision: partialPrecision(condition.abatementDateTime)
         )
     }
 
@@ -420,7 +560,8 @@ nonisolated enum FHIRR4ChartMapper {
             performedStart: procedure.performedDateTime?.date ?? procedure.performedPeriod?.start?.date,
             performedEnd: procedure.performedPeriod?.end?.date,
             reason: procedure.reasonCode?.first?.bestDisplay ?? display(procedure.reasonReference?.first),
-            encounterReference: procedure.encounter?.relativeReference
+            encounterReference: procedure.encounter?.relativeReference,
+            performedPrecision: partialPrecision(procedure.performedDateTime ?? procedure.performedPeriod?.start)
         )
     }
 
@@ -432,7 +573,8 @@ nonisolated enum FHIRR4ChartMapper {
             vaccine: code(immunization.vaccineCode, fallback: "Immunization"),
             status: FHIRR4Text.nonEmpty(immunization.status) ?? "unknown",
             occurrence: immunization.occurrenceDateTime?.date,
-            primarySource: immunization.primarySource
+            primarySource: immunization.primarySource,
+            occurrencePrecision: partialPrecision(immunization.occurrenceDateTime)
         )
     }
 
@@ -658,6 +800,7 @@ nonisolated enum FHIRR4ChartMapper {
         var enteredInError = 0
         var unreadable = 0
         var unreadableDates = 0
+        var partialDates = 0
 
         func warnings(for type: String) -> [String] {
             var lines: [String] = []
@@ -669,6 +812,9 @@ nonisolated enum FHIRR4ChartMapper {
             }
             if unreadableDates > 0 {
                 lines.append("\(Self.counted(unreadableDates, type)) had a date that could not be read; that date was left empty.")
+            }
+            if partialDates > 0 {
+                lines.append("\(Self.counted(partialDates, type)) had a date given only to the year or month; the chart shows the first day of that period.")
             }
             return lines
         }
@@ -704,6 +850,11 @@ nonisolated enum FHIRR4ChartMapper {
             if hasUnreadableDate(resource) {
                 tally.unreadableDates += 1
             }
+            // Some dates carry their precision to the chart (a problem's onset, a procedure's
+            // start). The rest are stored as a full date, so the import says so.
+            if resource.datesStoredWhole.contains(where: { partialPrecision($0) != nil }) {
+                tally.partialDates += 1
+            }
             values.append(map(resource, source(for: raw, serverBase: serverBase)))
         }
         warnings.append(contentsOf: tally.warnings(for: type.resourceType))
@@ -727,6 +878,15 @@ nonisolated enum FHIRR4ChartMapper {
 
     private static func hasUnreadableDate(_ resource: some FHIRR4MappedResource) -> Bool {
         resource.dateFields.contains { $0?.isUnreadable == true }
+    }
+
+    /// Year or month when the server stated no more than that; nil for a full date or none.
+    private static func partialPrecision(_ value: FHIRR4LenientDateTime?) -> ImportedDatePrecision? {
+        switch value?.value?.precision {
+        case .year: return .year
+        case .month: return .month
+        default: return nil
+        }
     }
 
     /// Newest first, undated last, ties by resource id, so the same input always gives the same order.

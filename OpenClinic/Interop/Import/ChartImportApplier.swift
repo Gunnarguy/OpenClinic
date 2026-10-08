@@ -104,6 +104,8 @@ struct ChartImportApplier {
                 row.category = item.category
                 row.onsetDate = item.onset
                 row.abatementDate = item.abatement
+                row.onsetPrecision = item.onsetPrecision?.rawValue
+                row.abatementPrecision = item.abatementPrecision?.rawValue
                 row.recordedDate = item.recorded
                 row.encounterReference = item.encounterReference
                 stamp(row, source: item.source, patient: patient)
@@ -209,6 +211,7 @@ struct ChartImportApplier {
                 row.status = item.status
                 row.performedStart = item.performedStart
                 row.performedEnd = item.performedEnd
+                row.performedPrecision = item.performedPrecision?.rawValue
                 row.reason = item.reason
                 row.encounterReference = item.encounterReference
                 stamp(row, source: item.source, patient: patient)
@@ -225,6 +228,7 @@ struct ChartImportApplier {
                 row.code = item.vaccine.code
                 row.status = item.status
                 row.occurrenceDate = item.occurrence
+                row.occurrencePrecision = item.occurrencePrecision?.rawValue
                 row.primarySource = item.primarySource
                 stamp(row, source: item.source, patient: patient)
             }
@@ -347,7 +351,7 @@ struct ChartImportApplier {
         if let date = imported.birthDate {
             birthDate = date
         } else {
-            birthDate = matches.first?.dateOfBirth ?? Date(timeIntervalSince1970: 0)
+            birthDate = matches.first?.dateOfBirth ?? Self.placeholderBirthDate
             warnings.append("The source has no date of birth for this patient.")
         }
 
@@ -375,6 +379,22 @@ struct ChartImportApplier {
         patient.gender = imported.sex
         patient.medicalRecordNumberSystem = imported.mrnSystem
         patient.deceasedDate = imported.deceasedDate
+        patient.isDeceased = imported.isDeceased
+        if imported.birthDate != nil {
+            patient.dateOfBirthPrecision = imported.birthDatePrecision?.rawValue
+        } else if created || patient.dateOfBirth == Self.placeholderBirthDate {
+            // No date of birth at the source: the chart says so, and shows no date and no age.
+            patient.dateOfBirthPrecision = ChartDateText.unknown
+        }
+        patient.deceasedDatePrecision = imported.deceasedPrecision?.rawValue
+        // The record number follows the source like every other value. A chart made before
+        // government numbers were left out could hold one as its record number.
+        if !created {
+            let wanted = imported.mrn.isEmpty ? resourceID : imported.mrn
+            if patient.medicalRecordNumber != wanted, !patient.medicalRecordNumber.hasPrefix("\(wanted) (") {
+                patient.medicalRecordNumber = uniqueMRN(imported, among: allPatients.filter { $0 !== patient })
+            }
+        }
         patient.phone = imported.phone
         patient.addressLine = imported.addressLine
         patient.city = imported.city
@@ -393,10 +413,23 @@ struct ChartImportApplier {
     /// The MRN is unique in the local store. Two servers can issue the same number, so a
     /// colliding one is qualified with the resource id instead of overwriting a chart.
     private func uniqueMRN(_ imported: ImportedPatient, among patients: [PatientProfile]) -> String {
-        let candidate = imported.mrn.isEmpty ? imported.source.resourceID : imported.mrn
-        guard patients.contains(where: { $0.medicalRecordNumber == candidate }) else { return candidate }
-        return "\(candidate) (\(imported.source.resourceID.prefix(8)))"
+        Self.uniqueRecordNumber(
+            imported.mrn.isEmpty ? imported.source.resourceID : imported.mrn,
+            resourceID: imported.source.resourceID,
+            taken: Set(patients.map(\.medicalRecordNumber)))
     }
+
+    private static func uniqueRecordNumber(_ candidate: String, resourceID: String, taken: Set<String>) -> String {
+        guard taken.contains(candidate) else { return candidate }
+        let qualified = "\(candidate) (\(resourceID.prefix(8)))"
+        guard taken.contains(qualified) else { return qualified }
+        var count = 2
+        while taken.contains("\(qualified) \(count)") { count += 1 }
+        return "\(qualified) \(count)"
+    }
+
+    /// What `dateOfBirth` holds when the source gave none. It is never shown: see `hasKnownBirthDate`.
+    private static let placeholderBirthDate = Date(timeIntervalSince1970: 0)
 
     /// Recomputes the patient-level fields other views read from the rows just synced.
     private func refreshDerivedFields(of patient: PatientProfile, allergiesWereRead: Bool) {
@@ -446,15 +479,23 @@ struct ChartImportApplier {
         make: (Item) -> Row,
         update: (Row, Item) -> Void
     ) -> ChartImportSummary.Line {
+        // Keyed by the id with its server address in one spelling, so a row stored when the address
+        // was typed another way ("HTTPS://Host:443/fhir") is found again and not imported twice.
         var existingByID: [String: Row] = [:]
-        for row in existing { existingByID[row.qualifiedID] = row }
+        for row in existing {
+            let key = Self.respelled(row.qualifiedID)
+            // An earlier version that imported one server under two spellings left two rows for one
+            // resource, the older marked as removed. The current one is the match; the other stays as it is.
+            if let held = existingByID[key], !held.isRemovedAtSource || row.isRemovedAtSource { continue }
+            existingByID[key] = row
+        }
 
         var created = 0
         var updated = 0
         var seen = Set<String>()
 
         for item in incoming {
-            let key = id(item)
+            let key = Self.respelled(id(item))
             guard seen.insert(key).inserted else { continue }
             if let row = existingByID[key] {
                 update(row, item)
@@ -470,7 +511,7 @@ struct ChartImportApplier {
 
         var removed = 0
         if canMarkRemoved {
-            for row in existing where !seen.contains(row.qualifiedID) && !row.isRemovedAtSource {
+            for row in existing where !seen.contains(Self.respelled(row.qualifiedID)) && !row.isRemovedAtSource {
                 row.isRemovedAtSource = true
                 row.sourceLastSyncedAt = now
                 removed += 1
@@ -500,24 +541,31 @@ struct ChartImportApplier {
         patientResourceID: String,
         completeTypes: Set<String>
     ) -> Int {
+        // An earlier version that imported one server under two spellings left two stored copies of
+        // each resource. Both are refreshed, so a row finds a current record whichever id it holds.
         let existing = (try? context.fetch(FetchDescriptor<FHIRResourceRecord>())) ?? []
-        var existingByID: [String: FHIRResourceRecord] = [:]
-        for record in existing where record.serverBase == serverBase && record.patientResourceID == patientResourceID {
-            existingByID[record.qualifiedID] = record
+        var existingByKey: [String: [FHIRResourceRecord]] = [:]
+        for record in existing where Self.sameServer(record.serverBase, serverBase) && record.patientResourceID == patientResourceID {
+            existingByKey[Self.respelled(record.qualifiedID), default: []].append(record)
         }
 
         var seen = Set<String>()
-        for resource in resources {
+        for received in resources {
+            // Stored as the server sent it, except that a Patient's government numbers lose their values.
+            let resource = FHIRR4ChartMapper.resourceForStorage(received)
             let qualifiedID = "\(serverBase)/\(resource.resourceType)/\(resource.id)"
-            guard seen.insert(qualifiedID).inserted else { continue }
-            if let record = existingByID[qualifiedID] {
-                if record.json != resource.json {
-                    record.json = resource.json
+            let key = Self.respelled(qualifiedID)
+            guard seen.insert(key).inserted else { continue }
+            if let records = existingByKey[key] {
+                for record in records {
+                    if record.json != resource.json {
+                        record.json = resource.json
+                    }
+                    record.versionID = resource.versionID
+                    record.lastUpdated = resource.lastUpdated
+                    record.fetchedAt = now
+                    record.isRemovedAtSource = false
                 }
-                record.versionID = resource.versionID
-                record.lastUpdated = resource.lastUpdated
-                record.fetchedAt = now
-                record.isRemovedAtSource = false
             } else {
                 context.insert(FHIRResourceRecord(
                     qualifiedID: qualifiedID,
@@ -533,10 +581,77 @@ struct ChartImportApplier {
             }
         }
 
-        for (qualifiedID, record) in existingByID where !seen.contains(qualifiedID) && completeTypes.contains(record.resourceType) {
-            record.isRemovedAtSource = true
+        for (key, records) in existingByKey where !seen.contains(key) {
+            for record in records where completeTypes.contains(record.resourceType) {
+                record.isRemovedAtSource = true
+            }
         }
         return seen.count
+    }
+
+    // MARK: - Records stored by an earlier version
+
+    /// Brings charts an earlier version imported up to what an import stores now:
+    /// a stored Patient resource loses its government numbers, a chart whose record number was one
+    /// of them gets the number an import would choose, and a chart whose source gave no date of birth
+    /// stops showing the placeholder date as one.
+    ///
+    /// Returns how many changes were made, or nil when the store could not be read or saved (the
+    /// caller then tries again at the next launch). Each stored Patient resource is parsed, so the
+    /// app runs this once and not at every launch.
+    @discardableResult
+    static func repairChartsFromEarlierVersions(in context: ModelContext) -> Int? {
+        let patientType = "Patient"
+        let descriptor = FetchDescriptor<FHIRResourceRecord>(predicate: #Predicate { $0.resourceType == patientType })
+        guard let records = try? context.fetch(descriptor) else { return nil }
+        guard !records.isEmpty else { return 0 }
+        guard let all = try? context.fetch(FetchDescriptor<PatientProfile>()) else { return nil }
+        let smartKind = ClinicalSourceKind.smartFHIR.rawValue
+
+        var changed = 0
+        for record in records {
+            guard let raw = try? FHIRR4RawResource(data: record.json) else { continue }
+            let patient = all.first {
+                $0.sourceKind == smartKind && $0.sourceRecordIdentifier == record.resourceID
+                    && sameServer($0.sourceSystemName, record.serverBase)
+            }
+
+            if let patient, patient.dateOfBirthPrecision == nil, patient.dateOfBirth == placeholderBirthDate,
+               !statesABirthDate(raw) {
+                patient.dateOfBirthPrecision = ChartDateText.unknown
+                changed += 1
+            }
+
+            let numbers = FHIRR4ChartMapper.governmentNumberValues(in: raw)
+            guard !numbers.isEmpty else { continue }
+            if let patient,
+               numbers.contains(where: { patient.medicalRecordNumber == $0 || patient.medicalRecordNumber.hasPrefix("\($0) (") }),
+               let imported = try? FHIRR4ChartMapper.patient(raw, serverBase: record.serverBase) {
+                patient.medicalRecordNumber = uniqueRecordNumber(
+                    imported.mrn.isEmpty ? record.resourceID : imported.mrn,
+                    resourceID: record.resourceID,
+                    taken: Set(all.filter { $0 !== patient }.map(\.medicalRecordNumber)))
+                patient.medicalRecordNumberSystem = imported.mrnSystem
+            }
+            record.json = FHIRR4ChartMapper.resourceForStorage(raw).json
+            changed += 1
+        }
+        if changed > 0 {
+            do {
+                try context.save()
+            } catch {
+                return nil
+            }
+        }
+        return changed
+    }
+
+    private static func statesABirthDate(_ raw: FHIRR4RawResource) -> Bool {
+        guard let object = (try? JSONSerialization.jsonObject(with: raw.json)) as? [String: Any],
+              let text = object["birthDate"] as? String else {
+            return false
+        }
+        return !text.trimmingCharacters(in: .whitespaces).isEmpty
     }
 
     // MARK: - Small conversions
@@ -545,12 +660,19 @@ struct ChartImportApplier {
 
     private static func sameServer(_ stored: String?, _ serverBase: String) -> Bool {
         guard let stored else { return false }
-        func normalized(_ text: String) -> String {
-            var value = text.lowercased()
-            while value.hasSuffix("/") { value.removeLast() }
-            return value
-        }
-        return normalized(stored) == normalized(serverBase)
+        // One spelling of the address (scheme and host in lower case, no default port, no trailing
+        // slash), and the path compared without regard to case as earlier imports did.
+        return FHIRR4Client.normalizedBase(stored).lowercased() == FHIRR4Client.normalizedBase(serverBase).lowercased()
+    }
+
+    /// `<server base>/<type>/<id>` as a key for matching: the server base in the client's one
+    /// spelling and in lower case, as `sameServer` compares it. A FHIR id holds no slash, so the last
+    /// two parts are always the type and the id. Only used to find a row; stored ids are not rewritten.
+    static func respelled(_ qualifiedID: String) -> String {
+        let parts = qualifiedID.split(separator: "/", omittingEmptySubsequences: false)
+        guard parts.count >= 3 else { return qualifiedID }
+        let base = parts.dropLast(2).joined(separator: "/")
+        return "\(FHIRR4Client.normalizedBase(base).lowercased())/\(parts[parts.count - 2])/\(parts[parts.count - 1])"
     }
 
     private static func minutes(from start: Date?, to end: Date?) -> Int? {

@@ -39,6 +39,8 @@ nonisolated struct CohortMatch: Sendable, Identifiable {
     let age: Int
     let sex: String
     let evidence: [CohortEvidence]
+    /// False when the source gave no date of birth; `age` is then not shown.
+    var ageIsKnown = true
 
     var id: UUID { patientID }
 }
@@ -122,13 +124,13 @@ nonisolated enum CohortEngine {
         switch criterion {
         case .diagnosis(let concept):
             return patient.diagnoses
-                .filter(concept.matches)
+                .filter { $0.namesADiagnosis && concept.matches($0) }
                 .sorted { $0.date > $1.date }
                 .map { diagnosisEvidence($0, detailSuffix: nil) }
 
         case .diagnosisNamed(let term):
             return patient.diagnoses
-                .filter { PanelVocabulary.diagnosisName($0.name).contains(term) }
+                .filter { $0.namesADiagnosis && PanelVocabulary.diagnosisName($0.name).contains(term) }
                 .sorted { $0.date > $1.date }
                 .map { diagnosisEvidence($0, detailSuffix: nil) }
 
@@ -173,7 +175,7 @@ nonisolated enum CohortEngine {
                 .map { CohortEvidence(kind: .appointment, sourceID: $0.appointmentID, label: $0.reason, detail: $0.status, date: $0.time) }
 
         case .age(let comparison, let bound):
-            guard comparison.holds(patient.age, bound) else { return [] }
+            guard patient.ageIsKnown, comparison.holds(patient.age, bound) else { return [] }
             return [CohortEvidence(kind: .demographic, sourceID: patient.mrn, label: "Age \(patient.age)", detail: nil, date: nil)]
 
         case .sex(let sex):
@@ -191,7 +193,7 @@ nonisolated enum CohortEngine {
     // MARK: Helpers
 
     private static func match(_ patient: PatientFacts, evidence: [CohortEvidence]) -> CohortMatch {
-        CohortMatch(patientID: patient.id, mrn: patient.mrn, name: patient.name, age: patient.age, sex: patient.sex, evidence: evidence)
+        CohortMatch(patientID: patient.id, mrn: patient.mrn, name: patient.name, age: patient.age, sex: patient.sex, evidence: evidence, ageIsKnown: patient.ageIsKnown)
     }
 
     private static func diagnosisEvidence(_ diagnosis: DiagnosisFact, detailSuffix: String?, kind: CohortEvidence.Kind = .diagnosis) -> CohortEvidence {

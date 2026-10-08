@@ -60,4 +60,26 @@ final class ClinicalFTSServiceTests: XCTestCase {
         results = await ftsService.search(query: "a") // tokens <= 2 chars are ignored
         XCTAssertEqual(results.count, 0)
     }
+
+    /// The launch sync compares these ids with the vector store's to decide on a repair.
+    func testChunkIDsAreTheIDsOfTheRowsSearchReads() async {
+        let patientId = UUID()
+        func chunk(_ text: String) -> ClinicalChunk {
+            ClinicalChunk(
+                patientId: patientId, content: text, contextualPrefix: "",
+                metadata: ChunkMetadata(
+                    chunkIndex: 0, sourceType: .clinicalRecord, sectionTitle: "History", dateRecorded: Date(),
+                    clinicalCategory: .chiefComplaint, patientName: "John Doe", wordCount: 3))
+        }
+        let first = chunk("asthma since childhood")
+        let second = chunk("hypertension on lisinopril")
+        await ftsService.insertBatch(chunks: [first, second])
+
+        let ids = await ftsService.chunkIDs
+        XCTAssertEqual(ids, [first.id.uuidString, second.id.uuidString])
+
+        await ftsService.deleteByPatient(patientId)
+        let afterDelete = await ftsService.chunkIDs
+        XCTAssertTrue(afterDelete.isEmpty)
+    }
 }
