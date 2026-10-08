@@ -1,0 +1,93 @@
+{
+ "resourceType": "Bundle",
+ "type": "searchset",
+ "total": 2,
+ "link": [
+  {
+   "relation": "self",
+   "url": "https://r4.smarthealthit.org/DocumentReference?patient=b8c71d92-a06b-4044-b053-64664e82f851"
+  }
+ ],
+ "entry": [
+  {
+   "fullUrl": "https://r4.smarthealthit.org/DocumentReference/openclinic-test-note-1",
+   "resource": {
+    "resourceType": "DocumentReference",
+    "id": "openclinic-test-note-1",
+    "meta": {
+     "versionId": "1",
+     "lastUpdated": "2026-10-01T09:00:00.000-04:00"
+    },
+    "status": "current",
+    "type": {
+     "coding": [
+      {
+       "system": "http://loinc.org",
+       "code": "11506-3",
+       "display": "Progress note"
+      }
+     ],
+     "text": "Progress note"
+    },
+    "subject": {
+     "reference": "Patient/b8c71d92-a06b-4044-b053-64664e82f851"
+    },
+    "date": "2026-09-30T14:00:00Z",
+    "author": [
+     {
+      "display": "Dr. Test Author"
+     }
+    ],
+    "description": "Dermatology progress note",
+    "content": [
+     {
+      "attachment": {
+       "contentType": "text/plain",
+       "data": "RGVybWF0b2xvZ3kgcHJvZ3Jlc3Mgbm90ZS4gU3ludGhldGljIHRleHQgd3JpdHRlbiBmb3IgT3BlbkNsaW5pYyB0ZXN0cy4KU3ViamVjdGl2ZTogaXRjaGluZyBvZiBib3RoIGZvcmVhcm1zIGZvciB0d28gd2Vla3MsIHdvcnNlIGF0IG5pZ2h0LgpPYmplY3RpdmU6IGVyeXRoZW1hdG91cyBsaWNoZW5pZmllZCBwbGFxdWVzIG9uIGJvdGggYW50ZWN1Yml0YWwgZm9zc2FlLgpBc3Nlc3NtZW50OiBhdG9waWMgZGVybWF0aXRpcywgbW9kZXJhdGUgZmxhcmUuClBsYW46IHRyaWFtY2lub2xvbmUgMC4xJSBjcmVhbSB0d2ljZSBkYWlseSBmb3IgMTQgZGF5cywgcmVjaGVjayBpbiA0IHdlZWtzLg=="
+      }
+     }
+    ]
+   }
+  },
+  {
+   "fullUrl": "https://r4.smarthealthit.org/DocumentReference/openclinic-test-note-2",
+   "resource": {
+    "resourceType": "DocumentReference",
+    "id": "openclinic-test-note-2",
+    "meta": {
+     "versionId": "1",
+     "lastUpdated": "2026-10-01T09:00:00.000-04:00"
+    },
+    "status": "current",
+    "type": {
+     "coding": [
+      {
+       "system": "http://loinc.org",
+       "code": "11506-3",
+       "display": "Progress note"
+      }
+     ],
+     "text": "Progress note"
+    },
+    "subject": {
+     "reference": "Patient/b8c71d92-a06b-4044-b053-64664e82f851"
+    },
+    "date": "2026-09-30T15:30:00.250Z",
+    "author": [
+     {
+      "display": "Dr. Test Author"
+     }
+    ],
+    "description": "Visit summary",
+    "content": [
+     {
+      "attachment": {
+       "contentType": "text/html",
+       "data": "PGh0bWw+PGJvZHk+PGgxPlZpc2l0IHN1bW1hcnk8L2gxPjxwPlN5bnRoZXRpYyB0ZXh0IHdyaXR0ZW4gZm9yIE9wZW5DbGluaWMgdGVzdHMuPC9wPjxwPkJsb29kIHByZXNzdXJlIDEyOC84MiAmYW1wOyBwdWxzZSA3Mi48L3A+PC9ib2R5PjwvaHRtbD4="
+      }
+     }
+    ]
+   }
+  }
+ ]
+}

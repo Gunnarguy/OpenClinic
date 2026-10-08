@@ -1,0 +1,493 @@
+{
+  "resourceType": "Bundle",
+  "id": "7b23ea34-0d92-4724-a5bb-5d97d289c221",
+  "meta": {
+    "lastUpdated": "2026-10-07T21:30:27.903-04:00"
+  },
+  "type": "searchset",
+  "total": 6,
+  "link": [
+    {
+      "relation": "self",
+      "url": "https://r4.smarthealthit.org/DiagnosticReport?_count=100&patient=b8c71d92-a06b-4044-b053-64664e82f851"
+    }
+  ],
+  "entry": [
+    {
+      "fullUrl": "https://r4.smarthealthit.org/DiagnosticReport/28971f62-2ab9-4409-b844-7267455b3105",
+      "resource": {
+        "resourceType": "DiagnosticReport",
+        "id": "28971f62-2ab9-4409-b844-7267455b3105",
+        "meta": {
+          "versionId": "4",
+          "lastUpdated": "2021-04-06T03:14:18.637-04:00",
+          "tag": [
+            {
+              "system": "https://smarthealthit.org/tags",
+              "code": "synthea-5-2019"
+            }
+          ]
+        },
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/v2-0074",
+                "code": "LAB",
+                "display": "Laboratory"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "57698-3",
+              "display": "Lipid Panel"
+            }
+          ],
+          "text": "Lipid Panel"
+        },
+        "subject": {
+          "reference": "Patient/b8c71d92-a06b-4044-b053-64664e82f851"
+        },
+        "encounter": {
+          "reference": "Encounter/97c24cc8-b9be-4b45-8991-03e04e822db1"
+        },
+        "effectiveDateTime": "2016-11-13T00:52:41+00:00",
+        "issued": "2016-11-13T00:52:41.832+00:00",
+        "result": [
+          {
+            "reference": "Observation/81b17262-07d8-4847-8815-137cec82b93b",
+            "display": "Total Cholesterol"
+          },
+          {
+            "reference": "Observation/f20ab29d-204a-4eff-8f1b-b19d9084788b",
+            "display": "Triglycerides"
+          },
+          {
+            "reference": "Observation/a61138ad-26ba-41b8-94cc-13d0cff1543a",
+            "display": "Low Density Lipoprotein Cholesterol"
+          },
+          {
+            "reference": "Observation/3a1fd950-7840-47eb-915d-465adf0df871",
+            "display": "High Density Lipoprotein Cholesterol"
+          }
+        ]
+      },
+      "search": {
+        "mode": "match"
+      },
+      "response": {
+        "status": "200 OK",
+        "etag": "W/\"4\""
+      }
+    },
+    {
+      "fullUrl": "https://r4.smarthealthit.org/DiagnosticReport/952e51bc-96d7-4cbb-bd11-85877f4eff46",
+      "resource": {
+        "resourceType": "DiagnosticReport",
+        "id": "952e51bc-96d7-4cbb-bd11-85877f4eff46",
+        "meta": {
+          "versionId": "4",
+          "lastUpdated": "2021-04-06T03:12:52.629-04:00",
+          "tag": [
+            {
+              "system": "https://smarthealthit.org/tags",
+              "code": "synthea-5-2019"
+            }
+          ]
+        },
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/v2-0074",
+                "code": "LAB",
+                "display": "Laboratory"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "58410-2",
+              "display": "Complete blood count (hemogram) panel - Blood by Automated count"
+            }
+          ],
+          "text": "Complete blood count (hemogram) panel - Blood by Automated count"
+        },
+        "subject": {
+          "reference": "Patient/b8c71d92-a06b-4044-b053-64664e82f851"
+        },
+        "encounter": {
+          "reference": "Encounter/9abc2707-4479-4f43-bada-c774804b5245"
+        },
+        "effectiveDateTime": "2012-11-04T00:52:41+00:00",
+        "issued": "2012-11-04T00:52:41.832+00:00",
+        "result": [
+          {
+            "reference": "Observation/805db3b9-3d2b-4eac-8347-d710210c5580",
+            "display": "Leukocytes [#/volume] in Blood by Automated count"
+          },
+          {
+            "reference": "Observation/c2b2d821-366c-4834-8ed7-5c6aba6d223f",
+            "display": "Erythrocytes [#/volume] in Blood by Automated count"
+          },
+          {
+            "reference": "Observation/a563e22a-3288-4ece-b91d-ee690a7ca567",
+            "display": "Hemoglobin [Mass/volume] in Blood"
+          },
+          {
+            "reference": "Observation/7e4e5cc4-b072-4b39-b30d-e309a276c713",
+            "display": "Hematocrit [Volume Fraction] of Blood by Automated count"
+          },
+          {
+            "reference": "Observation/d6035983-9e43-4ec8-ac8e-42de9e1bc744",
+            "display": "MCV [Entitic volume] by Automated count"
+          },
+          {
+            "reference": "Observation/75e659b3-b869-4441-95e3-cc4901004d5a",
+            "display": "MCH [Entitic mass] by Automated count"
+          },
+          {
+            "reference": "Observation/9a21d229-b723-41d1-babb-251e30044d3c",
+            "display": "MCHC [Mass/volume] by Automated count"
+          },
+          {
+            "reference": "Observation/a655aa4b-adc1-4a28-80c8-e3480e2abbdb",
+            "display": "Erythrocyte distribution width [Entitic volume] by Automated count"
+          },
+          {
+            "reference": "Observation/17dd3f90-1add-48f6-8fec-1f086a65fa80",
+            "display": "Platelets [#/volume] in Blood by Automated count"
+          },
+          {
+            "reference": "Observation/7c384004-058a-40e8-9a3e-87bc29750ab9",
+            "display": "Platelet distribution width [Entitic volume] in Blood by Automated count"
+          },
+          {
+            "reference": "Observation/10a8f994-fcde-4362-9f43-a6d3ac5e6082",
+            "display": "Platelet mean volume [Entitic volume] in Blood by Automated count"
+          }
+        ]
+      },
+      "search": {
+        "mode": "match"
+      },
+      "response": {
+        "status": "200 OK",
+        "etag": "W/\"4\""
+      }
+    },
+    {
+      "fullUrl": "https://r4.smarthealthit.org/DiagnosticReport/722dbb3d-0a1f-43b4-97a5-496da23d5c75",
+      "resource": {
+        "resourceType": "DiagnosticReport",
+        "id": "722dbb3d-0a1f-43b4-97a5-496da23d5c75",
+        "meta": {
+          "versionId": "4",
+          "lastUpdated": "2021-04-06T03:12:26.465-04:00",
+          "tag": [
+            {
+              "system": "https://smarthealthit.org/tags",
+              "code": "synthea-5-2019"
+            }
+          ]
+        },
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/v2-0074",
+                "code": "LAB",
+                "display": "Laboratory"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "57698-3",
+              "display": "Lipid Panel"
+            }
+          ],
+          "text": "Lipid Panel"
+        },
+        "subject": {
+          "reference": "Patient/b8c71d92-a06b-4044-b053-64664e82f851"
+        },
+        "encounter": {
+          "reference": "Encounter/81a1e9a0-c0fc-40b5-948e-dbe0de859297"
+        },
+        "effectiveDateTime": "2019-12-01T00:52:41+00:00",
+        "issued": "2019-12-01T00:52:41.832+00:00",
+        "result": [
+          {
+            "reference": "Observation/bb993819-455a-4c7c-b7ce-4276d1e47a8d",
+            "display": "Total Cholesterol"
+          },
+          {
+            "reference": "Observation/605124b3-6155-4080-af27-0679818027c2",
+            "display": "Triglycerides"
+          },
+          {
+            "reference": "Observation/ffae7239-d2cc-4a55-a5fe-0a33d4e88925",
+            "display": "Low Density Lipoprotein Cholesterol"
+          },
+          {
+            "reference": "Observation/c415c04e-0d0c-4643-b15a-60a65dc82d4a",
+            "display": "High Density Lipoprotein Cholesterol"
+          }
+        ]
+      },
+      "search": {
+        "mode": "match"
+      },
+      "response": {
+        "status": "200 OK",
+        "etag": "W/\"4\""
+      }
+    },
+    {
+      "fullUrl": "https://r4.smarthealthit.org/DiagnosticReport/08254765-e2e3-4c18-97b9-24d798fe6837",
+      "resource": {
+        "resourceType": "DiagnosticReport",
+        "id": "08254765-e2e3-4c18-97b9-24d798fe6837",
+        "meta": {
+          "versionId": "4",
+          "lastUpdated": "2021-04-06T03:11:21.163-04:00",
+          "tag": [
+            {
+              "system": "https://smarthealthit.org/tags",
+              "code": "synthea-5-2019"
+            }
+          ]
+        },
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/v2-0074",
+                "code": "LAB",
+                "display": "Laboratory"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "58410-2",
+              "display": "Complete blood count (hemogram) panel - Blood by Automated count"
+            }
+          ],
+          "text": "Complete blood count (hemogram) panel - Blood by Automated count"
+        },
+        "subject": {
+          "reference": "Patient/b8c71d92-a06b-4044-b053-64664e82f851"
+        },
+        "encounter": {
+          "reference": "Encounter/1938e31a-cf3b-4d3e-b44a-988bb99abcb7"
+        },
+        "effectiveDateTime": "2017-11-19T00:52:41+00:00",
+        "issued": "2017-11-19T00:52:41.832+00:00",
+        "result": [
+          {
+            "reference": "Observation/72c2571e-a90a-4364-b13a-6675b72f53c7",
+            "display": "Leukocytes [#/volume] in Blood by Automated count"
+          },
+          {
+            "reference": "Observation/8e2fb5fd-0491-473b-8166-1441289b8533",
+            "display": "Erythrocytes [#/volume] in Blood by Automated count"
+          },
+          {
+            "reference": "Observation/990a857a-436e-417b-859f-5480bbf3618d",
+            "display": "Hemoglobin [Mass/volume] in Blood"
+          },
+          {
+            "reference": "Observation/fcd88295-f5c5-4c72-b9e1-4048bf7e5de3",
+            "display": "Hematocrit [Volume Fraction] of Blood by Automated count"
+          },
+          {
+            "reference": "Observation/c2d38916-d35d-4062-ac6d-9f5331f7bea8",
+            "display": "MCV [Entitic volume] by Automated count"
+          },
+          {
+            "reference": "Observation/f86cc049-af5b-4caf-bec1-d65608334f9d",
+            "display": "MCH [Entitic mass] by Automated count"
+          },
+          {
+            "reference": "Observation/11acb328-dd73-47fc-b7cf-7d69cdc94b27",
+            "display": "MCHC [Mass/volume] by Automated count"
+          },
+          {
+            "reference": "Observation/a1e01de4-c6c1-4443-acfe-8c54a711fb6a",
+            "display": "Erythrocyte distribution width [Entitic volume] by Automated count"
+          },
+          {
+            "reference": "Observation/111880b5-edd5-4309-9198-b33f062fc4b2",
+            "display": "Platelets [#/volume] in Blood by Automated count"
+          },
+          {
+            "reference": "Observation/3c557690-acf7-4824-bdef-a4e51bece756",
+            "display": "Platelet distribution width [Entitic volume] in Blood by Automated count"
+          },
+          {
+            "reference": "Observation/5d26282f-caeb-4530-ab81-852f72cbda36",
+            "display": "Platelet mean volume [Entitic volume] in Blood by Automated count"
+          }
+        ]
+      },
+      "search": {
+        "mode": "match"
+      },
+      "response": {
+        "status": "200 OK",
+        "etag": "W/\"4\""
+      }
+    },
+    {
+      "fullUrl": "https://r4.smarthealthit.org/DiagnosticReport/35b50808-4293-4469-b215-eb79cbf44bf6",
+      "resource": {
+        "resourceType": "DiagnosticReport",
+        "id": "35b50808-4293-4469-b215-eb79cbf44bf6",
+        "meta": {
+          "versionId": "4",
+          "lastUpdated": "2021-04-06T03:10:42.524-04:00",
+          "tag": [
+            {
+              "system": "https://smarthealthit.org/tags",
+              "code": "synthea-5-2019"
+            }
+          ]
+        },
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/v2-0074",
+                "code": "LAB",
+                "display": "Laboratory"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "57698-3",
+              "display": "Lipid Panel"
+            }
+          ],
+          "text": "Lipid Panel"
+        },
+        "subject": {
+          "reference": "Patient/b8c71d92-a06b-4044-b053-64664e82f851"
+        },
+        "encounter": {
+          "reference": "Encounter/9abc2707-4479-4f43-bada-c774804b5245"
+        },
+        "effectiveDateTime": "2012-11-04T00:52:41+00:00",
+        "issued": "2012-11-04T00:52:41.832+00:00",
+        "result": [
+          {
+            "reference": "Observation/98620326-e2ac-4cbd-936c-37d472a69b43",
+            "display": "Total Cholesterol"
+          },
+          {
+            "reference": "Observation/19eed132-00ca-4de5-8458-a81faa06e25e",
+            "display": "Triglycerides"
+          },
+          {
+            "reference": "Observation/e7d9e00c-c8ae-44b0-b4c9-50e7cce13490",
+            "display": "Low Density Lipoprotein Cholesterol"
+          },
+          {
+            "reference": "Observation/e29f1cce-fb87-4f93-929c-c256b013205f",
+            "display": "High Density Lipoprotein Cholesterol"
+          }
+        ]
+      },
+      "search": {
+        "mode": "match"
+      },
+      "response": {
+        "status": "200 OK",
+        "etag": "W/\"4\""
+      }
+    },
+    {
+      "fullUrl": "https://r4.smarthealthit.org/DiagnosticReport/84e6f098-10b5-483f-b61f-5037096bc0c1",
+      "resource": {
+        "resourceType": "DiagnosticReport",
+        "id": "84e6f098-10b5-483f-b61f-5037096bc0c1",
+        "meta": {
+          "versionId": "4",
+          "lastUpdated": "2021-04-06T03:08:38.554-04:00",
+          "tag": [
+            {
+              "system": "https://smarthealthit.org/tags",
+              "code": "synthea-5-2019"
+            }
+          ]
+        },
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/v2-0074",
+                "code": "LAB",
+                "display": "Laboratory"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "69409-1",
+              "display": "U.S. standard certificate of death - 2003 revision"
+            }
+          ],
+          "text": "U.S. standard certificate of death - 2003 revision"
+        },
+        "subject": {
+          "reference": "Patient/b8c71d92-a06b-4044-b053-64664e82f851"
+        },
+        "encounter": {
+          "reference": "Encounter/50dab420-c17f-4202-a736-089964d0b443"
+        },
+        "effectiveDateTime": "2020-01-26T00:52:41+00:00",
+        "issued": "2020-01-26T00:52:41.832+00:00",
+        "result": [
+          {
+            "reference": "Observation/3c36fc98-caf2-4a00-9bc7-b3fdb0405eb3",
+            "display": "Cause of Death [US Standard Certificate of Death]"
+          }
+        ]
+      },
+      "search": {
+        "mode": "match"
+      },
+      "response": {
+        "status": "200 OK",
+        "etag": "W/\"4\""
+      }
+    }
+  ]
+}

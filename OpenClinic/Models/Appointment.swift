@@ -19,6 +19,8 @@ final class Appointment {
     var sourceRecordIdentifier: String?
     var sourceLastSyncedAt: Date?
     var sourceOfTruth: Bool
+    /// True when a later sync no longer returned this row. Kept, and shown as such, instead of deleted.
+    var isRemovedAtSource: Bool = false
     var patient: PatientProfile?
 
     init(
@@ -57,21 +59,24 @@ final class Appointment {
         self.sourceOfTruth = sourceOfTruth
     }
 
+    /// The status to display. It never depends on the time of day: it is the stored status,
+    /// moved forward only by the documentation state of a note written today.
     var resolvedStatus: String {
         let cal = Calendar.current
-        
+
         // If the status has been manually set to an explicit terminal state, prioritize it
-        if !["scheduled", "confirmed", "pending", "booked", "arrived", "checked-in", "checked in"].contains(status.lowercased()) {
+        if !["scheduled", "confirmed", "pending", "booked", "arrived", "checked-in", "checked in", "roomed"].contains(status.lowercased()) {
             return status
         }
-        
-        guard let patient = patient else { return status }
-        
+
+        // A note written today describes today's visit. It says nothing about a visit on another day.
+        guard cal.isDateInToday(scheduledTime), let patient = patient else { return status }
+
         // Check if there is a clinical note recorded today
         let todayRecords = (patient.clinicalRecords ?? []).filter { record in
             cal.isDateInToday(record.dateRecorded)
         }
-        
+
         if let latestTodayRecord = todayRecords.sorted(by: { $0.dateRecorded > $1.dateRecorded }).first {
             switch latestTodayRecord.documentationStatus.lowercased() {
             case "signed":
@@ -84,18 +89,7 @@ final class Appointment {
                 break
             }
         }
-        
-        // If no note today, but the time is in the past
-        let now = Date()
-        if cal.isDateInToday(scheduledTime) && scheduledTime < now {
-            let diff = now.timeIntervalSince(scheduledTime)
-            if diff < 900 {
-                return "Checked In"
-            } else {
-                return "Waiting triage"
-            }
-        }
-        
+
         return status
     }
 

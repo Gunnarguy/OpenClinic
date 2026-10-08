@@ -1,0 +1,2535 @@
+{
+  "version": 3,
+  "patients": [
+    {
+      "mrn": "OC-1001",
+      "firstName": "Catherine",
+      "lastName": "Hartley",
+      "dateOfBirth": "1975-03-14",
+      "gender": "Female",
+      "isSmoker": true,
+      "primaryClinician": "Dr. Elizabeth Smith, MD",
+      "preferredPharmacy": "Harbor Care Pharmacy",
+      "carePlanSummary": "Annual full-body skin surveillance after basal cell carcinoma, with field treatment of actinic keratoses and expedited review of any bleeding or non-healing lesion.",
+      "allergies": [
+        "Sulfonamide antibiotics",
+        "Adhesive tape"
+      ],
+      "riskFlags": [
+        "Current smoker",
+        "High cumulative UV exposure",
+        "History of basal cell carcinoma"
+      ],
+      "emergencyContactName": "Michael Hartley",
+      "emergencyContactPhone": "(555) 010-1001",
+      "bloodType": "A+",
+      "medications": [
+        {
+          "rxID": "RX-001",
+          "medicationName": "Simvastatin 20 mg",
+          "genericName": "Simvastatin",
+          "dose": "20 mg",
+          "route": "Oral",
+          "frequency": "Nightly",
+          "indication": "Hyperlipidemia",
+          "status": "Active",
+          "writtenBy": "Primary care (outside prescriber)",
+          "writtenDaysAgo": 120,
+          "quantityInfo": "Take 1 tablet nightly at bedtime",
+          "refills": 2,
+          "lastFilledDaysAgo": 12,
+          "nextRefillInDays": 18,
+          "pharmacyName": "Harbor Care Pharmacy",
+          "safetyNotes": [
+            "Monitor for myalgias",
+            "Avoid excess grapefruit"
+          ]
+        },
+        {
+          "rxID": "RX-002",
+          "medicationName": "Fluorouracil 5% Cream",
+          "genericName": "Fluorouracil",
+          "dose": "5%",
+          "route": "Topical",
+          "frequency": "Twice daily for 4 weeks",
+          "indication": "Field treatment of actinic keratoses",
+          "status": "Completed",
+          "writtenBy": "Dr. Elizabeth Smith, MD",
+          "writtenDaysAgo": 180,
+          "quantityInfo": "Apply to the forehead twice daily for 4 weeks",
+          "refills": 0,
+          "lastFilledDaysAgo": 178,
+          "pharmacyName": "Harbor Care Pharmacy",
+          "safetyNotes": [
+            "Expect brisk inflammatory reaction",
+            "Avoid healthy surrounding skin"
+          ]
+        },
+        {
+          "rxID": "RX-003",
+          "medicationName": "Tretinoin 0.05% Cream",
+          "genericName": "Tretinoin",
+          "dose": "0.05%",
+          "route": "Topical",
+          "frequency": "Nightly",
+          "indication": "Photodamage and actinic keratosis prophylaxis",
+          "status": "Active",
+          "writtenBy": "Dr. Elizabeth Smith, MD",
+          "writtenDaysAgo": 180,
+          "startDaysAgo": 138,
+          "quantityInfo": "Apply a thin layer to the face nightly",
+          "refills": 3,
+          "lastFilledDaysAgo": 20,
+          "nextRefillInDays": 10,
+          "pharmacyName": "Harbor Care Pharmacy",
+          "safetyNotes": [
+            "Use moisturizer to reduce irritation",
+            "Strict daily sunscreen"
+          ]
+        }
+      ],
+      "records": [
+        {
+          "recordID": "REC-001",
+          "daysAgo": 365,
+          "note": {
+            "conditionName": "Basal Cell Carcinoma",
+            "icd10Code": "C44.612",
+            "documentationStatus": "signed",
+            "clinician": "Dr. Elizabeth Smith, MD",
+            "visitType": "Lesion evaluation and excision",
+            "severity": "Clinically malignant, excised",
+            "ccHPI": "{age}-year-old woman presents with a pearly papule on the right dorsal forearm, present for about 6 months with intermittent bleeding. Occasional itching, no pain. Significant sun exposure as a lifeguard in her twenties. Current smoker.",
+            "reviewOfSystems": "Denies fever, chills, weight loss, fatigue, or night sweats. No other new lesions noted by patient.",
+            "examFindings": "6 mm pearly, translucent papule with arborizing telangiectasia on the right dorsal forearm. Well-circumscribed borders. No ulceration today. No palpable axillary or epitrochlear lymphadenopathy.",
+            "impressionsAndPlan": "Basal cell carcinoma, nodular type, right dorsal forearm (clinical and dermoscopic diagnosis). Elliptical excision with 4 mm margins performed today under local anesthesia; specimen sent to dermatopathology. Suture removal with nursing in 2 weeks. Full skin exam in 6 months. Counseled on daily SPF 50+ and on smoking cessation, which also supports wound healing. Addendum, pathology: nodular basal cell carcinoma, margins clear; patient notified by phone.",
+            "zones": [
+              "right_upper_extremity"
+            ],
+            "patientInstructions": "Keep the wound dry for 24 hours, then clean it daily and apply petrolatum under a non-adhesive dressing because of your adhesive tape allergy. Use SPF 50+ daily and report any bleeding or non-healing lesion.",
+            "followUpPlan": "Suture removal with nursing in 2 weeks. Full skin exam in 6 months.",
+            "recommendedOrders": [
+              "Dermatopathology specimen review"
+            ],
+            "carePlanSummary": "Nodular basal cell carcinoma excised with clear margins; entered skin cancer surveillance."
+          }
+        },
+        {
+          "recordID": "REC-002",
+          "daysAgo": 180,
+          "note": {
+            "conditionName": "Actinic Keratosis",
+            "icd10Code": "L57.0",
+            "documentationStatus": "signed",
+            "clinician": "Dr. Elizabeth Smith, MD",
+            "visitType": "Skin cancer surveillance and procedure",
+            "severity": "Moderate actinic damage",
+            "ccHPI": "{age}-year-old woman returns for a 6-month skin check after basal cell carcinoma excision. She reports rough, scaly patches on the forehead and scalp for 2 to 3 months, mildly tender when rubbed.",
+            "reviewOfSystems": "Denies bleeding from the lesions. No fever or weight change.",
+            "examFindings": "Three erythematous, rough, scaly papules on the forehead measuring 4 mm, 6 mm and 3 mm; the 6 mm lesion is on the right forehead. Two similar lesions on the vertex scalp. Sandpaper-like texture on palpation. No induration or ulceration.",
+            "impressionsAndPlan": "Actinic keratoses, forehead and scalp, 5 lesions. Liquid nitrogen cryotherapy applied to all 5 lesions today. Fluorouracil 5% cream twice daily for 4 weeks as field treatment of the forehead. After the course is finished and the skin has healed, about 6 weeks from now, start tretinoin 0.05% cream nightly. Nurse photo check in 3 months. Annual skin exam in 5 months. Biopsy any lesion that persists or thickens to rule out squamous cell carcinoma.",
+            "zones": [
+              "forehead",
+              "scalp"
+            ],
+            "patientInstructions": "Expect crusting after cryotherapy and redness during the fluorouracil course. Finish the 4-week course unless severe erosion occurs. Use SPF 50+ and a wide-brimmed hat daily.",
+            "followUpPlan": "Nurse photo check in 3 months. Annual skin exam in 5 months.",
+            "recommendedOrders": [
+              "Cryotherapy performed in clinic",
+              "Fluorouracil 5% cream",
+              "Tretinoin 0.05% cream"
+            ],
+            "carePlanSummary": "Reduce actinic burden with cryotherapy and field therapy, then reassess for persistent lesions."
+          }
+        },
+        {
+          "recordID": "REC-003",
+          "daysAgo": 30,
+          "note": {
+            "conditionName": "Annual Skin Exam",
+            "icd10Code": "Z12.83",
+            "documentationStatus": "signed",
+            "clinician": "Dr. Elizabeth Smith, MD",
+            "visitType": "Annual surveillance",
+            "severity": "Routine surveillance",
+            "ccHPI": "{age}-year-old woman presents for her annual full-body skin examination. History of basal cell carcinoma of the right dorsal forearm excised 11 months ago and actinic keratoses treated with cryotherapy and fluorouracil 5 months ago. Using tretinoin 0.05% nightly with good sun protection.",
+            "reviewOfSystems": "No new moles or changing lesions noted by patient. Denies pruritus, rashes, or skin pain.",
+            "examFindings": "Full-body skin exam performed. Right dorsal forearm: well-healed linear excision scar, no recurrence. Forehead: actinic keratoses largely resolved after fluorouracil, with one residual 2 mm scaly papule on the right forehead. Scalp clear. No other concerning lesions identified.",
+            "impressionsAndPlan": "1. Basal cell carcinoma excision site, right dorsal forearm: no recurrence, continue annual surveillance. 2. Residual actinic keratosis, right forehead: cryotherapy applied today. 3. Continue tretinoin 0.05% nightly for photodamage. 4. Return in 4 weeks to confirm the treated lesion has cleared, then annual exam in 12 months.",
+            "zones": [
+              "right_upper_extremity",
+              "forehead"
+            ],
+            "patientInstructions": "Expect a blister or crust at the treated spot for 1 to 2 weeks. Perform monthly skin self-checks and return earlier for any changing lesion.",
+            "followUpPlan": "Post-cryotherapy check in 4 weeks. Annual skin exam in 12 months.",
+            "recommendedOrders": [
+              "Cryotherapy performed in clinic"
+            ],
+            "carePlanSummary": "Stable surveillance visit with one residual actinic keratosis treated."
+          }
+        }
+      ],
+      "appointments": [
+        {
+          "appointmentID": "APT-001",
+          "reasonForVisit": "Post-cryo AK follow-up",
+          "status": "Ready for Checkout",
+          "encounterType": "Procedure follow-up",
+          "clinicianName": "Dr. Elizabeth Smith, MD",
+          "location": "Derm Suite 3",
+          "durationMinutes": 20,
+          "checkInStatus": "Checked in",
+          "prepInstructions": "Bring wound care questions and current topical medications.",
+          "linkedDiagnoses": [
+            "Actinic Keratosis",
+            "History of basal cell carcinoma"
+          ],
+          "offsetMinutes": -60,
+          "todayNote": {
+            "conditionName": "Actinic Keratosis",
+            "icd10Code": "L57.0",
+            "documentationStatus": "reviewed",
+            "clinician": "Dr. Elizabeth Smith, MD",
+            "visitType": "Procedure follow-up",
+            "severity": "Resolved",
+            "ccHPI": "{age}-year-old woman returns 4 weeks after cryotherapy of a residual actinic keratosis on the right forehead. The treated spot crusted and healed within 2 weeks. No new rough or bleeding lesions. She continues tretinoin 0.05% nightly and daily sunscreen.",
+            "reviewOfSystems": "Denies pain, bleeding, or new lesions.",
+            "examFindings": "Right forehead: treated site is smooth with faint hypopigmentation, no scale or induration. Remainder of the forehead clear of new actinic keratoses. Right dorsal forearm excision scar: well healed, no recurrence.",
+            "impressionsAndPlan": "1. Actinic keratosis, right forehead: resolved after cryotherapy 4 weeks ago. No new lesions. 2. History of basal cell carcinoma, right dorsal forearm: scar without recurrence. 3. Continue tretinoin 0.05% nightly and daily photoprotection. 4. Next annual skin exam in 11 months.",
+            "zones": [
+              "forehead"
+            ],
+            "patientInstructions": "Continue tretinoin nightly with a moisturizer, SPF 50+ every morning, and monthly skin self-checks.",
+            "followUpPlan": "Annual skin exam in 11 months, sooner for any new, bleeding or non-healing lesion.",
+            "recommendedOrders": [],
+            "carePlanSummary": "Actinic keratosis resolved; annual surveillance continues."
+          }
+        },
+        {
+          "appointmentID": "APT-002",
+          "reasonForVisit": "Annual skin exam",
+          "status": "Scheduled",
+          "encounterType": "Annual surveillance",
+          "clinicianName": "Dr. Elizabeth Smith, MD",
+          "location": "Derm Preventive Clinic",
+          "durationMinutes": 30,
+          "checkInStatus": "Reminder scheduled",
+          "prepInstructions": "Arrive without nail polish or full-body makeup for a complete skin exam.",
+          "linkedDiagnoses": [
+            "History of basal cell carcinoma",
+            "Actinic Keratosis"
+          ],
+          "daysFromNow": 335,
+          "hour": 10,
+          "minute": 0
+        }
+      ],
+      "photoSeries": [
+        {
+          "name": "ak_forehead",
+          "zone": "forehead",
+          "title": "AK course, right forehead",
+          "images": [
+            {
+              "daysAgo": 180,
+              "notes": "Initial scaly papule",
+              "style": "papule",
+              "size": 14,
+              "color": {
+                "red": 0.8,
+                "green": 0.45,
+                "blue": 0.4
+              },
+              "erythema": 0.45,
+              "linkedRecordID": "REC-002"
+            },
+            {
+              "daysAgo": 90,
+              "notes": "After fluorouracil field therapy",
+              "style": "papule",
+              "size": 8,
+              "color": {
+                "red": 0.85,
+                "green": 0.55,
+                "blue": 0.5
+              },
+              "erythema": 0.25
+            },
+            {
+              "daysAgo": 30,
+              "notes": "Residual 2 mm lesion before cryotherapy",
+              "style": "papule",
+              "size": 4,
+              "color": {
+                "red": 0.82,
+                "green": 0.5,
+                "blue": 0.45
+              },
+              "erythema": 0.2,
+              "linkedRecordID": "REC-003"
+            }
+          ]
+        }
+      ],
+      "problems": [
+        {
+          "problemID": "PRB-001",
+          "display": "Basal cell carcinoma of skin of right upper limb",
+          "icd10Code": "C44.612",
+          "clinicalStatus": "resolved",
+          "verificationStatus": "confirmed",
+          "onsetDaysAgo": 365,
+          "abatementDaysAgo": 344
+        },
+        {
+          "problemID": "PRB-002",
+          "display": "Actinic keratosis",
+          "icd10Code": "L57.0",
+          "clinicalStatus": "active",
+          "verificationStatus": "confirmed",
+          "onsetDaysAgo": 180
+        },
+        {
+          "problemID": "PRB-003",
+          "display": "Hyperlipidemia",
+          "icd10Code": "E78.5",
+          "clinicalStatus": "active",
+          "verificationStatus": "confirmed",
+          "onsetDaysAgo": 125
+        },
+        {
+          "problemID": "PRB-004",
+          "display": "Nicotine dependence, cigarettes",
+          "icd10Code": "F17.210",
+          "clinicalStatus": "active",
+          "verificationStatus": "confirmed",
+          "onsetDaysAgo": 365
+        }
+      ],
+      "vitals": [
+        {
+          "vitalsID": "VIT-001",
+          "appointmentID": "APT-001",
+          "systolic": 128,
+          "diastolic": 78,
+          "heartRate": 76,
+          "temperatureF": 98.2,
+          "oxygenSaturation": 97,
+          "weightKg": 68.5,
+          "painScore": 0
+        },
+        {
+          "vitalsID": "VIT-002",
+          "daysAgo": 30,
+          "systolic": 126,
+          "diastolic": 80,
+          "heartRate": 74,
+          "temperatureF": 98.4,
+          "oxygenSaturation": 97,
+          "weightKg": 68.9,
+          "painScore": 0
+        },
+        {
+          "vitalsID": "VIT-003",
+          "daysAgo": 180,
+          "systolic": 132,
+          "diastolic": 82,
+          "heartRate": 78,
+          "temperatureF": 98.1,
+          "oxygenSaturation": 96,
+          "weightKg": 69.4,
+          "heightCm": 165.0,
+          "painScore": 1
+        }
+      ],
+      "labs": [
+        {
+          "labID": "LAB-1001-A-TC",
+          "daysAgo": 125,
+          "panel": "Lipid panel",
+          "display": "Total cholesterol",
+          "loinc": "2093-3",
+          "value": 228,
+          "unit": "mg/dL",
+          "referenceRange": "under 200 mg/dL",
+          "interpretation": "H"
+        },
+        {
+          "labID": "LAB-1001-A-LDL",
+          "daysAgo": 125,
+          "panel": "Lipid panel",
+          "display": "LDL cholesterol",
+          "loinc": "18262-6",
+          "value": 142,
+          "unit": "mg/dL",
+          "referenceRange": "under 130 mg/dL",
+          "interpretation": "H"
+        },
+        {
+          "labID": "LAB-1001-A-HDL",
+          "daysAgo": 125,
+          "panel": "Lipid panel",
+          "display": "HDL cholesterol",
+          "loinc": "2085-9",
+          "value": 52,
+          "unit": "mg/dL",
+          "referenceRange": "over 40 mg/dL",
+          "interpretation": "N"
+        },
+        {
+          "labID": "LAB-1001-A-TG",
+          "daysAgo": 125,
+          "panel": "Lipid panel",
+          "display": "Triglycerides",
+          "loinc": "2571-8",
+          "value": 168,
+          "unit": "mg/dL",
+          "referenceRange": "under 150 mg/dL",
+          "interpretation": "H"
+        },
+        {
+          "labID": "LAB-1001-B-TC",
+          "daysAgo": 1,
+          "panel": "Lipid panel",
+          "display": "Total cholesterol",
+          "loinc": "2093-3",
+          "value": 196,
+          "unit": "mg/dL",
+          "referenceRange": "under 200 mg/dL",
+          "interpretation": "N"
+        },
+        {
+          "labID": "LAB-1001-B-LDL",
+          "daysAgo": 1,
+          "panel": "Lipid panel",
+          "display": "LDL cholesterol",
+          "loinc": "18262-6",
+          "value": 111,
+          "unit": "mg/dL",
+          "referenceRange": "under 130 mg/dL",
+          "interpretation": "N"
+        },
+        {
+          "labID": "LAB-1001-B-HDL",
+          "daysAgo": 1,
+          "panel": "Lipid panel",
+          "display": "HDL cholesterol",
+          "loinc": "2085-9",
+          "value": 54,
+          "unit": "mg/dL",
+          "referenceRange": "over 40 mg/dL",
+          "interpretation": "N"
+        },
+        {
+          "labID": "LAB-1001-B-TG",
+          "daysAgo": 1,
+          "panel": "Lipid panel",
+          "display": "Triglycerides",
+          "loinc": "2571-8",
+          "value": 152,
+          "unit": "mg/dL",
+          "referenceRange": "under 150 mg/dL",
+          "interpretation": "H"
+        }
+      ]
+    },
+    {
+      "mrn": "OC-1002",
+      "firstName": "Maria",
+      "lastName": "Santos",
+      "dateOfBirth": "1998-06-02",
+      "gender": "Female",
+      "isSmoker": false,
+      "primaryClinician": "Dr. Natalie Jones, MD",
+      "preferredPharmacy": "Downtown Family Pharmacy",
+      "carePlanSummary": "Maintain acne control with topical therapy while treating rosacea, avoiding triggers and watching for ocular symptoms.",
+      "allergies": [
+        "No known drug allergies"
+      ],
+      "riskFlags": [
+        "Rosacea triggers: heat, spicy food, exertion",
+        "Post-inflammatory hyperpigmentation risk"
+      ],
+      "emergencyContactName": "Elena Santos",
+      "emergencyContactPhone": "(555) 010-1002",
+      "bloodType": "O+",
+      "medications": [
+        {
+          "rxID": "RX-004",
+          "medicationName": "Tretinoin 0.025% Cream",
+          "genericName": "Tretinoin",
+          "dose": "0.025%",
+          "route": "Topical",
+          "frequency": "Nightly",
+          "indication": "Acne vulgaris",
+          "status": "Active",
+          "writtenBy": "Dr. Elizabeth Smith, MD",
+          "writtenDaysAgo": 98,
+          "quantityInfo": "Apply a thin layer to the face nightly",
+          "refills": 3,
+          "lastFilledDaysAgo": 12,
+          "nextRefillInDays": 18,
+          "pharmacyName": "Downtown Family Pharmacy",
+          "safetyNotes": [
+            "May worsen dryness initially",
+            "Can aggravate rosacea flushing; reduce frequency if irritated"
+          ]
+        },
+        {
+          "rxID": "RX-005",
+          "medicationName": "Benzoyl Peroxide 5% Gel",
+          "genericName": "Benzoyl Peroxide",
+          "dose": "5%",
+          "route": "Topical",
+          "frequency": "Every morning",
+          "indication": "Inflammatory acne",
+          "status": "Active",
+          "writtenBy": "Dr. Elizabeth Smith, MD",
+          "writtenDaysAgo": 98,
+          "quantityInfo": "Apply to affected areas every morning",
+          "refills": 5,
+          "lastFilledDaysAgo": 12,
+          "nextRefillInDays": 18,
+          "pharmacyName": "Downtown Family Pharmacy",
+          "safetyNotes": [
+            "Bleaches fabrics",
+            "Use a non-comedogenic moisturizer"
+          ]
+        },
+        {
+          "rxID": "RX-006",
+          "medicationName": "Doxycycline 100 mg",
+          "genericName": "Doxycycline",
+          "dose": "100 mg",
+          "route": "Oral",
+          "frequency": "Twice daily, then tapered",
+          "indication": "Inflammatory acne",
+          "status": "Completed",
+          "writtenBy": "Dr. Elizabeth Smith, MD",
+          "writtenDaysAgo": 98,
+          "quantityInfo": "Take 1 capsule twice daily with food for 8 weeks, then once daily for 4 weeks, then stop",
+          "refills": 0,
+          "lastFilledDaysAgo": 42,
+          "pharmacyName": "Downtown Family Pharmacy",
+          "safetyNotes": [
+            "Take with food and water",
+            "Photosensitivity counseling"
+          ]
+        },
+        {
+          "rxID": "RX-007",
+          "medicationName": "Metronidazole 0.75% Gel",
+          "genericName": "Metronidazole",
+          "dose": "0.75%",
+          "route": "Topical",
+          "frequency": "Twice daily",
+          "indication": "Rosacea",
+          "status": "Active",
+          "writtenBy": "Dr. Natalie Jones, MD",
+          "writtenDaysAgo": 42,
+          "quantityInfo": "Apply a thin layer to the nose and cheeks twice daily",
+          "refills": 2,
+          "lastFilledDaysAgo": 10,
+          "nextRefillInDays": 20,
+          "pharmacyName": "Downtown Family Pharmacy",
+          "safetyNotes": [
+            "Monitor for burning or dryness"
+          ]
+        }
+      ],
+      "records": [
+        {
+          "recordID": "REC-004",
+          "daysAgo": 98,
+          "note": {
+            "conditionName": "Acne Vulgaris",
+            "icd10Code": "L70.0",
+            "documentationStatus": "signed",
+            "clinician": "Dr. Elizabeth Smith, MD",
+            "visitType": "New patient acne consult",
+            "severity": "Moderate inflammatory",
+            "ccHPI": "{age}-year-old woman presents with moderate inflammatory acne of the face. Onset about 3 months ago, coinciding with starting a new job. Minimal improvement with an over-the-counter benzoyl peroxide wash. No prior prescription treatment. Denies new cosmetics or dietary changes.",
+            "reviewOfSystems": "Reports mild stress and occasional insomnia. Denies fevers, weight changes, or menstrual irregularity.",
+            "examFindings": "Both cheeks: numerous open and closed comedones with 15 to 20 inflammatory papules and 3 to 4 pustules. Forehead: scattered closed comedones. No nodules or cysts. No scarring. Mild post-inflammatory hyperpigmentation on the left cheek.",
+            "impressionsAndPlan": "Acne vulgaris, moderate inflammatory. 1. Start tretinoin 0.025% cream nightly (counseled on the purging phase and sun sensitivity). 2. Benzoyl peroxide 5% gel every morning. 3. Doxycycline 100 mg twice daily with food for the inflammatory component. 4. Follow-up in 8 weeks to assess response.",
+            "zones": [
+              "left_cheek",
+              "right_cheek",
+              "forehead"
+            ],
+            "patientInstructions": "Use a pea-sized amount of tretinoin, apply benzoyl peroxide in the morning, and avoid picking lesions.",
+            "followUpPlan": "Reassess response in 8 weeks.",
+            "recommendedOrders": [
+              "Tretinoin 0.025% cream",
+              "Benzoyl peroxide 5% gel",
+              "Doxycycline 100 mg"
+            ],
+            "carePlanSummary": "Combination topical and oral regimen started for inflammatory acne."
+          }
+        },
+        {
+          "recordID": "REC-005",
+          "daysAgo": 42,
+          "note": {
+            "conditionName": "Rosacea",
+            "icd10Code": "L71.8",
+            "documentationStatus": "signed",
+            "clinician": "Dr. Natalie Jones, MD",
+            "visitType": "Acne follow-up",
+            "severity": "Mild erythematotelangiectatic rosacea",
+            "ccHPI": "{age}-year-old woman returns for her 8-week acne follow-up. Significant improvement in acne with fewer breakouts and clearing comedones. She notes persistent redness across the nose and central cheeks that worsens with hot beverages, spicy food and exercise, with occasional stinging.",
+            "reviewOfSystems": "Denies eye irritation or blurry vision. Reports facial flushing lasting 10 to 15 minutes.",
+            "examFindings": "Acne: marked improvement, 2 small papules on the right cheek, forehead clear. Rosacea: diffuse centrofacial erythema of the nose and medial cheeks with scattered telangiectasias on the nasal alae. No papules or pustules of rosacea. No ocular involvement.",
+            "impressionsAndPlan": "1. Rosacea, erythematotelangiectatic type: new diagnosis. Start metronidazole 0.75% gel twice daily. Counseled on trigger avoidance (sun, heat, alcohol, spicy foods). 2. Acne vulgaris: good response. Taper doxycycline to 100 mg once daily for 4 weeks, then stop. Continue tretinoin and benzoyl peroxide. 3. Follow-up in 6 weeks.",
+            "zones": [
+              "facial_mesh_nose",
+              "left_cheek",
+              "right_cheek"
+            ],
+            "patientInstructions": "Track flushing triggers, use mineral sunscreen daily, and report any eye irritation promptly.",
+            "followUpPlan": "Rosacea check in 6 weeks, after the doxycycline taper is complete.",
+            "recommendedOrders": [
+              "Metronidazole 0.75% gel"
+            ],
+            "carePlanSummary": "Acne improved; rosacea added to the active problem list."
+          }
+        }
+      ],
+      "appointments": [
+        {
+          "appointmentID": "APT-003",
+          "reasonForVisit": "Rosacea 6-week follow-up",
+          "status": "Roomed",
+          "encounterType": "Chronic disease follow-up",
+          "clinicianName": "Dr. Natalie Jones, MD",
+          "location": "Acne and Rosacea Center",
+          "durationMinutes": 25,
+          "checkInStatus": "Checked in",
+          "prepInstructions": "Bring photos of your worst flare if available.",
+          "linkedDiagnoses": [
+            "Rosacea",
+            "Acne Vulgaris"
+          ],
+          "offsetMinutes": 0
+        }
+      ],
+      "photoSeries": [],
+      "problems": [
+        {
+          "problemID": "PRB-005",
+          "display": "Acne vulgaris",
+          "icd10Code": "L70.0",
+          "clinicalStatus": "active",
+          "verificationStatus": "confirmed",
+          "onsetDaysAgo": 98
+        },
+        {
+          "problemID": "PRB-006",
+          "display": "Rosacea, erythematotelangiectatic",
+          "icd10Code": "L71.8",
+          "clinicalStatus": "active",
+          "verificationStatus": "confirmed",
+          "onsetDaysAgo": 42
+        }
+      ],
+      "vitals": [
+        {
+          "vitalsID": "VIT-004",
+          "appointmentID": "APT-003",
+          "systolic": 112,
+          "diastolic": 70,
+          "heartRate": 68,
+          "temperatureF": 98.4,
+          "oxygenSaturation": 99,
+          "weightKg": 61.2,
+          "painScore": 0
+        },
+        {
+          "vitalsID": "VIT-005",
+          "daysAgo": 42,
+          "systolic": 110,
+          "diastolic": 68,
+          "heartRate": 70,
+          "temperatureF": 98.6,
+          "oxygenSaturation": 99,
+          "weightKg": 61.0,
+          "painScore": 0
+        },
+        {
+          "vitalsID": "VIT-006",
+          "daysAgo": 98,
+          "systolic": 114,
+          "diastolic": 72,
+          "heartRate": 72,
+          "temperatureF": 98.3,
+          "oxygenSaturation": 99,
+          "weightKg": 60.6,
+          "heightCm": 168.0,
+          "painScore": 0
+        }
+      ],
+      "labs": []
+    },
+    {
+      "mrn": "OC-1003",
+      "firstName": "Robert",
+      "lastName": "Chen",
+      "dateOfBirth": "1972-09-27",
+      "gender": "Male",
+      "isSmoker": false,
+      "primaryClinician": "Dr. Elizabeth Smith, MD",
+      "preferredPharmacy": "Northside Specialty Pharmacy",
+      "carePlanSummary": "Continue melanoma in situ surveillance while monitoring methotrexate safety labs and joint symptoms.",
+      "allergies": [
+        "Penicillin"
+      ],
+      "riskFlags": [
+        "Melanoma history",
+        "Possible psoriatic arthritis",
+        "Immunomodulator monitoring required"
+      ],
+      "emergencyContactName": "Angela Chen",
+      "emergencyContactPhone": "(555) 010-1003",
+      "bloodType": "B+",
+      "medications": [
+        {
+          "rxID": "RX-008",
+          "medicationName": "Clobetasol 0.05% Ointment",
+          "genericName": "Clobetasol",
+          "dose": "0.05%",
+          "route": "Topical",
+          "frequency": "Twice daily for flares, then weekends",
+          "indication": "Plaque psoriasis",
+          "status": "Active",
+          "writtenBy": "Dr. Elizabeth Smith, MD",
+          "writtenDaysAgo": 45,
+          "quantityInfo": "Apply to plaques twice daily for 2 weeks, then weekends only",
+          "refills": 1,
+          "lastFilledDaysAgo": 10,
+          "nextRefillInDays": 20,
+          "pharmacyName": "Northside Specialty Pharmacy",
+          "safetyNotes": [
+            "Avoid face and groin",
+            "Limit continuous use because of atrophy risk"
+          ]
+        },
+        {
+          "rxID": "RX-009",
+          "medicationName": "Calcipotriene 0.005% Cream",
+          "genericName": "Calcipotriene",
+          "dose": "0.005%",
+          "route": "Topical",
+          "frequency": "Daily",
+          "indication": "Psoriasis maintenance",
+          "status": "Active",
+          "writtenBy": "Dr. Elizabeth Smith, MD",
+          "writtenDaysAgo": 45,
+          "quantityInfo": "Apply to affected areas daily",
+          "refills": 3,
+          "lastFilledDaysAgo": 10,
+          "nextRefillInDays": 20,
+          "pharmacyName": "Northside Specialty Pharmacy",
+          "safetyNotes": [
+            "Do not exceed the weekly amount on the label"
+          ]
+        },
+        {
+          "rxID": "RX-010",
+          "medicationName": "Methotrexate 15 mg",
+          "genericName": "Methotrexate",
+          "dose": "15 mg",
+          "route": "Oral",
+          "frequency": "Once weekly on Mondays",
+          "indication": "Plaque psoriasis with joint symptoms",
+          "status": "Active",
+          "writtenBy": "Dr. Elizabeth Smith, MD",
+          "writtenDaysAgo": 42,
+          "quantityInfo": "Take 15 mg once weekly on Mondays",
+          "refills": 5,
+          "lastFilledDaysAgo": 14,
+          "nextRefillInDays": 14,
+          "pharmacyName": "Northside Specialty Pharmacy",
+          "safetyNotes": [
+            "CBC and CMP monitoring",
+            "Avoid alcohol excess",
+            "Confirm folic acid adherence"
+          ]
+        },
+        {
+          "rxID": "RX-011",
+          "medicationName": "Folic Acid 1 mg",
+          "genericName": "Folic Acid",
+          "dose": "1 mg",
+          "route": "Oral",
+          "frequency": "Daily except the methotrexate day",
+          "indication": "Methotrexate supplementation",
+          "status": "Active",
+          "writtenBy": "Dr. Elizabeth Smith, MD",
+          "writtenDaysAgo": 42,
+          "quantityInfo": "Take 1 tablet daily except Mondays",
+          "refills": 5,
+          "lastFilledDaysAgo": 14,
+          "nextRefillInDays": 16,
+          "pharmacyName": "Northside Specialty Pharmacy",
+          "safetyNotes": [
+            "Skip on the methotrexate day"
+          ]
+        }
+      ],
+      "records": [
+        {
+          "recordID": "REC-006",
+          "daysAgo": 730,
+          "note": {
+            "conditionName": "Melanoma In Situ",
+            "icd10Code": "D03.59",
+            "documentationStatus": "signed",
+            "clinician": "Dr. Elizabeth Smith, MD",
+            "visitType": "Pigmented lesion workup",
+            "severity": "High suspicion for melanoma",
+            "ccHPI": "{age}-year-old man referred by primary care for a changing mole over the left scapula. The lesion has darkened and grown over the past 4 months. No bleeding or itching. No family history of melanoma.",
+            "reviewOfSystems": "Denies weight loss, fatigue, bone pain, or neurological symptoms.",
+            "examFindings": "Left scapular region: 8 mm asymmetric macule with irregular borders and variegated brown-black color. ABCDE criteria: asymmetry, border irregularity, color variation, diameter over 6 mm and evolution all present. No satellite lesions. No palpable axillary or cervical lymphadenopathy. Dermoscopy: irregular pigment network with regression structures, no blue-white veil.",
+            "impressionsAndPlan": "Pigmented lesion of the left scapular region, highly suspicious for melanoma. Excisional biopsy with 2 mm margins performed today; rush pathology ordered. If melanoma in situ is confirmed, wide local excision with 5 mm margins in about 4 weeks. Sentinel lymph node biopsy is not indicated for in situ disease. Addendum, pathology: melanoma in situ, lentigo maligna type; patient notified by phone and wide local excision scheduled.",
+            "zones": [
+              "left_shoulder"
+            ],
+            "patientInstructions": "Keep the biopsy site clean and dry, avoid soaking, and expect a call with pathology results within 1 week.",
+            "followUpPlan": "Pathology by phone within 1 week. Wide local excision in about 4 weeks if melanoma in situ is confirmed.",
+            "recommendedOrders": [
+              "Rush dermatopathology"
+            ],
+            "carePlanSummary": "High-risk pigmented lesion moved to the expedited melanoma pathway."
+          }
+        },
+        {
+          "recordID": "REC-007",
+          "daysAgo": 700,
+          "note": {
+            "conditionName": "Melanoma In Situ, Post-Excision",
+            "icd10Code": "D03.59",
+            "documentationStatus": "signed",
+            "clinician": "Dr. Elizabeth Smith, MD",
+            "visitType": "Wide local excision",
+            "severity": "Melanoma in situ, definitive excision",
+            "ccHPI": "{age}-year-old man returns for wide local excision. Pathology from the excisional biopsy 4 weeks ago confirmed melanoma in situ, lentigo maligna type, of the left scapular region.",
+            "reviewOfSystems": "Denies fever, wound drainage, or new skin lesions.",
+            "examFindings": "Left scapular biopsy site: healing well, no signs of infection. Wide local excision performed with 5 mm margins and layered closure. Specimen sent to pathology. No new suspicious lesions on limited exam.",
+            "impressionsAndPlan": "Melanoma in situ of the left scapular region: wide local excision completed today. Final margins to be confirmed by pathology. Full-body skin exams every 6 months for surveillance. Counseled on sun protection, monthly self-exams and warning signs of recurrence. Addendum, pathology: no residual melanoma, margins clear.",
+            "zones": [
+              "left_shoulder"
+            ],
+            "patientInstructions": "Keep the dressing dry for 48 hours, avoid heavy lifting with the left arm for 2 weeks, and perform monthly skin self-exams.",
+            "followUpPlan": "Suture removal with nursing in 2 weeks. Full-body skin exam every 6 months.",
+            "recommendedOrders": [
+              "Final pathology margin confirmation"
+            ],
+            "carePlanSummary": "Definitive excision of melanoma in situ completed; surveillance every 6 months."
+          }
+        },
+        {
+          "recordID": "REC-008",
+          "daysAgo": 45,
+          "note": {
+            "conditionName": "Plaque Psoriasis",
+            "icd10Code": "L40.0",
+            "documentationStatus": "signed",
+            "clinician": "Dr. Elizabeth Smith, MD",
+            "visitType": "Chronic disease flare visit",
+            "severity": "Moderate flare, PASI 12",
+            "ccHPI": "{age}-year-old man presents with a psoriasis flare worsening over the past 2 months. Thick, itchy plaques on both elbows, both knees and the scalp. Using over-the-counter moisturizers only. New stiffness in both knees for 3 weeks, concerning for psoriatic arthritis. History of melanoma in situ of the left scapular region; his last surveillance exam about 4 months ago was clear.",
+            "reviewOfSystems": "Morning stiffness in both knees lasting about 45 minutes. Mild fatigue. Denies nail changes, eye redness, or GI symptoms.",
+            "examFindings": "Well-demarcated erythematous plaques with thick silvery scale on both elbows (8 cm x 6 cm), both knees (5 cm x 4 cm) and the vertex and occipital scalp. BSA about 8%. PASI 12. Knees: mild tenderness along the joint line without effusion. No dactylitis or enthesitis. Face and trunk clear.",
+            "impressionsAndPlan": "1. Plaque psoriasis, moderate flare, PASI 12. Start clobetasol 0.05% ointment twice daily for 2 weeks, then weekends only, with calcipotriene 0.005% cream daily for maintenance. 2. Possible psoriatic arthritis: baseline CBC, CMP and hepatitis panel ordered today. Methotrexate 15 mg weekly with folic acid to start once the labs are reviewed. Discussed immunosuppression in the setting of prior melanoma in situ; surveillance exams continue. 3. Rheumatology referral for joint evaluation. 4. Follow-up in 6 weeks for methotrexate labs and response.",
+            "zones": [
+              "left_upper_extremity",
+              "right_upper_extremity",
+              "left_lower_extremity",
+              "right_lower_extremity",
+              "scalp"
+            ],
+            "patientInstructions": "Complete baseline labs before the first methotrexate dose. Report fever, cough, or mouth sores right away, and limit alcohol.",
+            "followUpPlan": "Methotrexate safety and response visit in 6 weeks.",
+            "recommendedOrders": [
+              "CBC",
+              "CMP",
+              "Hepatitis panel",
+              "Rheumatology referral"
+            ],
+            "carePlanSummary": "Psoriasis treatment escalated to systemic therapy because of joint symptoms."
+          }
+        }
+      ],
+      "appointments": [
+        {
+          "appointmentID": "APT-005",
+          "reasonForVisit": "Psoriasis: methotrexate labs review",
+          "status": "Completed",
+          "encounterType": "Medication safety visit",
+          "clinicianName": "Dr. Elizabeth Smith, MD",
+          "location": "Derm Suite 2",
+          "durationMinutes": 25,
+          "checkInStatus": "Checked in",
+          "prepInstructions": "Complete CBC and CMP at least 24 hours before the visit.",
+          "linkedDiagnoses": [
+            "Plaque Psoriasis",
+            "Possible psoriatic arthritis"
+          ],
+          "offsetMinutes": -90,
+          "todayNote": {
+            "conditionName": "Plaque Psoriasis",
+            "icd10Code": "L40.0",
+            "documentationStatus": "signed",
+            "clinician": "Dr. Elizabeth Smith, MD",
+            "visitType": "Medication safety visit",
+            "severity": "Improving, PASI 6",
+            "ccHPI": "{age}-year-old man returns for methotrexate monitoring. He has taken methotrexate 15 mg weekly with folic acid for about 6 weeks. Plaques are thinner and less itchy. Morning knee stiffness is down from 45 minutes to about 15 minutes. No nausea, mouth sores, cough, or infections. Rheumatology visit is pending.",
+            "reviewOfSystems": "Denies fever, cough, mouth sores, nausea, or unusual fatigue.",
+            "examFindings": "Elbows and knees: thinner plaques with less scale and erythema. Scalp clear. PASI 6, down from 12. Knees: no tenderness or effusion today.",
+            "impressionsAndPlan": "1. Plaque psoriasis on methotrexate 15 mg weekly: PASI improved from 12 to 6. CBC and CMP reviewed today, within normal limits. Continue methotrexate with folic acid; continue calcipotriene and weekend clobetasol. 2. Possible psoriatic arthritis: stiffness improving; rheumatology visit pending. 3. Repeat CBC and CMP in 8 weeks. 4. Melanoma in situ surveillance: last full skin exam 6 months ago was clear; the next exam is booked at the first available Pigmented Lesion Clinic opening, in about 11 weeks.",
+            "zones": [
+              "left_upper_extremity",
+              "right_upper_extremity",
+              "left_lower_extremity",
+              "right_lower_extremity"
+            ],
+            "patientInstructions": "Take methotrexate once weekly on the same day, folic acid on the other days, and limit alcohol. Report fever, cough, or mouth sores right away.",
+            "followUpPlan": "Repeat CBC and CMP in 8 weeks. Melanoma surveillance exam in about 11 weeks.",
+            "recommendedOrders": [
+              "CBC with differential in 8 weeks",
+              "Comprehensive metabolic panel in 8 weeks"
+            ],
+            "carePlanSummary": "Methotrexate tolerated with normal safety labs and improving psoriasis."
+          }
+        },
+        {
+          "appointmentID": "APT-006",
+          "reasonForVisit": "6-month melanoma surveillance",
+          "status": "Scheduled",
+          "encounterType": "Cancer surveillance",
+          "clinicianName": "Dr. Elizabeth Smith, MD",
+          "location": "Pigmented Lesion Clinic",
+          "durationMinutes": 30,
+          "checkInStatus": "Reminder scheduled",
+          "prepInstructions": "Bring prior mole maps or outside dermatology records if available.",
+          "linkedDiagnoses": [
+            "History of melanoma in situ"
+          ],
+          "daysFromNow": 75,
+          "hour": 14,
+          "minute": 30
+        }
+      ],
+      "photoSeries": [
+        {
+          "name": "excision_site",
+          "zone": "left_shoulder",
+          "title": "Excision site surveillance, left scapular region",
+          "images": [
+            {
+              "daysAgo": 700,
+              "notes": "Wide local excision site, sutured closure",
+              "style": "scar",
+              "size": 34,
+              "color": {
+                "red": 0.72,
+                "green": 0.3,
+                "blue": 0.3
+              },
+              "erythema": 0.45,
+              "linkedRecordID": "REC-007"
+            },
+            {
+              "daysAgo": 365,
+              "notes": "Well-healed scar, no pigment recurrence",
+              "style": "scar",
+              "size": 32,
+              "color": {
+                "red": 0.82,
+                "green": 0.58,
+                "blue": 0.52
+              },
+              "erythema": 0.15
+            },
+            {
+              "daysAgo": 180,
+              "notes": "Stable scar, no pigment recurrence",
+              "style": "scar",
+              "size": 32,
+              "color": {
+                "red": 0.87,
+                "green": 0.67,
+                "blue": 0.59
+              },
+              "erythema": 0.05
+            }
+          ]
+        }
+      ],
+      "problems": [
+        {
+          "problemID": "PRB-007",
+          "display": "Melanoma in situ of left scapular region",
+          "icd10Code": "D03.59",
+          "clinicalStatus": "resolved",
+          "verificationStatus": "confirmed",
+          "onsetDaysAgo": 730,
+          "abatementDaysAgo": 700
+        },
+        {
+          "problemID": "PRB-008",
+          "display": "Plaque psoriasis",
+          "icd10Code": "L40.0",
+          "clinicalStatus": "active",
+          "verificationStatus": "confirmed",
+          "onsetDaysAgo": 45
+        },
+        {
+          "problemID": "PRB-009",
+          "display": "Psoriatic arthritis, suspected",
+          "icd10Code": "L40.50",
+          "clinicalStatus": "active",
+          "verificationStatus": "provisional",
+          "onsetDaysAgo": 45
+        }
+      ],
+      "vitals": [
+        {
+          "vitalsID": "VIT-007",
+          "appointmentID": "APT-005",
+          "systolic": 124,
+          "diastolic": 78,
+          "heartRate": 70,
+          "temperatureF": 98.1,
+          "oxygenSaturation": 98,
+          "weightKg": 84.3,
+          "painScore": 1
+        },
+        {
+          "vitalsID": "VIT-008",
+          "daysAgo": 45,
+          "systolic": 128,
+          "diastolic": 82,
+          "heartRate": 74,
+          "temperatureF": 98.4,
+          "oxygenSaturation": 98,
+          "weightKg": 85.1,
+          "heightCm": 178.0,
+          "painScore": 3
+        }
+      ],
+      "labs": [
+        {
+          "labID": "LAB-1003-A-WBC",
+          "daysAgo": 43,
+          "panel": "Complete blood count",
+          "display": "White blood cell count",
+          "loinc": "6690-2",
+          "value": 6.8,
+          "unit": "10*3/uL",
+          "referenceRange": "4.0 to 11.0 10*3/uL",
+          "interpretation": "N"
+        },
+        {
+          "labID": "LAB-1003-A-HGB",
+          "daysAgo": 43,
+          "panel": "Complete blood count",
+          "display": "Hemoglobin",
+          "loinc": "718-7",
+          "value": 14.6,
+          "unit": "g/dL",
+          "referenceRange": "13.5 to 17.5 g/dL",
+          "interpretation": "N"
+        },
+        {
+          "labID": "LAB-1003-A-PLT",
+          "daysAgo": 43,
+          "panel": "Complete blood count",
+          "display": "Platelet count",
+          "loinc": "777-3",
+          "value": 262,
+          "unit": "10*3/uL",
+          "referenceRange": "150 to 400 10*3/uL",
+          "interpretation": "N"
+        },
+        {
+          "labID": "LAB-1003-A-ALT",
+          "daysAgo": 43,
+          "panel": "Comprehensive metabolic panel",
+          "display": "ALT (alanine aminotransferase)",
+          "loinc": "1742-6",
+          "value": 26,
+          "unit": "U/L",
+          "referenceRange": "7 to 56 U/L",
+          "interpretation": "N"
+        },
+        {
+          "labID": "LAB-1003-A-AST",
+          "daysAgo": 43,
+          "panel": "Comprehensive metabolic panel",
+          "display": "AST (aspartate aminotransferase)",
+          "loinc": "1920-8",
+          "value": 22,
+          "unit": "U/L",
+          "referenceRange": "10 to 40 U/L",
+          "interpretation": "N"
+        },
+        {
+          "labID": "LAB-1003-A-CRE",
+          "daysAgo": 43,
+          "panel": "Comprehensive metabolic panel",
+          "display": "Creatinine",
+          "loinc": "2160-0",
+          "value": 0.9,
+          "unit": "mg/dL",
+          "referenceRange": "0.7 to 1.3 mg/dL",
+          "interpretation": "N"
+        },
+        {
+          "labID": "LAB-1003-A-HBSAG",
+          "daysAgo": 43,
+          "panel": "Hepatitis panel",
+          "display": "Hepatitis B surface antigen",
+          "text": "Negative",
+          "referenceRange": "Negative",
+          "interpretation": "N"
+        },
+        {
+          "labID": "LAB-1003-A-HCV",
+          "daysAgo": 43,
+          "panel": "Hepatitis panel",
+          "display": "Hepatitis C antibody",
+          "text": "Negative",
+          "referenceRange": "Negative",
+          "interpretation": "N"
+        },
+        {
+          "labID": "LAB-1003-B-WBC",
+          "daysAgo": 2,
+          "panel": "Complete blood count",
+          "display": "White blood cell count",
+          "loinc": "6690-2",
+          "value": 6.2,
+          "unit": "10*3/uL",
+          "referenceRange": "4.0 to 11.0 10*3/uL",
+          "interpretation": "N"
+        },
+        {
+          "labID": "LAB-1003-B-HGB",
+          "daysAgo": 2,
+          "panel": "Complete blood count",
+          "display": "Hemoglobin",
+          "loinc": "718-7",
+          "value": 14.4,
+          "unit": "g/dL",
+          "referenceRange": "13.5 to 17.5 g/dL",
+          "interpretation": "N"
+        },
+        {
+          "labID": "LAB-1003-B-PLT",
+          "daysAgo": 2,
+          "panel": "Complete blood count",
+          "display": "Platelet count",
+          "loinc": "777-3",
+          "value": 248,
+          "unit": "10*3/uL",
+          "referenceRange": "150 to 400 10*3/uL",
+          "interpretation": "N"
+        },
+        {
+          "labID": "LAB-1003-B-ALT",
+          "daysAgo": 2,
+          "panel": "Comprehensive metabolic panel",
+          "display": "ALT (alanine aminotransferase)",
+          "loinc": "1742-6",
+          "value": 28,
+          "unit": "U/L",
+          "referenceRange": "7 to 56 U/L",
+          "interpretation": "N"
+        },
+        {
+          "labID": "LAB-1003-B-AST",
+          "daysAgo": 2,
+          "panel": "Comprehensive metabolic panel",
+          "display": "AST (aspartate aminotransferase)",
+          "loinc": "1920-8",
+          "value": 24,
+          "unit": "U/L",
+          "referenceRange": "10 to 40 U/L",
+          "interpretation": "N"
+        },
+        {
+          "labID": "LAB-1003-B-CRE",
+          "daysAgo": 2,
+          "panel": "Comprehensive metabolic panel",
+          "display": "Creatinine",
+          "loinc": "2160-0",
+          "value": 0.9,
+          "unit": "mg/dL",
+          "referenceRange": "0.7 to 1.3 mg/dL",
+          "interpretation": "N"
+        }
+      ]
+    },
+    {
+      "mrn": "OC-1004",
+      "firstName": "Sarah",
+      "lastName": "Johnson",
+      "dateOfBirth": "1996-02-11",
+      "gender": "Female",
+      "isSmoker": false,
+      "primaryClinician": "Dr. Natalie Jones, MD",
+      "preferredPharmacy": "Northside Specialty Pharmacy",
+      "carePlanSummary": "Sustain the dupilumab response, maintain barrier repair, and avoid nickel and other confirmed contact allergens.",
+      "allergies": [
+        "Nickel",
+        "Fragrance mix"
+      ],
+      "riskFlags": [
+        "Severe atopic dermatitis history",
+        "Atopic triad (asthma, allergic rhinitis)",
+        "Biologic therapy: dupilumab"
+      ],
+      "emergencyContactName": "Alex Johnson",
+      "emergencyContactPhone": "(555) 010-1004",
+      "bloodType": "AB+",
+      "medications": [
+        {
+          "rxID": "RX-012",
+          "medicationName": "Triamcinolone 0.1% Cream",
+          "genericName": "Triamcinolone",
+          "dose": "0.1%",
+          "route": "Topical",
+          "frequency": "Twice daily for flares",
+          "indication": "Atopic dermatitis body flares",
+          "status": "Active",
+          "writtenBy": "Dr. Natalie Jones, MD",
+          "writtenDaysAgo": 84,
+          "quantityInfo": "Apply to affected areas twice daily for up to 2 weeks during flares",
+          "refills": 2,
+          "lastFilledDaysAgo": 54,
+          "nextRefillInDays": 6,
+          "pharmacyName": "Northside Specialty Pharmacy",
+          "safetyNotes": [
+            "Avoid prolonged uninterrupted use"
+          ]
+        },
+        {
+          "rxID": "RX-013",
+          "medicationName": "Tacrolimus 0.1% Ointment",
+          "genericName": "Tacrolimus",
+          "dose": "0.1%",
+          "route": "Topical",
+          "frequency": "Twice daily as needed",
+          "indication": "Neck and flexural eczema",
+          "status": "Active",
+          "writtenBy": "Dr. Natalie Jones, MD",
+          "writtenDaysAgo": 84,
+          "quantityInfo": "Apply to the neck and skin folds twice daily as needed",
+          "refills": 3,
+          "lastFilledDaysAgo": 26,
+          "nextRefillInDays": 4,
+          "pharmacyName": "Northside Specialty Pharmacy",
+          "safetyNotes": [
+            "Transient burning is common in the first week"
+          ]
+        },
+        {
+          "rxID": "RX-014",
+          "medicationName": "Hydroxyzine 25 mg",
+          "genericName": "Hydroxyzine",
+          "dose": "25 mg",
+          "route": "Oral",
+          "frequency": "At bedtime as needed",
+          "indication": "Nocturnal pruritus",
+          "status": "Active",
+          "writtenBy": "Dr. Natalie Jones, MD",
+          "writtenDaysAgo": 84,
+          "quantityInfo": "Take 1 tablet at bedtime as needed for itch",
+          "refills": 1,
+          "lastFilledDaysAgo": 55,
+          "nextRefillInDays": 5,
+          "pharmacyName": "Northside Specialty Pharmacy",
+          "safetyNotes": [
+            "Sedating",
+            "Avoid driving after dosing"
+          ]
+        },
+        {
+          "rxID": "RX-015",
+          "medicationName": "Dupilumab 300 mg",
+          "genericName": "Dupilumab",
+          "dose": "300 mg",
+          "route": "Subcutaneous",
+          "frequency": "Every 2 weeks",
+          "indication": "Severe atopic dermatitis",
+          "status": "Active",
+          "writtenBy": "Dr. Natalie Jones, MD",
+          "writtenDaysAgo": 80,
+          "quantityInfo": "Inject 300 mg subcutaneously every 2 weeks",
+          "refills": 5,
+          "lastFilledDaysAgo": 3,
+          "nextRefillInDays": 25,
+          "pharmacyName": "Northside Specialty Pharmacy",
+          "safetyNotes": [
+            "Monitor for conjunctivitis",
+            "Prior authorization renewal approved"
+          ]
+        },
+        {
+          "rxID": "RX-016",
+          "medicationName": "CeraVe Moisturizing Cream",
+          "genericName": "Ceramide moisturizer",
+          "route": "Topical",
+          "frequency": "After bathing and as needed",
+          "indication": "Skin barrier repair",
+          "status": "Active",
+          "writtenBy": "Dr. Natalie Jones, MD",
+          "writtenDaysAgo": 84,
+          "quantityInfo": "Apply liberally after bathing and as needed",
+          "refills": 11,
+          "lastFilledDaysAgo": 20,
+          "nextRefillInDays": 10,
+          "pharmacyName": "Northside Specialty Pharmacy",
+          "safetyNotes": [
+            "Apply within 3 minutes of bathing"
+          ]
+        }
+      ],
+      "records": [
+        {
+          "recordID": "REC-009",
+          "daysAgo": 84,
+          "note": {
+            "conditionName": "Atopic Dermatitis",
+            "icd10Code": "L20.89",
+            "documentationStatus": "signed",
+            "clinician": "Dr. Natalie Jones, MD",
+            "visitType": "Severe eczema flare",
+            "severity": "Severe, EASI 24",
+            "ccHPI": "{age}-year-old woman with childhood eczema presents with a severe flare over the past 6 weeks. Intense itch disrupts sleep, waking her 3 to 4 times nightly. It affects both antecubital fossae and the neck. No relief from over-the-counter hydrocortisone 1%. History of asthma and allergic rhinitis (atopic triad). Triggers: stress from graduate school exams and frequent hot showers.",
+            "reviewOfSystems": "Poor sleep because of itching. Mild asthma exacerbation, using her rescue inhaler 3 times a week. Denies eye discharge or visual changes.",
+            "examFindings": "Both antecubital fossae: erythematous, lichenified plaques with excoriations and serous weeping. Neck: diffuse erythema with fine papules and excoriations. BSA about 15%. EASI 24 (severe). No honey-colored crusting, pustules, or other signs of secondary infection.",
+            "impressionsAndPlan": "Atopic dermatitis, severe (IGA 4, EASI 24). 1. Triamcinolone 0.1% cream to the arms twice daily for 2 weeks, then as needed for flares. 2. Tacrolimus 0.1% ointment to the neck twice daily. 3. Hydroxyzine 25 mg at bedtime for nocturnal itch. 4. Ceramide moisturizer with the soak-and-smear technique. 5. Given the severity and effect on quality of life, start dupilumab: 600 mg loading dose, then 300 mg every 2 weeks. Prior authorization submitted. 6. Follow-up in 4 weeks.",
+            "zones": [
+              "left_upper_extremity",
+              "right_upper_extremity",
+              "neck"
+            ],
+            "patientInstructions": "Use the soak-and-smear technique nightly, moisturize liberally, and watch for eye redness or irritation after starting dupilumab.",
+            "followUpPlan": "Biologic response check in 4 weeks.",
+            "recommendedOrders": [
+              "Dupilumab prior authorization"
+            ],
+            "carePlanSummary": "Biologic therapy started for uncontrolled atopic dermatitis affecting sleep and quality of life."
+          }
+        },
+        {
+          "recordID": "REC-010",
+          "daysAgo": 56,
+          "note": {
+            "conditionName": "Allergic Contact Dermatitis, Nickel",
+            "icd10Code": "L23.0",
+            "documentationStatus": "signed",
+            "clinician": "Dr. Natalie Jones, MD",
+            "visitType": "Biologic follow-up",
+            "severity": "Localized contact dermatitis with mild residual eczema",
+            "ccHPI": "{age}-year-old woman returns for her 4-week dupilumab check. Marked improvement in atopic dermatitis: sleeping through the night, itch down from 9/10 to 3/10. She reports a new itchy, blistering rash on the abdomen under her belt buckle for 5 days. No new detergents or topical products.",
+            "reviewOfSystems": "Improved mood and energy with better sleep. Asthma well controlled. No eye redness or irritation.",
+            "examFindings": "Atopic dermatitis: antecubital fossae and neck without active inflammation. EASI 6, down from 24. New finding: sharply demarcated, rectangular erythematous plaque with vesicles on the upper abdomen just above the umbilicus, matching the contact area of her belt buckle. Classic morphology for allergic contact dermatitis.",
+            "impressionsAndPlan": "1. Allergic contact dermatitis to nickel, upper abdomen: clinical diagnosis. Triamcinolone 0.1% cream to the area twice daily for 1 week. Avoid nickel-containing buckles and jewelry; use a buckle cover or nickel-free alternatives. Patch testing with an extended allergen panel is planned once the area has cleared. 2. Atopic dermatitis: excellent response to dupilumab, EASI improved from 24 to 6. Continue dupilumab 300 mg every 2 weeks and barrier care. 3. Follow-up in 8 weeks.",
+            "zones": [
+              "upper_abdomen"
+            ],
+            "patientInstructions": "Avoid nickel-containing buckles and snaps, and continue dupilumab and daily moisturizer.",
+            "followUpPlan": "Dermatitis and dupilumab follow-up in 8 weeks; patch testing to be scheduled.",
+            "recommendedOrders": [
+              "Extended allergen patch testing"
+            ],
+            "carePlanSummary": "Strong biologic response with a localized nickel contact dermatitis."
+          }
+        }
+      ],
+      "appointments": [
+        {
+          "appointmentID": "APT-007",
+          "reasonForVisit": "Dupilumab 8-week check",
+          "status": "In Exam",
+          "encounterType": "Biologic therapy follow-up",
+          "clinicianName": "Dr. Natalie Jones, MD",
+          "location": "Derm Infusion and Biologic Clinic",
+          "durationMinutes": 30,
+          "checkInStatus": "Checked in",
+          "prepInstructions": "Bring your injection log and note any eye irritation.",
+          "linkedDiagnoses": [
+            "Atopic Dermatitis",
+            "Allergic Contact Dermatitis"
+          ],
+          "offsetMinutes": -30,
+          "todayNote": {
+            "conditionName": "Atopic Dermatitis",
+            "icd10Code": "L20.89",
+            "documentationStatus": "draft",
+            "clinician": "Dr. Natalie Jones, MD",
+            "visitType": "Biologic therapy follow-up",
+            "severity": "Mild, EASI 3",
+            "ccHPI": "{age}-year-old woman returns 8 weeks after her last visit, now about 11 weeks into dupilumab 300 mg every 2 weeks. She is sleeping through the night. No eye redness, tearing, or irritation. The nickel rash on the abdomen cleared after she switched to a nickel-free buckle.",
+            "reviewOfSystems": "Denies eye symptoms, injection site reactions, or asthma flares.",
+            "examFindings": "Both antecubital fossae: faint residual erythema with minimal lichenification, no excoriations. Neck clear. Abdomen: prior nickel dermatitis site resolved. EASI 3, down from 6.",
+            "impressionsAndPlan": "1. Atopic dermatitis on dupilumab: EASI improved from 6 to 3. No conjunctivitis. Continue dupilumab 300 mg every 2 weeks, daily moisturizer, and topicals as needed for flares. 2. Allergic contact dermatitis to nickel: resolved with avoidance. Patch testing in 2 weeks; hold topical steroids on the back for 5 days before testing.",
+            "zones": [
+              "left_upper_extremity",
+              "right_upper_extremity"
+            ],
+            "patientInstructions": "Continue dupilumab on schedule and moisturize daily. Avoid topical steroids on the back for 5 days before patch testing.",
+            "followUpPlan": "Patch testing in 2 weeks.",
+            "recommendedOrders": [
+              "Extended allergen patch testing"
+            ],
+            "carePlanSummary": "Atopic dermatitis well controlled on dupilumab; patch testing to confirm contact allergens."
+          }
+        },
+        {
+          "appointmentID": "APT-008",
+          "reasonForVisit": "Patch testing: nickel and extended panel",
+          "status": "Scheduled",
+          "encounterType": "Patch testing",
+          "clinicianName": "Dr. Natalie Jones, MD",
+          "location": "Allergy Patch Lab",
+          "durationMinutes": 40,
+          "checkInStatus": "Prep instructions sent",
+          "prepInstructions": "Avoid topical steroids on the back for 5 days before testing.",
+          "linkedDiagnoses": [
+            "Allergic Contact Dermatitis"
+          ],
+          "daysFromNow": 14,
+          "hour": 9,
+          "minute": 30
+        }
+      ],
+      "photoSeries": [],
+      "problems": [
+        {
+          "problemID": "PRB-010",
+          "display": "Atopic dermatitis",
+          "icd10Code": "L20.89",
+          "clinicalStatus": "active",
+          "verificationStatus": "confirmed",
+          "onsetDaysAgo": 84
+        },
+        {
+          "problemID": "PRB-011",
+          "display": "Allergic contact dermatitis due to nickel",
+          "icd10Code": "L23.0",
+          "clinicalStatus": "active",
+          "verificationStatus": "confirmed",
+          "onsetDaysAgo": 56
+        },
+        {
+          "problemID": "PRB-012",
+          "display": "Mild intermittent asthma",
+          "icd10Code": "J45.20",
+          "clinicalStatus": "active",
+          "verificationStatus": "confirmed",
+          "onsetDaysAgo": 84
+        },
+        {
+          "problemID": "PRB-013",
+          "display": "Allergic rhinitis",
+          "icd10Code": "J30.9",
+          "clinicalStatus": "active",
+          "verificationStatus": "confirmed",
+          "onsetDaysAgo": 84
+        }
+      ],
+      "vitals": [
+        {
+          "vitalsID": "VIT-009",
+          "appointmentID": "APT-007",
+          "systolic": 108,
+          "diastolic": 66,
+          "heartRate": 72,
+          "temperatureF": 98.2,
+          "oxygenSaturation": 99,
+          "weightKg": 58.4,
+          "painScore": 0
+        },
+        {
+          "vitalsID": "VIT-010",
+          "daysAgo": 56,
+          "systolic": 110,
+          "diastolic": 70,
+          "heartRate": 76,
+          "temperatureF": 98.5,
+          "oxygenSaturation": 99,
+          "weightKg": 58.0,
+          "painScore": 1
+        },
+        {
+          "vitalsID": "VIT-011",
+          "daysAgo": 84,
+          "systolic": 116,
+          "diastolic": 74,
+          "heartRate": 88,
+          "temperatureF": 98.7,
+          "oxygenSaturation": 98,
+          "weightKg": 57.6,
+          "heightCm": 163.0,
+          "painScore": 4
+        }
+      ],
+      "labs": []
+    },
+    {
+      "mrn": "OC-1005",
+      "firstName": "David",
+      "lastName": "Williams",
+      "dateOfBirth": "1985-04-19",
+      "gender": "Male",
+      "isSmoker": true,
+      "primaryClinician": "Dr. Elizabeth Smith, MD",
+      "preferredPharmacy": "Harbor Care Pharmacy",
+      "carePlanSummary": "Control rosacea and monitor ocular symptoms, treat hand warts, and keep a low threshold for biopsy of changing pigmented lesions.",
+      "allergies": [
+        "No known drug allergies"
+      ],
+      "riskFlags": [
+        "Current smoker",
+        "Occupational sun exposure",
+        "Possible ocular rosacea"
+      ],
+      "emergencyContactName": "Lisa Williams",
+      "emergencyContactPhone": "(555) 010-1005",
+      "bloodType": "O-",
+      "medications": [
+        {
+          "rxID": "RX-017",
+          "medicationName": "Ivermectin 1% Cream",
+          "genericName": "Ivermectin",
+          "dose": "1%",
+          "route": "Topical",
+          "frequency": "Daily",
+          "indication": "Papulopustular rosacea",
+          "status": "Active",
+          "writtenBy": "Dr. Elizabeth Smith, MD",
+          "writtenDaysAgo": 21,
+          "quantityInfo": "Apply a thin layer to the face once daily",
+          "refills": 2,
+          "lastFilledDaysAgo": 20,
+          "nextRefillInDays": 10,
+          "pharmacyName": "Harbor Care Pharmacy",
+          "safetyNotes": [
+            "Apply to dry skin only"
+          ]
+        },
+        {
+          "rxID": "RX-018",
+          "medicationName": "Azelaic Acid 15% Gel",
+          "genericName": "Azelaic Acid",
+          "dose": "15%",
+          "route": "Topical",
+          "frequency": "Twice daily",
+          "indication": "Rosacea erythema and papules",
+          "status": "Active",
+          "writtenBy": "Dr. Elizabeth Smith, MD",
+          "writtenDaysAgo": 21,
+          "quantityInfo": "Apply to affected areas twice daily",
+          "refills": 3,
+          "lastFilledDaysAgo": 20,
+          "nextRefillInDays": 10,
+          "pharmacyName": "Harbor Care Pharmacy",
+          "safetyNotes": [
+            "May sting on broken skin"
+          ]
+        },
+        {
+          "rxID": "RX-019",
+          "medicationName": "Brimonidine 0.33% Gel",
+          "genericName": "Brimonidine",
+          "dose": "0.33%",
+          "route": "Topical",
+          "frequency": "Once daily as needed",
+          "indication": "Rosacea flushing",
+          "status": "Active",
+          "writtenBy": "Dr. Elizabeth Smith, MD",
+          "writtenDaysAgo": 21,
+          "quantityInfo": "Apply to the face once daily as needed for flushing",
+          "refills": 1,
+          "lastFilledDaysAgo": 20,
+          "nextRefillInDays": 10,
+          "pharmacyName": "Harbor Care Pharmacy",
+          "safetyNotes": [
+            "Counsel about rebound erythema"
+          ]
+        },
+        {
+          "rxID": "RX-020",
+          "medicationName": "Imiquimod 5% Cream",
+          "genericName": "Imiquimod",
+          "dose": "5%",
+          "route": "Topical",
+          "frequency": "Three nights a week",
+          "indication": "Recalcitrant verruca vulgaris",
+          "status": "Active",
+          "writtenBy": "Dr. Elizabeth Smith, MD",
+          "writtenDaysAgo": 10,
+          "quantityInfo": "Apply to the warts at bedtime on Monday, Wednesday and Friday for 8 weeks",
+          "refills": 0,
+          "lastFilledDaysAgo": 9,
+          "pharmacyName": "Harbor Care Pharmacy",
+          "safetyNotes": [
+            "Wash off after 6 to 10 hours",
+            "Expect local irritation"
+          ]
+        }
+      ],
+      "records": [
+        {
+          "recordID": "REC-013",
+          "daysAgo": 500,
+          "note": {
+            "conditionName": "Dysplastic Nevus",
+            "icd10Code": "D22.5",
+            "documentationStatus": "signed",
+            "clinician": "Dr. Elizabeth Smith, MD",
+            "visitType": "Skin cancer screening",
+            "severity": "Mild atypia",
+            "ccHPI": "{age}-year-old man presents for a full-body skin exam. He reports a mole on the left upper back that has changed color slightly over the past year. No family history of melanoma. Worked outdoor construction for 10 years. Current smoker.",
+            "reviewOfSystems": "Denies itching, bleeding, or pain at the lesion.",
+            "examFindings": "Full-body skin exam performed. Left upper back: 6 mm asymmetric nevus with slightly irregular borders and two-tone brown color. Dermoscopy shows an irregular pigment network at the periphery, no blue-white veil or regression structures. Other nevi on the trunk appear banal.",
+            "impressionsAndPlan": "Dysplastic nevus, left upper back, mildly atypical appearance. Shave biopsy performed today for histology. Re-excision only if moderate or severe atypia is reported. Yearly full-body skin exam recommended given his sun exposure history. Addendum, pathology: dysplastic nevus with mild atypia, margins clear; no further treatment needed. Patient notified by phone.",
+            "zones": [
+              "torso"
+            ],
+            "patientInstructions": "Leave the dressing in place for 24 hours, then apply petrolatum daily. Report drainage or spreading redness.",
+            "followUpPlan": "Pathology by phone in 7 to 10 days. Full-body skin exam yearly.",
+            "recommendedOrders": [
+              "Shave biopsy pathology"
+            ],
+            "carePlanSummary": "Atypical nevus removed by shave biopsy; yearly surveillance advised because of sun exposure."
+          }
+        },
+        {
+          "recordID": "REC-011",
+          "daysAgo": 21,
+          "note": {
+            "conditionName": "Rosacea",
+            "icd10Code": "L71.8",
+            "documentationStatus": "signed",
+            "clinician": "Dr. Elizabeth Smith, MD",
+            "visitType": "Rosacea evaluation",
+            "severity": "Moderate with ocular symptoms",
+            "ccHPI": "{age}-year-old man presents with persistent facial redness, flushing and pimple-like bumps for the past 4 months. Triggers include alcohol, sun exposure and hot showers. No benefit from over-the-counter redness creams. His mother has rosacea. He has not had a skin exam since his dysplastic nevus biopsy about 16 months ago.",
+            "reviewOfSystems": "Mild eye grittiness and redness in the mornings, possible ocular rosacea. Denies visual changes.",
+            "examFindings": "Centrofacial erythema with prominent telangiectasias on the nasal alae and medial cheeks. About 12 inflammatory papules and 4 pustules on the cheeks and chin. No comedones. Early thickening of the nasal skin. Eyes: bilateral conjunctival injection with mild blepharitis.",
+            "impressionsAndPlan": "Rosacea, papulopustular type with early phymatous change and ocular symptoms. 1. Ivermectin 1% cream daily. 2. Azelaic acid 15% gel twice daily. 3. Brimonidine 0.33% gel as needed for flushing. 4. Trigger counseling: reduce alcohol, SPF 50+ daily, lukewarm showers. 5. Ophthalmology referral for possible ocular rosacea; warm compresses and lid hygiene in the meantime. 6. Follow-up in 6 weeks; the overdue yearly skin exam will be done at that visit.",
+            "zones": [
+              "facial_mesh_nose",
+              "left_cheek",
+              "right_cheek",
+              "chin"
+            ],
+            "patientInstructions": "Reduce alcohol and heat triggers, use sunscreen daily, and start warm compresses and lid hygiene.",
+            "followUpPlan": "Rosacea reassessment in 6 weeks; ophthalmology evaluation.",
+            "recommendedOrders": [
+              "Ophthalmology referral"
+            ],
+            "carePlanSummary": "Multimodal rosacea regimen started because of ocular and early phymatous features."
+          }
+        },
+        {
+          "recordID": "REC-012",
+          "daysAgo": 10,
+          "note": {
+            "conditionName": "Verruca Vulgaris",
+            "icd10Code": "B07.8",
+            "documentationStatus": "signed",
+            "clinician": "Dr. Elizabeth Smith, MD",
+            "visitType": "Procedure visit",
+            "severity": "Localized, recalcitrant",
+            "ccHPI": "{age}-year-old man presents for a wart on the right hand, present for 6 months and enlarging, with two new satellite lesions. Minimal response to over-the-counter salicylic acid and duct tape. He started his rosacea regimen 11 days ago and is tolerating it.",
+            "reviewOfSystems": "Denies pain, bleeding, or warts elsewhere.",
+            "examFindings": "Right dorsal hand at the second MCP joint: 7 mm verrucous papule with thrombosed capillaries and loss of skin lines. Two 2 mm satellite verrucae adjacent to it.",
+            "impressionsAndPlan": "Verruca vulgaris, right hand, 3 lesions. Liquid nitrogen cryotherapy applied to all three lesions today (2 freeze-thaw cycles). Imiquimod 5% cream three nights a week for 8 weeks. Counseled on HPV transmission and handwashing. Return in 4 weeks for retreatment if needed, combined with the rosacea check.",
+            "zones": [
+              "right_hand"
+            ],
+            "patientInstructions": "Expect blistering after cryotherapy. Keep the area clean and dry and do not pick at the warts.",
+            "followUpPlan": "Return in 4 weeks for possible wart retreatment and the rosacea check.",
+            "recommendedOrders": [
+              "Cryotherapy performed in clinic",
+              "Imiquimod 5% cream"
+            ],
+            "carePlanSummary": "Wart treatment added; the rosacea regimen is too new to assess."
+          }
+        }
+      ],
+      "appointments": [
+        {
+          "appointmentID": "APT-010",
+          "reasonForVisit": "Urgent: new rapidly growing lesion",
+          "status": "In Exam",
+          "encounterType": "Urgent lesion evaluation",
+          "clinicianName": "Dr. Elizabeth Smith, MD",
+          "location": "Rapid Access Derm Clinic",
+          "durationMinutes": 30,
+          "checkInStatus": "Same-day add-on, checked in",
+          "prepInstructions": "Keep the lesion uncovered if possible for photography and measurement.",
+          "linkedDiagnoses": [
+            "Atypical pigmented lesion"
+          ],
+          "offsetMinutes": -15,
+          "todayNote": {
+            "conditionName": "Atypical Pigmented Lesion",
+            "icd10Code": "D49.2",
+            "documentationStatus": "draft",
+            "clinician": "Dr. Elizabeth Smith, MD",
+            "visitType": "Urgent diagnostic biopsy",
+            "severity": "Suspicious for melanoma, pathology pending",
+            "ccHPI": "{age}-year-old man seen urgently for a new dark lesion on the left forearm, first noticed 3 weeks ago and enlarging over the past week. Occasionally itchy, no bleeding. History of a dysplastic nevus on the left upper back removed by shave biopsy. Occupational sun exposure; current smoker.",
+            "reviewOfSystems": "Denies weight loss, fatigue, or enlarged lymph nodes.",
+            "examFindings": "Left dorsal forearm: 6 mm asymmetric macule with irregular borders and variegated dark brown to black color. No ulceration. Dermoscopy: atypical pigment network with an off-center hyperpigmented focus. No palpable epitrochlear or axillary lymphadenopathy.",
+            "impressionsAndPlan": "Atypical pigmented lesion, left forearm: melanoma must be ruled out. 6 mm punch biopsy performed today under local anesthesia (1% lidocaine with epinephrine) and closed with 2 sutures. Specimen sent for rush dermatopathology; pathology pending. Return in 7 days for suture removal and results.",
+            "zones": [
+              "left_upper_extremity"
+            ],
+            "patientInstructions": "Keep the biopsy site dry for 24 hours, then change the dressing daily. Call for significant bleeding or signs of infection.",
+            "followUpPlan": "Return in 7 days for suture removal and pathology results.",
+            "recommendedOrders": [
+              "Rush dermatopathology"
+            ],
+            "carePlanSummary": "Urgent diagnostic pathway for a suspicious pigmented lesion."
+          }
+        },
+        {
+          "appointmentID": "APT-016",
+          "reasonForVisit": "Suture removal and pathology results",
+          "status": "Scheduled",
+          "encounterType": "Procedure follow-up",
+          "clinicianName": "Dr. Elizabeth Smith, MD",
+          "location": "Rapid Access Derm Clinic",
+          "durationMinutes": 15,
+          "checkInStatus": "Reminder scheduled",
+          "prepInstructions": "Keep the biopsy site covered until the visit.",
+          "linkedDiagnoses": [
+            "Atypical pigmented lesion"
+          ],
+          "daysFromNow": 7,
+          "hour": 9,
+          "minute": 0
+        },
+        {
+          "appointmentID": "APT-009",
+          "reasonForVisit": "Wart cryotherapy retreatment and rosacea check",
+          "status": "Scheduled",
+          "encounterType": "Procedure follow-up",
+          "clinicianName": "Dr. Elizabeth Smith, MD",
+          "location": "Derm Procedure Clinic",
+          "durationMinutes": 20,
+          "checkInStatus": "Reminder scheduled",
+          "prepInstructions": "Do not apply imiquimod the night before the visit.",
+          "linkedDiagnoses": [
+            "Verruca Vulgaris",
+            "Rosacea"
+          ],
+          "daysFromNow": 18,
+          "hour": 15,
+          "minute": 0
+        }
+      ],
+      "photoSeries": [],
+      "problems": [
+        {
+          "problemID": "PRB-014",
+          "display": "Dysplastic nevus of trunk",
+          "icd10Code": "D22.5",
+          "clinicalStatus": "resolved",
+          "verificationStatus": "confirmed",
+          "onsetDaysAgo": 500,
+          "abatementDaysAgo": 493
+        },
+        {
+          "problemID": "PRB-015",
+          "display": "Rosacea, papulopustular",
+          "icd10Code": "L71.8",
+          "clinicalStatus": "active",
+          "verificationStatus": "confirmed",
+          "onsetDaysAgo": 21
+        },
+        {
+          "problemID": "PRB-016",
+          "display": "Verruca vulgaris of right hand",
+          "icd10Code": "B07.8",
+          "clinicalStatus": "active",
+          "verificationStatus": "confirmed",
+          "onsetDaysAgo": 10
+        },
+        {
+          "problemID": "PRB-017",
+          "display": "Nicotine dependence, cigarettes",
+          "icd10Code": "F17.210",
+          "clinicalStatus": "active",
+          "verificationStatus": "confirmed",
+          "onsetDaysAgo": 500
+        }
+      ],
+      "vitals": [
+        {
+          "vitalsID": "VIT-012",
+          "appointmentID": "APT-010",
+          "systolic": 132,
+          "diastolic": 84,
+          "heartRate": 80,
+          "temperatureF": 98.6,
+          "oxygenSaturation": 97,
+          "weightKg": 88.0,
+          "painScore": 0
+        },
+        {
+          "vitalsID": "VIT-013",
+          "daysAgo": 10,
+          "systolic": 130,
+          "diastolic": 82,
+          "heartRate": 78,
+          "temperatureF": 98.4,
+          "oxygenSaturation": 97,
+          "weightKg": 88.2,
+          "painScore": 0
+        },
+        {
+          "vitalsID": "VIT-014",
+          "daysAgo": 21,
+          "systolic": 134,
+          "diastolic": 86,
+          "heartRate": 82,
+          "temperatureF": 98.5,
+          "oxygenSaturation": 96,
+          "weightKg": 88.5,
+          "heightCm": 180.0,
+          "painScore": 0
+        }
+      ],
+      "labs": []
+    },
+    {
+      "mrn": "OC-2001",
+      "firstName": "Thomas",
+      "lastName": "Randall",
+      "dateOfBirth": "1970-08-22",
+      "gender": "Male",
+      "isSmoker": false,
+      "primaryClinician": "Dr. Elizabeth Smith, MD",
+      "preferredPharmacy": "Northside Specialty Pharmacy",
+      "carePlanSummary": "Maintain psoriasis clearance on guselkumab every 8 weeks with yearly tuberculosis screening.",
+      "allergies": [
+        "No known drug allergies"
+      ],
+      "riskFlags": [
+        "Biologic therapy: guselkumab",
+        "TB screening negative within 12 months"
+      ],
+      "emergencyContactName": "Karen Randall",
+      "emergencyContactPhone": "(555) 010-2001",
+      "medications": [
+        {
+          "rxID": "RX-021",
+          "medicationName": "Guselkumab 100 mg",
+          "genericName": "Guselkumab",
+          "dose": "100 mg",
+          "route": "Subcutaneous",
+          "frequency": "Every 8 weeks",
+          "indication": "Moderate to severe plaque psoriasis",
+          "status": "Active",
+          "writtenBy": "Dr. Elizabeth Smith, MD",
+          "writtenDaysAgo": 161,
+          "startDaysAgo": 140,
+          "quantityInfo": "Inject 100 mg subcutaneously at weeks 0 and 4, then every 8 weeks (given in clinic)",
+          "refills": 5,
+          "lastFilledDaysAgo": 3,
+          "nextRefillInDays": 53,
+          "pharmacyName": "Northside Specialty Pharmacy",
+          "safetyNotes": [
+            "Yearly tuberculosis screening",
+            "Hold for active infection"
+          ]
+        },
+        {
+          "rxID": "RX-022",
+          "medicationName": "Clobetasol 0.05% Ointment",
+          "genericName": "Clobetasol",
+          "dose": "0.05%",
+          "route": "Topical",
+          "frequency": "Twice daily as needed",
+          "indication": "Plaque psoriasis flares",
+          "status": "Active",
+          "writtenBy": "Dr. Elizabeth Smith, MD",
+          "writtenDaysAgo": 168,
+          "quantityInfo": "Apply to plaques twice daily as needed, for up to 2 weeks at a time",
+          "refills": 1,
+          "lastFilledDaysAgo": 120,
+          "pharmacyName": "Northside Specialty Pharmacy",
+          "safetyNotes": [
+            "Avoid face and groin",
+            "Limit continuous use because of atrophy risk"
+          ]
+        }
+      ],
+      "records": [
+        {
+          "recordID": "REC-014",
+          "daysAgo": 168,
+          "note": {
+            "conditionName": "Plaque Psoriasis",
+            "icd10Code": "L40.0",
+            "documentationStatus": "signed",
+            "clinician": "Dr. Elizabeth Smith, MD",
+            "visitType": "Biologic therapy evaluation",
+            "severity": "Moderate to severe, BSA 12%",
+            "ccHPI": "{age}-year-old man with plaque psoriasis for 10 years presents with worsening disease despite topical steroids and a prior course of phototherapy. Itch and scaling interfere with work. No joint pain or stiffness.",
+            "reviewOfSystems": "Denies joint pain, fever, cough, or night sweats.",
+            "examFindings": "Thick erythematous plaques with silvery scale on both elbows and forearms and across the lower back. BSA 12%. Nails normal. No joint swelling or tenderness.",
+            "impressionsAndPlan": "Plaque psoriasis, moderate to severe, BSA 12%, with inadequate response to topical therapy and phototherapy. Plan guselkumab 100 mg subcutaneously at weeks 0 and 4, then every 8 weeks. QuantiFERON-TB Gold and hepatitis panel drawn today; first dose once screening is negative and prior authorization is approved. Clobetasol 0.05% ointment as needed for thick plaques in the meantime. Addendum: QuantiFERON-TB Gold negative and hepatitis panel negative; guselkumab started 4 weeks after this visit.",
+            "zones": [
+              "left_upper_extremity",
+              "right_upper_extremity",
+              "lower_back"
+            ],
+            "patientInstructions": "Complete the screening labs today. Report fever, persistent cough, or signs of infection before each injection.",
+            "followUpPlan": "First guselkumab injection after negative screening, then week 4, then every 8 weeks.",
+            "recommendedOrders": [
+              "QuantiFERON-TB Gold",
+              "Hepatitis B and C panel",
+              "Guselkumab prior authorization"
+            ],
+            "carePlanSummary": "Escalated to biologic therapy after topical therapy and phototherapy failed."
+          }
+        }
+      ],
+      "appointments": [
+        {
+          "appointmentID": "APT-011",
+          "reasonForVisit": "Psoriasis biologic injection",
+          "status": "Completed",
+          "encounterType": "Biologic injection",
+          "clinicianName": "Dr. Elizabeth Smith, MD",
+          "location": "Derm Infusion and Biologic Clinic",
+          "durationMinutes": 15,
+          "checkInStatus": "Checked in",
+          "prepInstructions": "Report any fever or infection before the injection.",
+          "linkedDiagnoses": [
+            "Plaque Psoriasis"
+          ],
+          "offsetMinutes": -120,
+          "todayNote": {
+            "conditionName": "Plaque Psoriasis",
+            "icd10Code": "L40.0",
+            "documentationStatus": "signed",
+            "clinician": "Dr. Elizabeth Smith, MD",
+            "visitType": "Biologic therapy visit",
+            "severity": "Stable, BSA under 1%",
+            "ccHPI": "{age}-year-old man presents for his week 20 guselkumab injection. His first dose was 20 weeks ago after a negative QuantiFERON-TB Gold. Skin is nearly clear with no new flares. No infections, fever, or injection site reactions since the last dose 8 weeks ago.",
+            "reviewOfSystems": "Denies fever, cough, joint pain, or recent infections.",
+            "examFindings": "No active plaques on the elbows, forearms, or lower back; BSA under 1%. Right anterior thigh injection site: clean, no erythema or induration after the injection.",
+            "impressionsAndPlan": "Plaque psoriasis, stable on guselkumab, BSA under 1%. Guselkumab 100 mg given subcutaneously in the right thigh today; tolerated well with no immediate reaction. Next dose in 8 weeks. Tuberculosis screening negative within the past 12 months; repeat yearly.",
+            "zones": [
+              "right_lower_extremity"
+            ],
+            "patientInstructions": "Watch the injection site for redness or swelling. Call before the next dose if you have a fever or infection.",
+            "followUpPlan": "Next guselkumab injection in 8 weeks.",
+            "recommendedOrders": [
+              "Guselkumab 100 mg, next dose in 8 weeks"
+            ],
+            "carePlanSummary": "Biologic maintenance for plaque psoriasis with sustained clearance."
+          }
+        },
+        {
+          "appointmentID": "APT-018",
+          "reasonForVisit": "Guselkumab injection, week 28",
+          "status": "Scheduled",
+          "encounterType": "Biologic injection",
+          "clinicianName": "Dr. Elizabeth Smith, MD",
+          "location": "Derm Infusion and Biologic Clinic",
+          "durationMinutes": 15,
+          "checkInStatus": "Reminder scheduled",
+          "prepInstructions": "Report any fever or infection before the injection.",
+          "linkedDiagnoses": [
+            "Plaque Psoriasis"
+          ],
+          "daysFromNow": 56,
+          "hour": 8,
+          "minute": 0
+        }
+      ],
+      "photoSeries": [],
+      "problems": [
+        {
+          "problemID": "PRB-018",
+          "display": "Plaque psoriasis",
+          "icd10Code": "L40.0",
+          "clinicalStatus": "active",
+          "verificationStatus": "confirmed",
+          "onsetDaysAgo": 168
+        }
+      ],
+      "vitals": [
+        {
+          "vitalsID": "VIT-015",
+          "appointmentID": "APT-011",
+          "systolic": 126,
+          "diastolic": 80,
+          "heartRate": 72,
+          "temperatureF": 98.0,
+          "oxygenSaturation": 98,
+          "weightKg": 92.4,
+          "painScore": 0
+        },
+        {
+          "vitalsID": "VIT-016",
+          "daysAgo": 168,
+          "systolic": 130,
+          "diastolic": 84,
+          "heartRate": 76,
+          "temperatureF": 98.3,
+          "oxygenSaturation": 97,
+          "weightKg": 94.0,
+          "heightCm": 183.0,
+          "painScore": 2
+        }
+      ],
+      "labs": [
+        {
+          "labID": "LAB-2001-QFT",
+          "daysAgo": 175,
+          "panel": "Tuberculosis screening",
+          "display": "Interferon gamma release assay for tuberculosis",
+          "text": "Negative",
+          "referenceRange": "Negative",
+          "interpretation": "N"
+        }
+      ]
+    },
+    {
+      "mrn": "OC-2002",
+      "firstName": "Margaret",
+      "lastName": "Liu",
+      "dateOfBirth": "1948-11-03",
+      "gender": "Female",
+      "isSmoker": false,
+      "primaryClinician": "Dr. Natalie Jones, MD",
+      "preferredPharmacy": "Harbor Care Pharmacy",
+      "carePlanSummary": "Yearly full-body skin exam because of fair skin and extensive sun exposure.",
+      "allergies": [
+        "Latex"
+      ],
+      "riskFlags": [
+        "Fair skin with extensive sun exposure history"
+      ],
+      "emergencyContactName": "Daniel Liu",
+      "emergencyContactPhone": "(555) 010-2002",
+      "medications": [
+        {
+          "rxID": "RX-023",
+          "medicationName": "Amlodipine 5 mg",
+          "genericName": "Amlodipine",
+          "dose": "5 mg",
+          "route": "Oral",
+          "frequency": "Daily",
+          "indication": "Hypertension",
+          "status": "Active",
+          "writtenBy": "Primary care (outside prescriber)",
+          "writtenDaysAgo": 400,
+          "quantityInfo": "Take 1 tablet daily",
+          "refills": 3,
+          "lastFilledDaysAgo": 15,
+          "nextRefillInDays": 15,
+          "pharmacyName": "Harbor Care Pharmacy",
+          "safetyNotes": [
+            "May cause ankle swelling"
+          ]
+        }
+      ],
+      "records": [
+        {
+          "recordID": "REC-015",
+          "daysAgo": 365,
+          "note": {
+            "conditionName": "Annual Skin Exam",
+            "icd10Code": "Z12.83",
+            "documentationStatus": "signed",
+            "clinician": "Dr. Natalie Jones, MD",
+            "visitType": "Annual screening",
+            "severity": "Routine, benign findings",
+            "ccHPI": "{age}-year-old woman presents for her yearly full-body skin screening. No new, changing, or symptomatic lesions. History of extensive sun exposure. Latex allergy noted; non-latex gloves used.",
+            "reviewOfSystems": "Denies itching, bleeding lesions, or non-healing sores.",
+            "examFindings": "Full-body skin exam performed. Scattered seborrheic keratoses and cherry angiomas consistent with age. No atypical nevi and no lesions suspicious for malignancy.",
+            "impressionsAndPlan": "Normal full-body skin screening with benign seborrheic keratoses and cherry angiomas. No malignancy. Patient reassured. Return in 12 months for routine screening, sooner for any changing lesion.",
+            "zones": [],
+            "patientInstructions": "Use sunscreen daily and check your skin monthly.",
+            "followUpPlan": "Annual skin exam in 12 months.",
+            "recommendedOrders": [],
+            "carePlanSummary": "Routine yearly skin cancer screening."
+          }
+        }
+      ],
+      "appointments": [
+        {
+          "appointmentID": "APT-012",
+          "reasonForVisit": "Annual skin exam",
+          "status": "Checked In",
+          "encounterType": "Annual skin exam",
+          "clinicianName": "Dr. Natalie Jones, MD",
+          "location": "Derm Preventive Clinic",
+          "durationMinutes": 30,
+          "checkInStatus": "Checked in",
+          "prepInstructions": "Remove nail polish so the nails can be examined.",
+          "linkedDiagnoses": [
+            "Skin cancer screening"
+          ],
+          "offsetMinutes": 30
+        }
+      ],
+      "photoSeries": [],
+      "problems": [
+        {
+          "problemID": "PRB-019",
+          "display": "Seborrheic keratosis",
+          "icd10Code": "L82.1",
+          "clinicalStatus": "active",
+          "verificationStatus": "confirmed",
+          "onsetDaysAgo": 365
+        },
+        {
+          "problemID": "PRB-020",
+          "display": "Essential hypertension",
+          "icd10Code": "I10",
+          "clinicalStatus": "active",
+          "verificationStatus": "confirmed",
+          "onsetDaysAgo": 400
+        }
+      ],
+      "vitals": [
+        {
+          "vitalsID": "VIT-017",
+          "daysAgo": 365,
+          "systolic": 138,
+          "diastolic": 76,
+          "heartRate": 70,
+          "temperatureF": 97.9,
+          "oxygenSaturation": 97,
+          "weightKg": 59.8,
+          "heightCm": 157.0,
+          "painScore": 0
+        }
+      ],
+      "labs": []
+    },
+    {
+      "mrn": "OC-2003",
+      "firstName": "Patricia",
+      "lastName": "Okafor",
+      "dateOfBirth": "1953-05-30",
+      "gender": "Female",
+      "isSmoker": false,
+      "primaryClinician": "Dr. Natalie Jones, MD",
+      "preferredPharmacy": "Downtown Family Pharmacy",
+      "carePlanSummary": "Mohs surgery for basal cell carcinoma of the nasal tip, continuing apixaban around the procedure unless cardiology advises otherwise.",
+      "allergies": [
+        "Codeine"
+      ],
+      "riskFlags": [
+        "Anticoagulated: apixaban for atrial fibrillation",
+        "Biopsy-proven basal cell carcinoma, nasal tip"
+      ],
+      "emergencyContactName": "Samuel Okafor",
+      "emergencyContactPhone": "(555) 010-2003",
+      "medications": [
+        {
+          "rxID": "RX-024",
+          "medicationName": "Apixaban 5 mg",
+          "genericName": "Apixaban",
+          "dose": "5 mg",
+          "route": "Oral",
+          "frequency": "Twice daily",
+          "indication": "Atrial fibrillation",
+          "status": "Active",
+          "writtenBy": "Cardiology (outside prescriber)",
+          "writtenDaysAgo": 300,
+          "quantityInfo": "Take 1 tablet twice daily",
+          "refills": 3,
+          "lastFilledDaysAgo": 18,
+          "nextRefillInDays": 12,
+          "pharmacyName": "Downtown Family Pharmacy",
+          "safetyNotes": [
+            "Bleeding risk with procedures",
+            "Do not stop without cardiology guidance"
+          ]
+        }
+      ],
+      "records": [
+        {
+          "recordID": "REC-016",
+          "daysAgo": 14,
+          "note": {
+            "conditionName": "Basal Cell Carcinoma",
+            "icd10Code": "C44.311",
+            "documentationStatus": "signed",
+            "clinician": "Dr. Natalie Jones, MD",
+            "visitType": "Lesion evaluation and biopsy",
+            "severity": "Biopsy-proven malignancy",
+            "ccHPI": "{age}-year-old woman presents with a slowly enlarging bump on the tip of the nose for about 8 months that bleeds when rubbed. She takes apixaban for atrial fibrillation. Codeine allergy.",
+            "reviewOfSystems": "Denies pain, numbness, or other new skin lesions.",
+            "examFindings": "Nasal tip: 5 mm pearly papule with telangiectasias and a central crust. No other suspicious lesions on the face. No palpable cervical lymphadenopathy.",
+            "impressionsAndPlan": "Lesion of the nasal tip, clinically consistent with basal cell carcinoma. Shave biopsy performed today with apixaban continued; hemostasis with aluminum chloride and pressure. Addendum, pathology: nodular basal cell carcinoma. Patient notified by phone and referred for Mohs micrographic surgery because of the nasal tip location.",
+            "zones": [
+              "facial_mesh_nose"
+            ],
+            "patientInstructions": "Apply petrolatum and a bandage daily. Hold firm pressure for 15 minutes if the site bleeds. Continue apixaban as prescribed.",
+            "followUpPlan": "Mohs surgery consult in 2 weeks.",
+            "recommendedOrders": [
+              "Shave biopsy pathology",
+              "Mohs surgery referral"
+            ],
+            "carePlanSummary": "Biopsy-proven nodular basal cell carcinoma of the nasal tip referred for Mohs surgery."
+          }
+        }
+      ],
+      "appointments": [
+        {
+          "appointmentID": "APT-013",
+          "reasonForVisit": "Mohs surgery consult",
+          "status": "Confirmed",
+          "encounterType": "Surgical consult",
+          "clinicianName": "Dr. Elizabeth Smith, MD",
+          "location": "Mohs Surgery Suite",
+          "durationMinutes": 30,
+          "checkInStatus": "Confirmed by patient",
+          "prepInstructions": "Bring a current medication list. Do not stop apixaban before the visit.",
+          "linkedDiagnoses": [
+            "Basal Cell Carcinoma"
+          ],
+          "offsetMinutes": 60
+        },
+        {
+          "appointmentID": "APT-017",
+          "reasonForVisit": "Mohs micrographic surgery",
+          "status": "Scheduled",
+          "encounterType": "Mohs surgery",
+          "clinicianName": "Dr. Elizabeth Smith, MD",
+          "location": "Mohs Surgery Suite",
+          "durationMinutes": 180,
+          "checkInStatus": "Reminder scheduled",
+          "prepInstructions": "Continue apixaban unless cardiology advises otherwise. Eat a normal breakfast and arrange a ride home.",
+          "linkedDiagnoses": [
+            "Basal Cell Carcinoma"
+          ],
+          "daysFromNow": 5,
+          "hour": 8,
+          "minute": 0
+        }
+      ],
+      "photoSeries": [],
+      "problems": [
+        {
+          "problemID": "PRB-021",
+          "display": "Basal cell carcinoma of skin of nose",
+          "icd10Code": "C44.311",
+          "clinicalStatus": "active",
+          "verificationStatus": "confirmed",
+          "onsetDaysAgo": 14
+        },
+        {
+          "problemID": "PRB-022",
+          "display": "Atrial fibrillation",
+          "icd10Code": "I48.91",
+          "clinicalStatus": "active",
+          "verificationStatus": "confirmed",
+          "onsetDaysAgo": 300
+        }
+      ],
+      "vitals": [
+        {
+          "vitalsID": "VIT-018",
+          "daysAgo": 14,
+          "systolic": 134,
+          "diastolic": 78,
+          "heartRate": 74,
+          "temperatureF": 98.2,
+          "oxygenSaturation": 97,
+          "weightKg": 71.5,
+          "heightCm": 160.0,
+          "painScore": 0
+        }
+      ],
+      "labs": []
+    },
+    {
+      "mrn": "OC-2004",
+      "firstName": "Carlos",
+      "lastName": "Rivera",
+      "dateOfBirth": "1970-01-15",
+      "gender": "Male",
+      "isSmoker": true,
+      "primaryClinician": "Dr. Elizabeth Smith, MD",
+      "preferredPharmacy": "Harbor Care Pharmacy",
+      "carePlanSummary": "Treat actinic keratoses of the nose and reinforce sun protection and smoking cessation.",
+      "allergies": [
+        "No known drug allergies"
+      ],
+      "riskFlags": [
+        "Current smoker",
+        "High cumulative UV exposure (outdoor work)"
+      ],
+      "emergencyContactName": "Rosa Rivera",
+      "emergencyContactPhone": "(555) 010-2004",
+      "medications": [
+        {
+          "rxID": "RX-025",
+          "medicationName": "Fluorouracil 5% Cream",
+          "genericName": "Fluorouracil",
+          "dose": "5%",
+          "route": "Topical",
+          "frequency": "Twice daily for 3 weeks",
+          "indication": "Field treatment of actinic keratoses",
+          "status": "Completed",
+          "writtenBy": "Dr. Elizabeth Smith, MD",
+          "writtenDaysAgo": 60,
+          "startDaysAgo": 46,
+          "quantityInfo": "Apply to the nose twice daily for 3 weeks",
+          "refills": 0,
+          "lastFilledDaysAgo": 59,
+          "pharmacyName": "Harbor Care Pharmacy",
+          "safetyNotes": [
+            "Expect brisk inflammatory reaction",
+            "Avoid the eyes and nostrils"
+          ]
+        }
+      ],
+      "records": [
+        {
+          "recordID": "REC-017",
+          "daysAgo": 60,
+          "note": {
+            "conditionName": "Actinic Keratosis",
+            "icd10Code": "L57.0",
+            "documentationStatus": "signed",
+            "clinician": "Dr. Elizabeth Smith, MD",
+            "visitType": "Lesion evaluation and procedure",
+            "severity": "Mild actinic damage",
+            "ccHPI": "{age}-year-old man with decades of outdoor work presents with rough, tender spots on the nose for several months. Current smoker. No bleeding or rapid growth.",
+            "reviewOfSystems": "Denies bleeding, pain at rest, or non-healing sores.",
+            "examFindings": "Nasal dorsum and right nasal sidewall: three discrete erythematous, scaly, sandpaper-like papules measuring 3 to 4 mm. No induration or infiltration.",
+            "impressionsAndPlan": "Actinic keratoses of the nose, 3 lesions. Liquid nitrogen cryotherapy applied to all three lesions (single 10-second freeze-thaw cycle). Fluorouracil 5% cream twice daily for 3 weeks as field therapy once the treated sites have healed, in about 2 weeks. Counseled on sun protection, hats and smoking cessation. Return in 2 months to reassess and retreat any persistent lesions.",
+            "zones": [
+              "facial_mesh_nose"
+            ],
+            "patientInstructions": "Expect blistering or crusting at the treated sites. Do not pick the crusts. Start fluorouracil after the crusts fall off.",
+            "followUpPlan": "Return in 2 months for reassessment and repeat cryotherapy if needed.",
+            "recommendedOrders": [
+              "Cryotherapy performed in clinic",
+              "Fluorouracil 5% cream"
+            ],
+            "carePlanSummary": "Destruction and field treatment of precancerous lesions on the nose."
+          }
+        }
+      ],
+      "appointments": [
+        {
+          "appointmentID": "APT-014",
+          "reasonForVisit": "AK cryotherapy session",
+          "status": "Scheduled",
+          "encounterType": "Procedure",
+          "clinicianName": "Dr. Elizabeth Smith, MD",
+          "location": "Derm Procedure Clinic",
+          "durationMinutes": 20,
+          "checkInStatus": "Reminder sent",
+          "prepInstructions": "Do not apply creams to the nose on the day of the visit.",
+          "linkedDiagnoses": [
+            "Actinic Keratosis"
+          ],
+          "offsetMinutes": 120
+        }
+      ],
+      "photoSeries": [],
+      "problems": [
+        {
+          "problemID": "PRB-023",
+          "display": "Actinic keratosis",
+          "icd10Code": "L57.0",
+          "clinicalStatus": "active",
+          "verificationStatus": "confirmed",
+          "onsetDaysAgo": 60
+        },
+        {
+          "problemID": "PRB-024",
+          "display": "Nicotine dependence, cigarettes",
+          "icd10Code": "F17.210",
+          "clinicalStatus": "active",
+          "verificationStatus": "confirmed",
+          "onsetDaysAgo": 60
+        }
+      ],
+      "vitals": [
+        {
+          "vitalsID": "VIT-019",
+          "daysAgo": 60,
+          "systolic": 136,
+          "diastolic": 84,
+          "heartRate": 80,
+          "temperatureF": 98.4,
+          "oxygenSaturation": 96,
+          "weightKg": 86.7,
+          "heightCm": 175.0,
+          "painScore": 0
+        }
+      ],
+      "labs": []
+    },
+    {
+      "mrn": "OC-2005",
+      "firstName": "Helen",
+      "lastName": "Whitfield",
+      "dateOfBirth": "1963-07-08",
+      "gender": "Female",
+      "isSmoker": false,
+      "primaryClinician": "Dr. Elizabeth Smith, MD",
+      "preferredPharmacy": "Downtown Family Pharmacy",
+      "carePlanSummary": "New patient evaluation of a changing mole with a baseline full-body skin exam.",
+      "allergies": [
+        "Iodinated contrast"
+      ],
+      "riskFlags": [
+        "Family history of melanoma (mother)",
+        "New patient"
+      ],
+      "emergencyContactName": "George Whitfield",
+      "emergencyContactPhone": "(555) 010-2005",
+      "medications": [
+        {
+          "rxID": "RX-026",
+          "medicationName": "Levothyroxine 75 mcg",
+          "genericName": "Levothyroxine",
+          "dose": "75 mcg",
+          "route": "Oral",
+          "frequency": "Daily",
+          "indication": "Hypothyroidism",
+          "status": "Active",
+          "writtenBy": "Primary care (outside prescriber)",
+          "writtenDaysAgo": 200,
+          "quantityInfo": "Take 1 tablet every morning on an empty stomach",
+          "refills": 3,
+          "lastFilledDaysAgo": 20,
+          "nextRefillInDays": 10,
+          "pharmacyName": "Downtown Family Pharmacy",
+          "safetyNotes": [
+            "Take 30 to 60 minutes before breakfast"
+          ]
+        }
+      ],
+      "records": [],
+      "appointments": [
+        {
+          "appointmentID": "APT-015",
+          "reasonForVisit": "New patient: suspicious mole evaluation",
+          "status": "Scheduled",
+          "encounterType": "New patient consult",
+          "clinicianName": "Dr. Elizabeth Smith, MD",
+          "location": "Pigmented Lesion Clinic",
+          "durationMinutes": 30,
+          "checkInStatus": "Reminder sent",
+          "prepInstructions": "Complete new patient forms online before arrival.",
+          "linkedDiagnoses": [
+            "Suspicious pigmented lesion"
+          ],
+          "offsetMinutes": 150
+        }
+      ],
+      "photoSeries": [],
+      "problems": [
+        {
+          "problemID": "PRB-025",
+          "display": "Hypothyroidism",
+          "icd10Code": "E03.9",
+          "clinicalStatus": "active",
+          "verificationStatus": "confirmed",
+          "onsetDaysAgo": 200
+        }
+      ],
+      "vitals": [],
+      "labs": []
+    }
+  ],
+  "messages": [
+    {
+      "sender": "System",
+      "subject": "Chart Note Reminder",
+      "preview": "You have 2 unsigned chart notes from today's clinic: Catherine Hartley (reviewed, awaiting signature) and David Williams (draft).",
+      "hoursAgo": 0.25,
+      "isRead": false,
+      "category": "Admin"
+    },
+    {
+      "sender": "Dermatopathology Lab",
+      "subject": "Pathology Accession Pending: David Williams",
+      "preview": "Rush requisition received for the left forearm punch biopsy. Accession is pending until the specimen arrives in the lab; no result is available yet.",
+      "hoursAgo": 0.1,
+      "isRead": false,
+      "category": "Lab"
+    },
+    {
+      "sender": "Lab",
+      "subject": "Lab Results: Catherine Hartley",
+      "preview": "Lipid panel is back. LDL is down 22% since she started simvastatin 20 mg nightly. The result was copied to her primary care office; no dermatology action is needed.",
+      "hoursAgo": 1,
+      "isRead": false,
+      "category": "Lab"
+    },
+    {
+      "sender": "Front Desk",
+      "subject": "Same-Day Add-On: David Williams",
+      "preview": "David Williams was added to today's schedule as an urgent visit for a new, rapidly growing lesion on the left forearm.",
+      "hoursAgo": 2,
+      "isRead": true,
+      "category": "Scheduling"
+    },
+    {
+      "sender": "Dr. Natalie Jones, MD",
+      "subject": "Referral: Mohs Consult for Patricia Okafor",
+      "preview": "Referring Patricia Okafor for Mohs evaluation of a biopsy-proven nodular basal cell carcinoma on the nasal tip. She takes apixaban for atrial fibrillation and is allergic to codeine.",
+      "hoursAgo": 4,
+      "isRead": false,
+      "category": "Clinical"
+    },
+    {
+      "sender": "Pharmacy",
+      "subject": "Prior Authorization Approved: Sarah Johnson",
+      "preview": "The dupilumab 300 mg prior authorization renewal was approved. Refills can continue on the every-2-week schedule.",
+      "hoursAgo": 6,
+      "isRead": true,
+      "category": "Pharmacy"
+    },
+    {
+      "sender": "Lab",
+      "subject": "Monitoring Labs Resulted: Robert Chen",
+      "preview": "CBC and comprehensive metabolic panel for methotrexate monitoring have resulted, all within normal limits.",
+      "hoursAgo": 26,
+      "isRead": true,
+      "category": "Lab"
+    },
+    {
+      "sender": "Admin",
+      "subject": "Compliance Training Due",
+      "preview": "Annual HIPAA compliance training is due by the end of the month.",
+      "hoursAgo": 72,
+      "isRead": true,
+      "category": "Admin"
+    },
+    {
+      "sender": "Dr. Natalie Jones, MD",
+      "subject": "Derm Grand Rounds",
+      "preview": "Reminder: Grand Rounds this week covers Mohs surgery for basal cell carcinoma in anticoagulated patients.",
+      "hoursAgo": 120,
+      "isRead": true,
+      "category": "Clinical"
+    }
+  ]
+}

@@ -105,6 +105,14 @@ struct ClinicalAssistantAnswer: Codable {
 }
 #endif
 
+/// How a panel question was answered.
+nonisolated enum PanelAnswer: Sendable {
+    /// Computed from structured chart data, with the facts behind each match.
+    case computed(CohortResult)
+    /// Written by the language model from a chart summary. Not checked against the chart.
+    case generated(String)
+}
+
 @MainActor
 final class ClinicalIntelligenceService: ObservableObject {
     let objectWillChange = ObservableObjectPublisher()
@@ -114,6 +122,10 @@ final class ClinicalIntelligenceService: ObservableObject {
 
     /// Whether to use RAG-augmented context (vs. static tool summaries only).
     var ragEnabled: Bool = true
+
+    /// False makes every answer come from the chart formatters and no language model is called.
+    /// Unit tests set it, so they neither wait on a model nor depend on what one writes.
+    var languageModelEnabled: Bool = true
 
     /// Whether to use Deep Think multi-pass retrieval.
     var deepThinkEnabled: Bool = false
@@ -273,10 +285,40 @@ final class ClinicalIntelligenceService: ObservableObject {
         return try await executeFallbackQuery(query: query, modelContext: modelContext, patient: patient)
     }
 
-    /// Cross-patient panel query — searches across ALL patients in the database.
-    func executePanelQuery(query: String, modelContext: ModelContext) async throws -> String {
+    /// Answers a cross-patient question.
+    ///
+    /// A set question ("which patients ...", "who is on ...") is computed from
+    /// structured chart data by `CohortEngine`, with the chart facts behind each
+    /// match. Only a question the parser does not fully understand goes to the
+    /// language model, and that answer is returned as `.generated` so the
+    /// caller can label it as unverified.
+    func answerPanelQuestion(_ query: String, modelContext: ModelContext) async throws -> PanelAnswer {
         let allPatients = try modelContext.fetch(FetchDescriptor<PatientProfile>(sortBy: [SortDescriptor(\.lastName)]))
-        AppLogger.ai.info("🏥 executePanelQuery — \(allPatients.count) patients, query: \(query.prefix(60)), RAG: \(self.ragEnabled)")
+        let snapshot = PanelSnapshot(patients: allPatients)
+        let parser = CohortQueryParser(vocabulary: PanelVocabulary(snapshot: snapshot))
+
+        if let cohortQuery = parser.parse(query) {
+            let result = CohortEngine.run(cohortQuery, on: snapshot)
+            lastRAGMetadata = nil
+            AppLogger.ai.info("🧮 Panel question computed from chart data: \(result.matches.count) of \(result.panelSize) patients")
+            return .computed(result)
+        }
+
+        AppLogger.ai.info("🗣️ Panel question not parsed as a cohort query, using the language model")
+        return .generated(try await generatePanelAnswer(query: query, allPatients: allPatients, modelContext: modelContext))
+    }
+
+    /// Cross-patient panel query as plain text, for Shortcuts and evaluation runs.
+    func executePanelQuery(query: String, modelContext: ModelContext) async throws -> String {
+        switch try await answerPanelQuestion(query, modelContext: modelContext) {
+        case .computed(let result): return CohortAnswerFormatter.text(for: result)
+        case .generated(let text): return text
+        }
+    }
+
+    /// Language-model path for panel questions the cohort parser does not cover.
+    private func generatePanelAnswer(query: String, allPatients: [PatientProfile], modelContext: ModelContext) async throws -> String {
+        AppLogger.ai.info("🏥 generatePanelAnswer — \(allPatients.count) patients, query: \(query.prefix(60)), RAG: \(self.ragEnabled)")
 
         // RAG context retrieval (panel-wide, no patient scope)
         var ragContext: String?
@@ -324,6 +366,7 @@ final class ClinicalIntelligenceService: ObservableObject {
     #if canImport(FoundationModels)
     @available(iOS 26.0, macOS 26.0, visionOS 26.0, *)
     private func resolveModel(for estimatedTokens: Int) -> PlatformLanguageModel? {
+        guard languageModelEnabled else { return nil }
         let pcc = PrivateCloudComputeLanguageModel()
         if estimatedTokens > 4000, pcc.isAvailable, !pcc.quotaUsage.isLimitReached {
             AppLogger.ai.info("☁️ Routing to Private Cloud Compute (\(estimatedTokens) estimated tokens)")

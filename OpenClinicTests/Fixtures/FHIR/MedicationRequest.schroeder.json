@@ -1,0 +1,160 @@
+{
+  "resourceType": "Bundle",
+  "id": "25b52507-5a2f-476f-88a3-ebd35dc4bb4c",
+  "meta": {
+    "lastUpdated": "2026-10-07T21:30:25.340-04:00"
+  },
+  "type": "searchset",
+  "total": 3,
+  "link": [
+    {
+      "relation": "self",
+      "url": "https://r4.smarthealthit.org/MedicationRequest?_count=100&patient=b8c71d92-a06b-4044-b053-64664e82f851"
+    }
+  ],
+  "entry": [
+    {
+      "fullUrl": "https://r4.smarthealthit.org/MedicationRequest/93a19164-8ffa-4a37-abab-079baa33e7e9",
+      "resource": {
+        "resourceType": "MedicationRequest",
+        "id": "93a19164-8ffa-4a37-abab-079baa33e7e9",
+        "meta": {
+          "versionId": "32",
+          "lastUpdated": "2021-04-06T03:08:45.811-04:00",
+          "tag": [
+            {
+              "system": "https://smarthealthit.org/tags",
+              "code": "synthea-5-2019"
+            }
+          ]
+        },
+        "status": "stopped",
+        "intent": "order",
+        "medicationCodeableConcept": {
+          "coding": [
+            {
+              "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+              "code": "309362",
+              "display": "Clopidogrel 75 MG Oral Tablet"
+            }
+          ],
+          "text": "Clopidogrel 75 MG Oral Tablet"
+        },
+        "subject": {
+          "reference": "Patient/b8c71d92-a06b-4044-b053-64664e82f851"
+        },
+        "encounter": {
+          "reference": "Encounter/81a1e9a0-c0fc-40b5-948e-dbe0de859297"
+        },
+        "authoredOn": "2020-01-19T00:52:41+00:00",
+        "requester": {
+          "reference": "Practitioner/22d56828-df1d-4739-82b9-45a3757b3a5f"
+        }
+      },
+      "search": {
+        "mode": "match"
+      },
+      "response": {
+        "status": "200 OK",
+        "etag": "W/\"32\""
+      }
+    },
+    {
+      "fullUrl": "https://r4.smarthealthit.org/MedicationRequest/8fabfeaf-0e00-481d-ade1-633c285a3aa1",
+      "resource": {
+        "resourceType": "MedicationRequest",
+        "id": "8fabfeaf-0e00-481d-ade1-633c285a3aa1",
+        "meta": {
+          "versionId": "32",
+          "lastUpdated": "2021-04-06T03:06:56.641-04:00",
+          "tag": [
+            {
+              "system": "https://smarthealthit.org/tags",
+              "code": "synthea-5-2019"
+            }
+          ]
+        },
+        "status": "stopped",
+        "intent": "order",
+        "medicationCodeableConcept": {
+          "coding": [
+            {
+              "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+              "code": "834102",
+              "display": "Penicillin V Potassium 500 MG Oral Tablet"
+            }
+          ],
+          "text": "Penicillin V Potassium 500 MG Oral Tablet"
+        },
+        "subject": {
+          "reference": "Patient/b8c71d92-a06b-4044-b053-64664e82f851"
+        },
+        "encounter": {
+          "reference": "Encounter/953db820-6c9f-4685-a914-042c9fa42024"
+        },
+        "authoredOn": "2010-04-15T00:52:41+00:00",
+        "requester": {
+          "reference": "Practitioner/22d56828-df1d-4739-82b9-45a3757b3a5f"
+        },
+        "reasonReference": [
+          {
+            "reference": "Condition/d314739a-9407-426e-be08-71580068c5a3"
+          }
+        ]
+      },
+      "search": {
+        "mode": "match"
+      },
+      "response": {
+        "status": "200 OK",
+        "etag": "W/\"32\""
+      }
+    },
+    {
+      "fullUrl": "https://r4.smarthealthit.org/MedicationRequest/941dc961-9dd2-4edb-ada5-2d273736708c",
+      "resource": {
+        "resourceType": "MedicationRequest",
+        "id": "941dc961-9dd2-4edb-ada5-2d273736708c",
+        "meta": {
+          "versionId": "32",
+          "lastUpdated": "2021-04-06T03:03:00.658-04:00",
+          "tag": [
+            {
+              "system": "https://smarthealthit.org/tags",
+              "code": "synthea-5-2019"
+            }
+          ]
+        },
+        "status": "stopped",
+        "intent": "order",
+        "medicationCodeableConcept": {
+          "coding": [
+            {
+              "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+              "code": "1804799",
+              "display": "Alteplase 100 MG Injection"
+            }
+          ],
+          "text": "Alteplase 100 MG Injection"
+        },
+        "subject": {
+          "reference": "Patient/b8c71d92-a06b-4044-b053-64664e82f851"
+        },
+        "encounter": {
+          "reference": "Encounter/81a1e9a0-c0fc-40b5-948e-dbe0de859297"
+        },
+        "authoredOn": "2020-01-19T00:52:41+00:00",
+        "requester": {
+          "reference": "Practitioner/22d56828-df1d-4739-82b9-45a3757b3a5f"
+        }
+      },
+      "search": {
+        "mode": "match"
+      },
+      "response": {
+        "status": "200 OK",
+        "etag": "W/\"32\""
+      }
+    }
+  ]
+}

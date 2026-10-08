@@ -1,0 +1,1901 @@
+{
+  "resourceType": "Bundle",
+  "id": "0739cbe6-fc7c-4857-82ee-91099c01e302",
+  "meta": {
+    "lastUpdated": "2026-10-07T21:30:28.860-04:00"
+  },
+  "type": "searchset",
+  "total": 79,
+  "link": [
+    {
+      "relation": "self",
+      "url": "https://r4.smarthealthit.org?_getpages=0739cbe6-fc7c-4857-82ee-91099c01e302&_getpagesoffset=50&_count=50&_pretty=true&_bundletype=searchset"
+    },
+    {
+      "relation": "previous",
+      "url": "https://r4.smarthealthit.org?_getpages=0739cbe6-fc7c-4857-82ee-91099c01e302&_getpagesoffset=0&_count=50&_pretty=true&_bundletype=searchset"
+    }
+  ],
+  "entry": [
+    {
+      "fullUrl": "https://r4.smarthealthit.org/Observation/3c36fc98-caf2-4a00-9bc7-b3fdb0405eb3",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "3c36fc98-caf2-4a00-9bc7-b3fdb0405eb3",
+        "meta": {
+          "versionId": "10",
+          "lastUpdated": "2021-04-06T03:08:38.528-04:00",
+          "tag": [
+            {
+              "system": "https://smarthealthit.org/tags",
+              "code": "synthea-5-2019"
+            }
+          ]
+        },
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "exam",
+                "display": "exam"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "69453-9",
+              "display": "Cause of Death [US Standard Certificate of Death]"
+            }
+          ],
+          "text": "Cause of Death [US Standard Certificate of Death]"
+        },
+        "subject": {
+          "reference": "Patient/b8c71d92-a06b-4044-b053-64664e82f851"
+        },
+        "encounter": {
+          "reference": "Encounter/50dab420-c17f-4202-a736-089964d0b443"
+        },
+        "effectiveDateTime": "2020-01-26T00:52:41+00:00",
+        "issued": "2020-01-26T00:52:41.832+00:00",
+        "valueCodeableConcept": {
+          "coding": [
+            {
+              "system": "http://snomed.info/sct",
+              "code": "230690007",
+              "display": "Stroke"
+            }
+          ],
+          "text": "Stroke"
+        }
+      },
+      "search": {
+        "mode": "match"
+      },
+      "response": {
+        "status": "200 OK",
+        "etag": "W/\"10\""
+      }
+    },
+    {
+      "fullUrl": "https://r4.smarthealthit.org/Observation/e789a489-e089-4e30-ba88-b262081dd8c7",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "e789a489-e089-4e30-ba88-b262081dd8c7",
+        "meta": {
+          "versionId": "10",
+          "lastUpdated": "2021-04-06T03:08:26.990-04:00",
+          "tag": [
+            {
+              "system": "https://smarthealthit.org/tags",
+              "code": "synthea-5-2019"
+            }
+          ]
+        },
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "vital-signs",
+                "display": "vital-signs"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "39156-5",
+              "display": "Body Mass Index"
+            }
+          ],
+          "text": "Body Mass Index"
+        },
+        "subject": {
+          "reference": "Patient/b8c71d92-a06b-4044-b053-64664e82f851"
+        },
+        "encounter": {
+          "reference": "Encounter/1938e31a-cf3b-4d3e-b44a-988bb99abcb7"
+        },
+        "effectiveDateTime": "2017-11-19T00:52:41+00:00",
+        "issued": "2017-11-19T00:52:41.832+00:00",
+        "valueQuantity": {
+          "value": 28.47050031437219,
+          "unit": "kg/m2",
+          "system": "http://unitsofmeasure.org",
+          "code": "kg/m2"
+        }
+      },
+      "search": {
+        "mode": "match"
+      },
+      "response": {
+        "status": "200 OK",
+        "etag": "W/\"10\""
+      }
+    },
+    {
+      "fullUrl": "https://r4.smarthealthit.org/Observation/35cec4fb-1508-4576-8d9f-69a70c580191",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "35cec4fb-1508-4576-8d9f-69a70c580191",
+        "meta": {
+          "versionId": "10",
+          "lastUpdated": "2021-04-06T03:08:21.390-04:00",
+          "tag": [
+            {
+              "system": "https://smarthealthit.org/tags",
+              "code": "synthea-5-2019"
+            }
+          ]
+        },
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "vital-signs",
+                "display": "vital-signs"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "8331-1",
+              "display": "Oral temperature"
+            }
+          ],
+          "text": "Oral temperature"
+        },
+        "subject": {
+          "reference": "Patient/b8c71d92-a06b-4044-b053-64664e82f851"
+        },
+        "encounter": {
+          "reference": "Encounter/953db820-6c9f-4685-a914-042c9fa42024"
+        },
+        "effectiveDateTime": "2010-04-15T00:52:41+00:00",
+        "issued": "2010-04-15T00:52:41.832+00:00",
+        "valueQuantity": {
+          "value": 39.12985947783664,
+          "unit": "Cel",
+          "system": "http://unitsofmeasure.org",
+          "code": "Cel"
+        }
+      },
+      "search": {
+        "mode": "match"
+      },
+      "response": {
+        "status": "200 OK",
+        "etag": "W/\"10\""
+      }
+    },
+    {
+      "fullUrl": "https://r4.smarthealthit.org/Observation/a563e22a-3288-4ece-b91d-ee690a7ca567",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "a563e22a-3288-4ece-b91d-ee690a7ca567",
+        "meta": {
+          "versionId": "10",
+          "lastUpdated": "2021-04-06T03:08:17.150-04:00",
+          "tag": [
+            {
+              "system": "https://smarthealthit.org/tags",
+              "code": "synthea-5-2019"
+            }
+          ]
+        },
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "laboratory",
+                "display": "laboratory"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "718-7",
+              "display": "Hemoglobin [Mass/volume] in Blood"
+            }
+          ],
+          "text": "Hemoglobin [Mass/volume] in Blood"
+        },
+        "subject": {
+          "reference": "Patient/b8c71d92-a06b-4044-b053-64664e82f851"
+        },
+        "encounter": {
+          "reference": "Encounter/9abc2707-4479-4f43-bada-c774804b5245"
+        },
+        "effectiveDateTime": "2012-11-04T00:52:41+00:00",
+        "issued": "2012-11-04T00:52:41.832+00:00",
+        "valueQuantity": {
+          "value": 12.25102629122275,
+          "unit": "g/dL",
+          "system": "http://unitsofmeasure.org",
+          "code": "g/dL"
+        }
+      },
+      "search": {
+        "mode": "match"
+      },
+      "response": {
+        "status": "200 OK",
+        "etag": "W/\"10\""
+      }
+    },
+    {
+      "fullUrl": "https://r4.smarthealthit.org/Observation/ffae7239-d2cc-4a55-a5fe-0a33d4e88925",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "ffae7239-d2cc-4a55-a5fe-0a33d4e88925",
+        "meta": {
+          "versionId": "10",
+          "lastUpdated": "2021-04-06T03:08:15.587-04:00",
+          "tag": [
+            {
+              "system": "https://smarthealthit.org/tags",
+              "code": "synthea-5-2019"
+            }
+          ]
+        },
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "laboratory",
+                "display": "laboratory"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "18262-6",
+              "display": "Low Density Lipoprotein Cholesterol"
+            }
+          ],
+          "text": "Low Density Lipoprotein Cholesterol"
+        },
+        "subject": {
+          "reference": "Patient/b8c71d92-a06b-4044-b053-64664e82f851"
+        },
+        "encounter": {
+          "reference": "Encounter/81a1e9a0-c0fc-40b5-948e-dbe0de859297"
+        },
+        "effectiveDateTime": "2019-12-01T00:52:41+00:00",
+        "issued": "2019-12-01T00:52:41.832+00:00",
+        "valueQuantity": {
+          "value": 57.25557481456363,
+          "unit": "mg/dL",
+          "system": "http://unitsofmeasure.org",
+          "code": "mg/dL"
+        }
+      },
+      "search": {
+        "mode": "match"
+      },
+      "response": {
+        "status": "200 OK",
+        "etag": "W/\"10\""
+      }
+    },
+    {
+      "fullUrl": "https://r4.smarthealthit.org/Observation/6f36b1d7-d303-4c51-9523-d07e28d84001",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "6f36b1d7-d303-4c51-9523-d07e28d84001",
+        "meta": {
+          "versionId": "10",
+          "lastUpdated": "2021-04-06T03:08:10.561-04:00",
+          "tag": [
+            {
+              "system": "https://smarthealthit.org/tags",
+              "code": "synthea-5-2019"
+            }
+          ]
+        },
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "vital-signs",
+                "display": "vital-signs"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "8302-2",
+              "display": "Body Height"
+            }
+          ],
+          "text": "Body Height"
+        },
+        "subject": {
+          "reference": "Patient/b8c71d92-a06b-4044-b053-64664e82f851"
+        },
+        "encounter": {
+          "reference": "Encounter/9abc2707-4479-4f43-bada-c774804b5245"
+        },
+        "effectiveDateTime": "2012-11-04T00:52:41+00:00",
+        "issued": "2012-11-04T00:52:41.832+00:00",
+        "valueQuantity": {
+          "value": 176.69006046005984,
+          "unit": "cm",
+          "system": "http://unitsofmeasure.org",
+          "code": "cm"
+        }
+      },
+      "search": {
+        "mode": "match"
+      },
+      "response": {
+        "status": "200 OK",
+        "etag": "W/\"10\""
+      }
+    },
+    {
+      "fullUrl": "https://r4.smarthealthit.org/Observation/10d9a8d2-3dc4-47ca-aab5-4dc952237c23",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "10d9a8d2-3dc4-47ca-aab5-4dc952237c23",
+        "meta": {
+          "versionId": "10",
+          "lastUpdated": "2021-04-06T03:08:04.828-04:00",
+          "tag": [
+            {
+              "system": "https://smarthealthit.org/tags",
+              "code": "synthea-5-2019"
+            }
+          ]
+        },
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "vital-signs",
+                "display": "vital-signs"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "39156-5",
+              "display": "Body Mass Index"
+            }
+          ],
+          "text": "Body Mass Index"
+        },
+        "subject": {
+          "reference": "Patient/b8c71d92-a06b-4044-b053-64664e82f851"
+        },
+        "encounter": {
+          "reference": "Encounter/9a45ef9c-28f8-410e-beb0-108df06683eb"
+        },
+        "effectiveDateTime": "2018-11-25T00:52:41+00:00",
+        "issued": "2018-11-25T00:52:41.832+00:00",
+        "valueQuantity": {
+          "value": 29.23141242162465,
+          "unit": "kg/m2",
+          "system": "http://unitsofmeasure.org",
+          "code": "kg/m2"
+        }
+      },
+      "search": {
+        "mode": "match"
+      },
+      "response": {
+        "status": "200 OK",
+        "etag": "W/\"10\""
+      }
+    },
+    {
+      "fullUrl": "https://r4.smarthealthit.org/Observation/9cbc106d-8a92-482e-bc98-c75206a86bd3",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "9cbc106d-8a92-482e-bc98-c75206a86bd3",
+        "meta": {
+          "versionId": "10",
+          "lastUpdated": "2021-04-06T03:07:51.412-04:00",
+          "tag": [
+            {
+              "system": "https://smarthealthit.org/tags",
+              "code": "synthea-5-2019"
+            }
+          ]
+        },
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "survey",
+                "display": "survey"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "72166-2",
+              "display": "Tobacco smoking status NHIS"
+            }
+          ],
+          "text": "Tobacco smoking status NHIS"
+        },
+        "subject": {
+          "reference": "Patient/b8c71d92-a06b-4044-b053-64664e82f851"
+        },
+        "encounter": {
+          "reference": "Encounter/9abc2707-4479-4f43-bada-c774804b5245"
+        },
+        "effectiveDateTime": "2012-11-04T00:52:41+00:00",
+        "issued": "2012-11-04T00:52:41.832+00:00",
+        "valueCodeableConcept": {
+          "coding": [
+            {
+              "system": "http://snomed.info/sct",
+              "code": "266919005",
+              "display": "Never smoker"
+            }
+          ],
+          "text": "Never smoker"
+        }
+      },
+      "search": {
+        "mode": "match"
+      },
+      "response": {
+        "status": "200 OK",
+        "etag": "W/\"10\""
+      }
+    },
+    {
+      "fullUrl": "https://r4.smarthealthit.org/Observation/eac66aab-43f7-4d41-948b-56205fe832ea",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "eac66aab-43f7-4d41-948b-56205fe832ea",
+        "meta": {
+          "versionId": "10",
+          "lastUpdated": "2021-04-06T03:07:47.924-04:00",
+          "tag": [
+            {
+              "system": "https://smarthealthit.org/tags",
+              "code": "synthea-5-2019"
+            }
+          ]
+        },
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "survey",
+                "display": "survey"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "72166-2",
+              "display": "Tobacco smoking status NHIS"
+            }
+          ],
+          "text": "Tobacco smoking status NHIS"
+        },
+        "subject": {
+          "reference": "Patient/b8c71d92-a06b-4044-b053-64664e82f851"
+        },
+        "encounter": {
+          "reference": "Encounter/ec14b308-2acc-488b-b4b0-37e91d8e70e3"
+        },
+        "effectiveDateTime": "2014-11-09T00:52:41+00:00",
+        "issued": "2014-11-09T00:52:41.832+00:00",
+        "valueCodeableConcept": {
+          "coding": [
+            {
+              "system": "http://snomed.info/sct",
+              "code": "266919005",
+              "display": "Never smoker"
+            }
+          ],
+          "text": "Never smoker"
+        }
+      },
+      "search": {
+        "mode": "match"
+      },
+      "response": {
+        "status": "200 OK",
+        "etag": "W/\"10\""
+      }
+    },
+    {
+      "fullUrl": "https://r4.smarthealthit.org/Observation/c2d38916-d35d-4062-ac6d-9f5331f7bea8",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "c2d38916-d35d-4062-ac6d-9f5331f7bea8",
+        "meta": {
+          "versionId": "10",
+          "lastUpdated": "2021-04-06T03:07:44.392-04:00",
+          "tag": [
+            {
+              "system": "https://smarthealthit.org/tags",
+              "code": "synthea-5-2019"
+            }
+          ]
+        },
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "laboratory",
+                "display": "laboratory"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "787-2",
+              "display": "MCV [Entitic volume] by Automated count"
+            }
+          ],
+          "text": "MCV [Entitic volume] by Automated count"
+        },
+        "subject": {
+          "reference": "Patient/b8c71d92-a06b-4044-b053-64664e82f851"
+        },
+        "encounter": {
+          "reference": "Encounter/1938e31a-cf3b-4d3e-b44a-988bb99abcb7"
+        },
+        "effectiveDateTime": "2017-11-19T00:52:41+00:00",
+        "issued": "2017-11-19T00:52:41.832+00:00",
+        "valueQuantity": {
+          "value": 80.8256864397689,
+          "unit": "fL",
+          "system": "http://unitsofmeasure.org",
+          "code": "fL"
+        }
+      },
+      "search": {
+        "mode": "match"
+      },
+      "response": {
+        "status": "200 OK",
+        "etag": "W/\"10\""
+      }
+    },
+    {
+      "fullUrl": "https://r4.smarthealthit.org/Observation/c415c04e-0d0c-4643-b15a-60a65dc82d4a",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "c415c04e-0d0c-4643-b15a-60a65dc82d4a",
+        "meta": {
+          "versionId": "10",
+          "lastUpdated": "2021-04-06T03:07:22.099-04:00",
+          "tag": [
+            {
+              "system": "https://smarthealthit.org/tags",
+              "code": "synthea-5-2019"
+            }
+          ]
+        },
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "laboratory",
+                "display": "laboratory"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "2085-9",
+              "display": "High Density Lipoprotein Cholesterol"
+            }
+          ],
+          "text": "High Density Lipoprotein Cholesterol"
+        },
+        "subject": {
+          "reference": "Patient/b8c71d92-a06b-4044-b053-64664e82f851"
+        },
+        "encounter": {
+          "reference": "Encounter/81a1e9a0-c0fc-40b5-948e-dbe0de859297"
+        },
+        "effectiveDateTime": "2019-12-01T00:52:41+00:00",
+        "issued": "2019-12-01T00:52:41.832+00:00",
+        "valueQuantity": {
+          "value": 76.52098537994594,
+          "unit": "mg/dL",
+          "system": "http://unitsofmeasure.org",
+          "code": "mg/dL"
+        }
+      },
+      "search": {
+        "mode": "match"
+      },
+      "response": {
+        "status": "200 OK",
+        "etag": "W/\"10\""
+      }
+    },
+    {
+      "fullUrl": "https://r4.smarthealthit.org/Observation/875cd83e-9443-490a-8685-220580896b88",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "875cd83e-9443-490a-8685-220580896b88",
+        "meta": {
+          "versionId": "10",
+          "lastUpdated": "2021-04-06T03:06:57.505-04:00",
+          "tag": [
+            {
+              "system": "https://smarthealthit.org/tags",
+              "code": "synthea-5-2019"
+            }
+          ]
+        },
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "vital-signs",
+                "display": "vital-signs"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "55284-4",
+              "display": "Blood Pressure"
+            }
+          ],
+          "text": "Blood Pressure"
+        },
+        "subject": {
+          "reference": "Patient/b8c71d92-a06b-4044-b053-64664e82f851"
+        },
+        "encounter": {
+          "reference": "Encounter/694af9c5-5294-4178-bcac-8f936e6b29de"
+        },
+        "effectiveDateTime": "2010-10-31T00:52:41+00:00",
+        "issued": "2010-10-31T00:52:41.832+00:00",
+        "component": [
+          {
+            "code": {
+              "coding": [
+                {
+                  "system": "http://loinc.org",
+                  "code": "8462-4",
+                  "display": "Diastolic Blood Pressure"
+                }
+              ],
+              "text": "Diastolic Blood Pressure"
+            },
+            "valueQuantity": {
+              "value": 80.98821615186581,
+              "unit": "mm[Hg]",
+              "system": "http://unitsofmeasure.org",
+              "code": "mm[Hg]"
+            }
+          },
+          {
+            "code": {
+              "coding": [
+                {
+                  "system": "http://loinc.org",
+                  "code": "8480-6",
+                  "display": "Systolic Blood Pressure"
+                }
+              ],
+              "text": "Systolic Blood Pressure"
+            },
+            "valueQuantity": {
+              "value": 102.70285034495913,
+              "unit": "mm[Hg]",
+              "system": "http://unitsofmeasure.org",
+              "code": "mm[Hg]"
+            }
+          }
+        ]
+      },
+      "search": {
+        "mode": "match"
+      },
+      "response": {
+        "status": "200 OK",
+        "etag": "W/\"10\""
+      }
+    },
+    {
+      "fullUrl": "https://r4.smarthealthit.org/Observation/2a00726f-8c81-4d43-a17a-cc6f85036ff6",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "2a00726f-8c81-4d43-a17a-cc6f85036ff6",
+        "meta": {
+          "versionId": "10",
+          "lastUpdated": "2021-04-06T03:06:53.533-04:00",
+          "tag": [
+            {
+              "system": "https://smarthealthit.org/tags",
+              "code": "synthea-5-2019"
+            }
+          ]
+        },
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "vital-signs",
+                "display": "vital-signs"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "29463-7",
+              "display": "Body Weight"
+            }
+          ],
+          "text": "Body Weight"
+        },
+        "subject": {
+          "reference": "Patient/b8c71d92-a06b-4044-b053-64664e82f851"
+        },
+        "encounter": {
+          "reference": "Encounter/694af9c5-5294-4178-bcac-8f936e6b29de"
+        },
+        "effectiveDateTime": "2010-10-31T00:52:41+00:00",
+        "issued": "2010-10-31T00:52:41.832+00:00",
+        "valueQuantity": {
+          "value": 88.68802061233905,
+          "unit": "kg",
+          "system": "http://unitsofmeasure.org",
+          "code": "kg"
+        }
+      },
+      "search": {
+        "mode": "match"
+      },
+      "response": {
+        "status": "200 OK",
+        "etag": "W/\"10\""
+      }
+    },
+    {
+      "fullUrl": "https://r4.smarthealthit.org/Observation/111880b5-edd5-4309-9198-b33f062fc4b2",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "111880b5-edd5-4309-9198-b33f062fc4b2",
+        "meta": {
+          "versionId": "10",
+          "lastUpdated": "2021-04-06T03:06:47.493-04:00",
+          "tag": [
+            {
+              "system": "https://smarthealthit.org/tags",
+              "code": "synthea-5-2019"
+            }
+          ]
+        },
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "laboratory",
+                "display": "laboratory"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "777-3",
+              "display": "Platelets [#/volume] in Blood by Automated count"
+            }
+          ],
+          "text": "Platelets [#/volume] in Blood by Automated count"
+        },
+        "subject": {
+          "reference": "Patient/b8c71d92-a06b-4044-b053-64664e82f851"
+        },
+        "encounter": {
+          "reference": "Encounter/1938e31a-cf3b-4d3e-b44a-988bb99abcb7"
+        },
+        "effectiveDateTime": "2017-11-19T00:52:41+00:00",
+        "issued": "2017-11-19T00:52:41.832+00:00",
+        "valueQuantity": {
+          "value": 416.7166009216963,
+          "unit": "10*3/uL",
+          "system": "http://unitsofmeasure.org",
+          "code": "10*3/uL"
+        }
+      },
+      "search": {
+        "mode": "match"
+      },
+      "response": {
+        "status": "200 OK",
+        "etag": "W/\"10\""
+      }
+    },
+    {
+      "fullUrl": "https://r4.smarthealthit.org/Observation/f78af870-8c5f-425c-b813-9064a9c6c02e",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "f78af870-8c5f-425c-b813-9064a9c6c02e",
+        "meta": {
+          "versionId": "10",
+          "lastUpdated": "2021-04-06T03:06:46.203-04:00",
+          "tag": [
+            {
+              "system": "https://smarthealthit.org/tags",
+              "code": "synthea-5-2019"
+            }
+          ]
+        },
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "vital-signs",
+                "display": "vital-signs"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "55284-4",
+              "display": "Blood Pressure"
+            }
+          ],
+          "text": "Blood Pressure"
+        },
+        "subject": {
+          "reference": "Patient/b8c71d92-a06b-4044-b053-64664e82f851"
+        },
+        "encounter": {
+          "reference": "Encounter/9a45ef9c-28f8-410e-beb0-108df06683eb"
+        },
+        "effectiveDateTime": "2018-11-25T00:52:41+00:00",
+        "issued": "2018-11-25T00:52:41.832+00:00",
+        "component": [
+          {
+            "code": {
+              "coding": [
+                {
+                  "system": "http://loinc.org",
+                  "code": "8462-4",
+                  "display": "Diastolic Blood Pressure"
+                }
+              ],
+              "text": "Diastolic Blood Pressure"
+            },
+            "valueQuantity": {
+              "value": 75.25046292667264,
+              "unit": "mm[Hg]",
+              "system": "http://unitsofmeasure.org",
+              "code": "mm[Hg]"
+            }
+          },
+          {
+            "code": {
+              "coding": [
+                {
+                  "system": "http://loinc.org",
+                  "code": "8480-6",
+                  "display": "Systolic Blood Pressure"
+                }
+              ],
+              "text": "Systolic Blood Pressure"
+            },
+            "valueQuantity": {
+              "value": 125.97839619170614,
+              "unit": "mm[Hg]",
+              "system": "http://unitsofmeasure.org",
+              "code": "mm[Hg]"
+            }
+          }
+        ]
+      },
+      "search": {
+        "mode": "match"
+      },
+      "response": {
+        "status": "200 OK",
+        "etag": "W/\"10\""
+      }
+    },
+    {
+      "fullUrl": "https://r4.smarthealthit.org/Observation/bb993819-455a-4c7c-b7ce-4276d1e47a8d",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "bb993819-455a-4c7c-b7ce-4276d1e47a8d",
+        "meta": {
+          "versionId": "10",
+          "lastUpdated": "2021-04-06T03:06:38.469-04:00",
+          "tag": [
+            {
+              "system": "https://smarthealthit.org/tags",
+              "code": "synthea-5-2019"
+            }
+          ]
+        },
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "laboratory",
+                "display": "laboratory"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "2093-3",
+              "display": "Total Cholesterol"
+            }
+          ],
+          "text": "Total Cholesterol"
+        },
+        "subject": {
+          "reference": "Patient/b8c71d92-a06b-4044-b053-64664e82f851"
+        },
+        "encounter": {
+          "reference": "Encounter/81a1e9a0-c0fc-40b5-948e-dbe0de859297"
+        },
+        "effectiveDateTime": "2019-12-01T00:52:41+00:00",
+        "issued": "2019-12-01T00:52:41.832+00:00",
+        "valueQuantity": {
+          "value": 160.0379771534461,
+          "unit": "mg/dL",
+          "system": "http://unitsofmeasure.org",
+          "code": "mg/dL"
+        }
+      },
+      "search": {
+        "mode": "match"
+      },
+      "response": {
+        "status": "200 OK",
+        "etag": "W/\"10\""
+      }
+    },
+    {
+      "fullUrl": "https://r4.smarthealthit.org/Observation/a655aa4b-adc1-4a28-80c8-e3480e2abbdb",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "a655aa4b-adc1-4a28-80c8-e3480e2abbdb",
+        "meta": {
+          "versionId": "10",
+          "lastUpdated": "2021-04-06T03:06:12.325-04:00",
+          "tag": [
+            {
+              "system": "https://smarthealthit.org/tags",
+              "code": "synthea-5-2019"
+            }
+          ]
+        },
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "laboratory",
+                "display": "laboratory"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "21000-5",
+              "display": "Erythrocyte distribution width [Entitic volume] by Automated count"
+            }
+          ],
+          "text": "Erythrocyte distribution width [Entitic volume] by Automated count"
+        },
+        "subject": {
+          "reference": "Patient/b8c71d92-a06b-4044-b053-64664e82f851"
+        },
+        "encounter": {
+          "reference": "Encounter/9abc2707-4479-4f43-bada-c774804b5245"
+        },
+        "effectiveDateTime": "2012-11-04T00:52:41+00:00",
+        "issued": "2012-11-04T00:52:41.832+00:00",
+        "valueQuantity": {
+          "value": 43.5067969644472,
+          "unit": "fL",
+          "system": "http://unitsofmeasure.org",
+          "code": "fL"
+        }
+      },
+      "search": {
+        "mode": "match"
+      },
+      "response": {
+        "status": "200 OK",
+        "etag": "W/\"10\""
+      }
+    },
+    {
+      "fullUrl": "https://r4.smarthealthit.org/Observation/14ad753f-f44e-44d9-b7a2-9fa28e1d5e33",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "14ad753f-f44e-44d9-b7a2-9fa28e1d5e33",
+        "meta": {
+          "versionId": "10",
+          "lastUpdated": "2021-04-06T03:05:18.558-04:00",
+          "tag": [
+            {
+              "system": "https://smarthealthit.org/tags",
+              "code": "synthea-5-2019"
+            }
+          ]
+        },
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "vital-signs",
+                "display": "vital-signs"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "55284-4",
+              "display": "Blood Pressure"
+            }
+          ],
+          "text": "Blood Pressure"
+        },
+        "subject": {
+          "reference": "Patient/b8c71d92-a06b-4044-b053-64664e82f851"
+        },
+        "encounter": {
+          "reference": "Encounter/ec14b308-2acc-488b-b4b0-37e91d8e70e3"
+        },
+        "effectiveDateTime": "2014-11-09T00:52:41+00:00",
+        "issued": "2014-11-09T00:52:41.832+00:00",
+        "component": [
+          {
+            "code": {
+              "coding": [
+                {
+                  "system": "http://loinc.org",
+                  "code": "8462-4",
+                  "display": "Diastolic Blood Pressure"
+                }
+              ],
+              "text": "Diastolic Blood Pressure"
+            },
+            "valueQuantity": {
+              "value": 82.9475514228373,
+              "unit": "mm[Hg]",
+              "system": "http://unitsofmeasure.org",
+              "code": "mm[Hg]"
+            }
+          },
+          {
+            "code": {
+              "coding": [
+                {
+                  "system": "http://loinc.org",
+                  "code": "8480-6",
+                  "display": "Systolic Blood Pressure"
+                }
+              ],
+              "text": "Systolic Blood Pressure"
+            },
+            "valueQuantity": {
+              "value": 130.45910057773017,
+              "unit": "mm[Hg]",
+              "system": "http://unitsofmeasure.org",
+              "code": "mm[Hg]"
+            }
+          }
+        ]
+      },
+      "search": {
+        "mode": "match"
+      },
+      "response": {
+        "status": "200 OK",
+        "etag": "W/\"10\""
+      }
+    },
+    {
+      "fullUrl": "https://r4.smarthealthit.org/Observation/7c384004-058a-40e8-9a3e-87bc29750ab9",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "7c384004-058a-40e8-9a3e-87bc29750ab9",
+        "meta": {
+          "versionId": "10",
+          "lastUpdated": "2021-04-06T03:05:17.097-04:00",
+          "tag": [
+            {
+              "system": "https://smarthealthit.org/tags",
+              "code": "synthea-5-2019"
+            }
+          ]
+        },
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "laboratory",
+                "display": "laboratory"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "32207-3",
+              "display": "Platelet distribution width [Entitic volume] in Blood by Automated count"
+            }
+          ],
+          "text": "Platelet distribution width [Entitic volume] in Blood by Automated count"
+        },
+        "subject": {
+          "reference": "Patient/b8c71d92-a06b-4044-b053-64664e82f851"
+        },
+        "encounter": {
+          "reference": "Encounter/9abc2707-4479-4f43-bada-c774804b5245"
+        },
+        "effectiveDateTime": "2012-11-04T00:52:41+00:00",
+        "issued": "2012-11-04T00:52:41.832+00:00",
+        "valueQuantity": {
+          "value": 401.99556089243464,
+          "unit": "fL",
+          "system": "http://unitsofmeasure.org",
+          "code": "fL"
+        }
+      },
+      "search": {
+        "mode": "match"
+      },
+      "response": {
+        "status": "200 OK",
+        "etag": "W/\"10\""
+      }
+    },
+    {
+      "fullUrl": "https://r4.smarthealthit.org/Observation/c9ca239f-16e5-410f-b02e-2aa79c22c539",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "c9ca239f-16e5-410f-b02e-2aa79c22c539",
+        "meta": {
+          "versionId": "8",
+          "lastUpdated": "2021-04-06T03:05:13.452-04:00",
+          "tag": [
+            {
+              "system": "https://smarthealthit.org/tags",
+              "code": "synthea-5-2019"
+            }
+          ]
+        },
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "vital-signs",
+                "display": "vital-signs"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "72514-3",
+              "display": "Pain severity - 0-10 verbal numeric rating [Score] - Reported"
+            }
+          ],
+          "text": "Pain severity - 0-10 verbal numeric rating [Score] - Reported"
+        },
+        "subject": {
+          "reference": "Patient/b8c71d92-a06b-4044-b053-64664e82f851"
+        },
+        "encounter": {
+          "reference": "Encounter/1938e31a-cf3b-4d3e-b44a-988bb99abcb7"
+        },
+        "effectiveDateTime": "2017-11-19T00:52:41+00:00",
+        "issued": "2017-11-19T00:52:41.832+00:00",
+        "valueQuantity": {
+          "value": 2.4325982066767895,
+          "unit": "{score}",
+          "system": "http://unitsofmeasure.org",
+          "code": "{score}"
+        }
+      },
+      "search": {
+        "mode": "match"
+      },
+      "response": {
+        "status": "200 OK",
+        "etag": "W/\"8\""
+      }
+    },
+    {
+      "fullUrl": "https://r4.smarthealthit.org/Observation/d6035983-9e43-4ec8-ac8e-42de9e1bc744",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "d6035983-9e43-4ec8-ac8e-42de9e1bc744",
+        "meta": {
+          "versionId": "10",
+          "lastUpdated": "2021-04-06T03:05:07.317-04:00",
+          "tag": [
+            {
+              "system": "https://smarthealthit.org/tags",
+              "code": "synthea-5-2019"
+            }
+          ]
+        },
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "laboratory",
+                "display": "laboratory"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "787-2",
+              "display": "MCV [Entitic volume] by Automated count"
+            }
+          ],
+          "text": "MCV [Entitic volume] by Automated count"
+        },
+        "subject": {
+          "reference": "Patient/b8c71d92-a06b-4044-b053-64664e82f851"
+        },
+        "encounter": {
+          "reference": "Encounter/9abc2707-4479-4f43-bada-c774804b5245"
+        },
+        "effectiveDateTime": "2012-11-04T00:52:41+00:00",
+        "issued": "2012-11-04T00:52:41.832+00:00",
+        "valueQuantity": {
+          "value": 92.09534478533463,
+          "unit": "fL",
+          "system": "http://unitsofmeasure.org",
+          "code": "fL"
+        }
+      },
+      "search": {
+        "mode": "match"
+      },
+      "response": {
+        "status": "200 OK",
+        "etag": "W/\"10\""
+      }
+    },
+    {
+      "fullUrl": "https://r4.smarthealthit.org/Observation/d7b2d47f-6de3-4cb5-9824-ec8b288bcfb5",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "d7b2d47f-6de3-4cb5-9824-ec8b288bcfb5",
+        "meta": {
+          "versionId": "10",
+          "lastUpdated": "2021-04-06T03:04:38.862-04:00",
+          "tag": [
+            {
+              "system": "https://smarthealthit.org/tags",
+              "code": "synthea-5-2019"
+            }
+          ]
+        },
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "vital-signs",
+                "display": "vital-signs"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "29463-7",
+              "display": "Body Weight"
+            }
+          ],
+          "text": "Body Weight"
+        },
+        "subject": {
+          "reference": "Patient/b8c71d92-a06b-4044-b053-64664e82f851"
+        },
+        "encounter": {
+          "reference": "Encounter/81a1e9a0-c0fc-40b5-948e-dbe0de859297"
+        },
+        "effectiveDateTime": "2019-12-01T00:52:41+00:00",
+        "issued": "2019-12-01T00:52:41.832+00:00",
+        "valueQuantity": {
+          "value": 93.6341700531178,
+          "unit": "kg",
+          "system": "http://unitsofmeasure.org",
+          "code": "kg"
+        }
+      },
+      "search": {
+        "mode": "match"
+      },
+      "response": {
+        "status": "200 OK",
+        "etag": "W/\"10\""
+      }
+    },
+    {
+      "fullUrl": "https://r4.smarthealthit.org/Observation/990a857a-436e-417b-859f-5480bbf3618d",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "990a857a-436e-417b-859f-5480bbf3618d",
+        "meta": {
+          "versionId": "10",
+          "lastUpdated": "2021-04-06T03:04:25.914-04:00",
+          "tag": [
+            {
+              "system": "https://smarthealthit.org/tags",
+              "code": "synthea-5-2019"
+            }
+          ]
+        },
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "laboratory",
+                "display": "laboratory"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "718-7",
+              "display": "Hemoglobin [Mass/volume] in Blood"
+            }
+          ],
+          "text": "Hemoglobin [Mass/volume] in Blood"
+        },
+        "subject": {
+          "reference": "Patient/b8c71d92-a06b-4044-b053-64664e82f851"
+        },
+        "encounter": {
+          "reference": "Encounter/1938e31a-cf3b-4d3e-b44a-988bb99abcb7"
+        },
+        "effectiveDateTime": "2017-11-19T00:52:41+00:00",
+        "issued": "2017-11-19T00:52:41.832+00:00",
+        "valueQuantity": {
+          "value": 13.808144186492914,
+          "unit": "g/dL",
+          "system": "http://unitsofmeasure.org",
+          "code": "g/dL"
+        }
+      },
+      "search": {
+        "mode": "match"
+      },
+      "response": {
+        "status": "200 OK",
+        "etag": "W/\"10\""
+      }
+    },
+    {
+      "fullUrl": "https://r4.smarthealthit.org/Observation/f86cc049-af5b-4caf-bec1-d65608334f9d",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "f86cc049-af5b-4caf-bec1-d65608334f9d",
+        "meta": {
+          "versionId": "10",
+          "lastUpdated": "2021-04-06T03:03:49.461-04:00",
+          "tag": [
+            {
+              "system": "https://smarthealthit.org/tags",
+              "code": "synthea-5-2019"
+            }
+          ]
+        },
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "laboratory",
+                "display": "laboratory"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "785-6",
+              "display": "MCH [Entitic mass] by Automated count"
+            }
+          ],
+          "text": "MCH [Entitic mass] by Automated count"
+        },
+        "subject": {
+          "reference": "Patient/b8c71d92-a06b-4044-b053-64664e82f851"
+        },
+        "encounter": {
+          "reference": "Encounter/1938e31a-cf3b-4d3e-b44a-988bb99abcb7"
+        },
+        "effectiveDateTime": "2017-11-19T00:52:41+00:00",
+        "issued": "2017-11-19T00:52:41.832+00:00",
+        "valueQuantity": {
+          "value": 27.267211682484216,
+          "unit": "pg",
+          "system": "http://unitsofmeasure.org",
+          "code": "pg"
+        }
+      },
+      "search": {
+        "mode": "match"
+      },
+      "response": {
+        "status": "200 OK",
+        "etag": "W/\"10\""
+      }
+    },
+    {
+      "fullUrl": "https://r4.smarthealthit.org/Observation/93e1abe2-251c-4e7c-9d8b-b29037498ee9",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "93e1abe2-251c-4e7c-9d8b-b29037498ee9",
+        "meta": {
+          "versionId": "10",
+          "lastUpdated": "2021-04-06T03:03:45.644-04:00",
+          "tag": [
+            {
+              "system": "https://smarthealthit.org/tags",
+              "code": "synthea-5-2019"
+            }
+          ]
+        },
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "vital-signs",
+                "display": "vital-signs"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "55284-4",
+              "display": "Blood Pressure"
+            }
+          ],
+          "text": "Blood Pressure"
+        },
+        "subject": {
+          "reference": "Patient/b8c71d92-a06b-4044-b053-64664e82f851"
+        },
+        "encounter": {
+          "reference": "Encounter/97c24cc8-b9be-4b45-8991-03e04e822db1"
+        },
+        "effectiveDateTime": "2016-11-13T00:52:41+00:00",
+        "issued": "2016-11-13T00:52:41.832+00:00",
+        "component": [
+          {
+            "code": {
+              "coding": [
+                {
+                  "system": "http://loinc.org",
+                  "code": "8462-4",
+                  "display": "Diastolic Blood Pressure"
+                }
+              ],
+              "text": "Diastolic Blood Pressure"
+            },
+            "valueQuantity": {
+              "value": 71.20253492667484,
+              "unit": "mm[Hg]",
+              "system": "http://unitsofmeasure.org",
+              "code": "mm[Hg]"
+            }
+          },
+          {
+            "code": {
+              "coding": [
+                {
+                  "system": "http://loinc.org",
+                  "code": "8480-6",
+                  "display": "Systolic Blood Pressure"
+                }
+              ],
+              "text": "Systolic Blood Pressure"
+            },
+            "valueQuantity": {
+              "value": 112.98504055500008,
+              "unit": "mm[Hg]",
+              "system": "http://unitsofmeasure.org",
+              "code": "mm[Hg]"
+            }
+          }
+        ]
+      },
+      "search": {
+        "mode": "match"
+      },
+      "response": {
+        "status": "200 OK",
+        "etag": "W/\"10\""
+      }
+    },
+    {
+      "fullUrl": "https://r4.smarthealthit.org/Observation/a61138ad-26ba-41b8-94cc-13d0cff1543a",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "a61138ad-26ba-41b8-94cc-13d0cff1543a",
+        "meta": {
+          "versionId": "10",
+          "lastUpdated": "2021-04-06T03:03:27.000-04:00",
+          "tag": [
+            {
+              "system": "https://smarthealthit.org/tags",
+              "code": "synthea-5-2019"
+            }
+          ]
+        },
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "laboratory",
+                "display": "laboratory"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "18262-6",
+              "display": "Low Density Lipoprotein Cholesterol"
+            }
+          ],
+          "text": "Low Density Lipoprotein Cholesterol"
+        },
+        "subject": {
+          "reference": "Patient/b8c71d92-a06b-4044-b053-64664e82f851"
+        },
+        "encounter": {
+          "reference": "Encounter/97c24cc8-b9be-4b45-8991-03e04e822db1"
+        },
+        "effectiveDateTime": "2016-11-13T00:52:41+00:00",
+        "issued": "2016-11-13T00:52:41.832+00:00",
+        "valueQuantity": {
+          "value": 94.3183091270201,
+          "unit": "mg/dL",
+          "system": "http://unitsofmeasure.org",
+          "code": "mg/dL"
+        }
+      },
+      "search": {
+        "mode": "match"
+      },
+      "response": {
+        "status": "200 OK",
+        "etag": "W/\"10\""
+      }
+    },
+    {
+      "fullUrl": "https://r4.smarthealthit.org/Observation/805db3b9-3d2b-4eac-8347-d710210c5580",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "805db3b9-3d2b-4eac-8347-d710210c5580",
+        "meta": {
+          "versionId": "10",
+          "lastUpdated": "2021-04-06T03:03:17.059-04:00",
+          "tag": [
+            {
+              "system": "https://smarthealthit.org/tags",
+              "code": "synthea-5-2019"
+            }
+          ]
+        },
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "laboratory",
+                "display": "laboratory"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "6690-2",
+              "display": "Leukocytes [#/volume] in Blood by Automated count"
+            }
+          ],
+          "text": "Leukocytes [#/volume] in Blood by Automated count"
+        },
+        "subject": {
+          "reference": "Patient/b8c71d92-a06b-4044-b053-64664e82f851"
+        },
+        "encounter": {
+          "reference": "Encounter/9abc2707-4479-4f43-bada-c774804b5245"
+        },
+        "effectiveDateTime": "2012-11-04T00:52:41+00:00",
+        "issued": "2012-11-04T00:52:41.832+00:00",
+        "valueQuantity": {
+          "value": 8.821226093914467,
+          "unit": "10*3/uL",
+          "system": "http://unitsofmeasure.org",
+          "code": "10*3/uL"
+        }
+      },
+      "search": {
+        "mode": "match"
+      },
+      "response": {
+        "status": "200 OK",
+        "etag": "W/\"10\""
+      }
+    },
+    {
+      "fullUrl": "https://r4.smarthealthit.org/Observation/c2b2d821-366c-4834-8ed7-5c6aba6d223f",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "c2b2d821-366c-4834-8ed7-5c6aba6d223f",
+        "meta": {
+          "versionId": "10",
+          "lastUpdated": "2021-04-06T03:02:12.336-04:00",
+          "tag": [
+            {
+              "system": "https://smarthealthit.org/tags",
+              "code": "synthea-5-2019"
+            }
+          ]
+        },
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "laboratory",
+                "display": "laboratory"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "789-8",
+              "display": "Erythrocytes [#/volume] in Blood by Automated count"
+            }
+          ],
+          "text": "Erythrocytes [#/volume] in Blood by Automated count"
+        },
+        "subject": {
+          "reference": "Patient/b8c71d92-a06b-4044-b053-64664e82f851"
+        },
+        "encounter": {
+          "reference": "Encounter/9abc2707-4479-4f43-bada-c774804b5245"
+        },
+        "effectiveDateTime": "2012-11-04T00:52:41+00:00",
+        "issued": "2012-11-04T00:52:41.832+00:00",
+        "valueQuantity": {
+          "value": 4.5679453646201775,
+          "unit": "10*6/uL",
+          "system": "http://unitsofmeasure.org",
+          "code": "10*6/uL"
+        }
+      },
+      "search": {
+        "mode": "match"
+      },
+      "response": {
+        "status": "200 OK",
+        "etag": "W/\"10\""
+      }
+    },
+    {
+      "fullUrl": "https://r4.smarthealthit.org/Observation/6239bde1-273f-4c1d-b1e2-b4a0625b540e",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "6239bde1-273f-4c1d-b1e2-b4a0625b540e",
+        "meta": {
+          "versionId": "10",
+          "lastUpdated": "2021-04-06T03:01:36.278-04:00",
+          "tag": [
+            {
+              "system": "https://smarthealthit.org/tags",
+              "code": "synthea-5-2019"
+            }
+          ]
+        },
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "vital-signs",
+                "display": "vital-signs"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "29463-7",
+              "display": "Body Weight"
+            }
+          ],
+          "text": "Body Weight"
+        },
+        "subject": {
+          "reference": "Patient/b8c71d92-a06b-4044-b053-64664e82f851"
+        },
+        "encounter": {
+          "reference": "Encounter/1938e31a-cf3b-4d3e-b44a-988bb99abcb7"
+        },
+        "effectiveDateTime": "2017-11-19T00:52:41+00:00",
+        "issued": "2017-11-19T00:52:41.832+00:00",
+        "valueQuantity": {
+          "value": 88.88312959425942,
+          "unit": "kg",
+          "system": "http://unitsofmeasure.org",
+          "code": "kg"
+        }
+      },
+      "search": {
+        "mode": "match"
+      },
+      "response": {
+        "status": "200 OK",
+        "etag": "W/\"10\""
+      }
+    }
+  ]
+}

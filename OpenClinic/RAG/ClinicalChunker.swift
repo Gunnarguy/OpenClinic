@@ -358,6 +358,9 @@ struct ClinicalChunker {
         // Appointments
         all.append(contentsOf: chunkAppointments(patient.appointments ?? [], patient: patient))
 
+        // Structured chart rows: problems, allergies, observations, encounters and the rest
+        all.append(contentsOf: chunkChart(for: patient))
+
         return all
     }
 }

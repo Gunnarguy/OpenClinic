@@ -133,6 +133,18 @@ struct InteroperabilityWorkspaceView: View {
                 .padding(.vertical, 4)
             }
 
+            Section("Open Sandbox") {
+                NavigationLink {
+                    SandboxImportView()
+                } label: {
+                    Label("Import a Sandbox Patient", systemImage: "square.and.arrow.down.on.square")
+                }
+                Text("Finds a synthetic patient on the open SMART Health IT R4 server and imports the full record. No sign-in is needed.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .clinicalFinePrint()
+            }
+
             Section("Live SMART Import") {
                 Button {
                     Task { await smartController.connectSMARTSandboxEndToEnd() }
@@ -427,33 +439,18 @@ struct InteroperabilityWorkspaceView: View {
                 }
             }
 
-            if let summary = smartController.lastImportSummary {
-                Section("Last Import") {
-                    LabeledContent("Patient") {
-                        Text(summary.patientName)
-                    }
-                    identifierRow("FHIR ID", value: summary.patientID, monospaced: true)
-                    LabeledContent("Patient Record") {
-                        Text(summary.createdNewPatient ? "Created" : "Updated")
-                    }
-                    LabeledContent("Conditions") {
-                        Text("\(summary.conditionCount)")
-                    }
-                    LabeledContent("Medications") {
-                        Text("\(summary.medicationCount)")
-                    }
-                    LabeledContent("Appointments") {
-                        Text("\(summary.appointmentCount)")
-                    }
-                    if !summary.warnings.isEmpty {
-                        ForEach(summary.warnings, id: \.self) { warning in
-                            Text(warning)
-                                .font(.caption)
-                                .foregroundStyle(.orange)
-                                .clinicalFinePrint()
-                        }
+            if smartController.importCoordinator.isImporting {
+                Section("Importing") {
+                    HStack(spacing: 12) {
+                        ProgressView()
+                        Text(smartController.importCoordinator.statusText)
+                            .font(.subheadline)
                     }
                 }
+            }
+
+            if let summary = smartController.lastImportSummary {
+                ChartImportSummarySection(summary: summary)
             }
         }
         .navigationTitle("EHR Connectivity")

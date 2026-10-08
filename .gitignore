@@ -20,3 +20,7 @@ xcuserdata/
 # Swift Package Manager
 .build/
 .gemini/
+
+# Claude Code machine-local files
+.claude/settings.local.json
+.claude/.state/

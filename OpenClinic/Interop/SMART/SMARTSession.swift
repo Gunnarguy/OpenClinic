@@ -12,7 +12,8 @@ enum SMARTSessionError: LocalizedError {
     case requestFailed(statusCode: Int, responseBody: String)
     case capabilityStatementInvalid
     case tokenExchangeRejected(statusCode: Int, error: String, errorDescription: String?)
-    case tokenResponseInvalid(responseBody: String)
+    case tokenResponseInvalid
+    case noRefreshToken
 
     var errorDescription: String? {
         switch self {
@@ -26,8 +27,9 @@ enum SMARTSessionError: LocalizedError {
             return "A valid FHIR server base URL is required."
         case .invalidResponse:
             return "The SMART discovery endpoint returned an invalid response."
-        case let .requestFailed(statusCode, responseBody):
-            return "SMART request failed with status \(statusCode): \(responseBody)"
+        case let .requestFailed(statusCode, _):
+            // The body can hold a token or patient data, so it stays out of what the clinician reads.
+            return "SMART request failed with status \(statusCode)."
         case .capabilityStatementInvalid:
             return "The FHIR metadata endpoint returned an unsupported CapabilityStatement payload."
         case let .tokenExchangeRejected(statusCode, error, errorDescription):
@@ -35,8 +37,10 @@ enum SMARTSessionError: LocalizedError {
                 return "SMART token exchange was rejected with status \(statusCode) (\(error)): \(errorDescription)"
             }
             return "SMART token exchange was rejected with status \(statusCode) (\(error))."
-        case let .tokenResponseInvalid(responseBody):
-            return "SMART token exchange returned an unreadable response: \(responseBody)"
+        case .tokenResponseInvalid:
+            return "SMART token exchange returned a response that could not be read."
+        case .noRefreshToken:
+            return "The server did not issue a refresh token. Sign in again to continue."
         }
     }
 }
@@ -179,23 +183,81 @@ final class SMARTSession: ObservableObject {
                 )
             }
 
-            let responseBody = String(data: data, encoding: .utf8) ?? "<non-UTF8 body>"
-            AppLogger.smart.error("SMART token exchange failed [\(httpResponse.statusCode)] \(responseBody)")
-            throw SMARTSessionError.requestFailed(statusCode: httpResponse.statusCode, responseBody: responseBody)
+            // A token endpoint body is never logged or shown: it can carry a token.
+            AppLogger.smart.error("SMART token exchange failed with status \(httpResponse.statusCode, privacy: .public)")
+            throw SMARTSessionError.requestFailed(statusCode: httpResponse.statusCode, responseBody: "")
         }
 
         let token: SMARTTokenResponse
         do {
             token = try JSONDecoder().decode(SMARTTokenResponse.self, from: data)
         } catch {
-            let responseBody = String(data: data, encoding: .utf8) ?? "<non-UTF8 body>"
-            AppLogger.smart.error("SMART token response could not be decoded: \(responseBody)")
-            throw SMARTSessionError.tokenResponseInvalid(responseBody: responseBody)
+            AppLogger.smart.error("SMART token response could not be decoded")
+            throw SMARTSessionError.tokenResponseInvalid
         }
 
         applyTokenResponse(token)
         AppLogger.smart.info("SMART token exchange completed successfully")
         return token
+    }
+
+    /// Trades the refresh token for a new access token and applies it.
+    ///
+    /// A server may answer without a new refresh token or without the launch context. The
+    /// values from the current token are kept in that case, as SMART App Launch describes.
+    @discardableResult
+    func refreshAccessToken(clientID: String, clientSecret: String? = nil) async throws -> SMARTTokenResponse {
+        guard let configuration else { throw SMARTSessionError.missingConfiguration }
+        guard let current = tokenResponse, let refreshToken = current.refreshToken, !refreshToken.isEmpty else {
+            throw SMARTSessionError.noRefreshToken
+        }
+
+        var request = URLRequest(url: configuration.tokenEndpoint)
+        request.httpMethod = "POST"
+        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+
+        var fields: [String: String] = [
+            "grant_type": "refresh_token",
+            "refresh_token": refreshToken,
+            "client_id": clientID,
+        ]
+        if let clientSecret { fields["client_secret"] = clientSecret }
+        request.httpBody = Self.formEncodedData(fields)
+
+        let (data, response) = try await urlSession.data(for: request)
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw SMARTSessionError.invalidResponse
+        }
+        guard 200..<300 ~= httpResponse.statusCode else {
+            if let oauthError = try? JSONDecoder().decode(SMARTTokenErrorResponse.self, from: data) {
+                throw SMARTSessionError.tokenExchangeRejected(
+                    statusCode: httpResponse.statusCode,
+                    error: oauthError.error,
+                    errorDescription: oauthError.errorDescription
+                )
+            }
+            throw SMARTSessionError.requestFailed(statusCode: httpResponse.statusCode, responseBody: "")
+        }
+
+        guard let refreshed = try? JSONDecoder().decode(SMARTTokenResponse.self, from: data) else {
+            throw SMARTSessionError.tokenResponseInvalid
+        }
+
+        let merged = SMARTTokenResponse(
+            accessToken: refreshed.accessToken,
+            tokenType: refreshed.tokenType,
+            expiresIn: refreshed.expiresIn,
+            scope: refreshed.scope ?? current.scope,
+            refreshToken: refreshed.refreshToken ?? current.refreshToken,
+            patient: refreshed.patient ?? current.patient,
+            encounter: refreshed.encounter ?? current.encounter,
+            idToken: refreshed.idToken ?? current.idToken,
+            issuedAt: .now
+        )
+        applyTokenResponse(merged)
+        AppLogger.smart.info("SMART access token refreshed")
+        return merged
     }
 
     func handleRedirectURL(_ url: URL) throws -> String {

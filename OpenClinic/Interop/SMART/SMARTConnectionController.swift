@@ -89,7 +89,7 @@ final class SMARTConnectionController: ObservableObject {
     @Published var patientIDText: String = ""
     @Published var manualAccessToken: String = ""
     @Published private(set) var pendingAuthorizationRequest: SMARTAuthorizationRequest?
-    @Published private(set) var lastImportSummary: FHIRImportSummary?
+    @Published private(set) var lastImportSummary: ChartImportSummary?
     @Published private(set) var lastDiscoverySummary: SMARTDiscoverySummary?
     @Published private(set) var lastErrorMessage: String?
     @Published private(set) var statusMessage: String?
@@ -99,18 +99,15 @@ final class SMARTConnectionController: ObservableObject {
 
     let session: SMARTSession
 
-    private let fhirClient: FHIRClient
-    private let importService: FHIRImportService
+    /// Runs record imports. Views read its phase for progress.
+    let importCoordinator = ChartImportCoordinator()
     private let webAuthenticationCoordinator = SMARTWebAuthenticationCoordinator()
     private let defaults = UserDefaults.standard
     private let credentialStore: SMARTCredentialStore
     private var cancellables: Set<AnyCancellable> = []
 
-    init(session: SMARTSession? = nil, fhirClient: FHIRClient? = nil, credentialStore: SMARTCredentialStore? = nil) {
+    init(session: SMARTSession? = nil, credentialStore: SMARTCredentialStore? = nil) {
         self.session = session ?? SMARTSession()
-        let resolvedFHIRClient = fhirClient ?? FHIRClient()
-        self.fhirClient = resolvedFHIRClient
-        self.importService = FHIRImportService(client: resolvedFHIRClient)
         self.credentialStore = credentialStore ?? KeychainSMARTCredentialStore.shared
 
         self.session.objectWillChange
@@ -352,7 +349,6 @@ final class SMARTConnectionController: ObservableObject {
                 clientSecret: clientSecret.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty
             )
 
-            fhirClient.setAccessToken(token.accessToken)
             if patientIDText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 patientIDText = token.patient ?? ""
             }
@@ -379,7 +375,6 @@ final class SMARTConnectionController: ObservableObject {
             ?? tokenContext?.patientID
         let resolvedEncounterID = tokenContext?.encounterID
 
-        fhirClient.setAccessToken(trimmedToken)
         if patientIDText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
            let resolvedPatientID {
             patientIDText = resolvedPatientID
@@ -452,13 +447,40 @@ final class SMARTConnectionController: ObservableObject {
         lastErrorMessage = nil
         defer { isImporting = false }
 
-        do {
-            let summary = try await importService.importPatientContext(patientID: patientID, baseURL: baseURL, modelContext: modelContext)
+        let summary = await importCoordinator.importChart(
+            patientID: patientID,
+            baseURL: baseURL,
+            tokenProvider: { [weak self] forceRefresh in
+                await self?.accessToken(forceRefresh: forceRefresh)
+            },
+            context: modelContext
+        )
+
+        if let summary {
             lastImportSummary = summary
-            statusMessage = "Imported sandbox data for \(summary.patientName)."
-        } catch {
-            setError(error.localizedDescription)
+            statusMessage = "Imported \(summary.totalReceived) chart facts for \(summary.patientName)."
+        } else if case .failed(let message) = importCoordinator.phase {
+            setError(message)
         }
+    }
+
+    /// The bearer token for a FHIR request. After a 401 the client asks again with
+    /// `forceRefresh`, and the session trades its refresh token for a new access token when
+    /// the server issued one. Without a refresh token the same token is returned, the request
+    /// fails a second time, and the clinician is asked to sign in again.
+    private func accessToken(forceRefresh: Bool) async -> String? {
+        if forceRefresh || session.tokenResponse?.isExpired == true {
+            do {
+                try await session.refreshAccessToken(
+                    clientID: clientID.trimmingCharacters(in: .whitespacesAndNewlines),
+                    clientSecret: clientSecret.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty
+                )
+                persistSessionState()
+            } catch {
+                AppLogger.smart.info("Access token was not refreshed: \(String(describing: type(of: error)), privacy: .public)")
+            }
+        }
+        return session.tokenResponse?.accessToken
     }
 
     func setError(_ message: String?) {
@@ -565,7 +587,6 @@ final class SMARTConnectionController: ObservableObject {
             }
 
             session.applyTokenResponse(tokenResponse)
-            fhirClient.setAccessToken(tokenResponse.accessToken)
 
             if patientIDText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
                let patient = tokenResponse.patient {

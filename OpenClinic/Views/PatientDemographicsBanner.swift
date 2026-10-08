@@ -32,9 +32,12 @@ struct PatientDemographicsBanner: View {
                         Text(profile.fullName)
                             .font(.headline)
                             .foregroundColor(.primary)
+                            .layoutPriority(1)
                         
                         Text("MRN: \(profile.medicalRecordNumber)")
                             .font(.system(size: 10, weight: .semibold, design: .monospaced))
+                            .lineLimit(1)
+                            .truncationMode(.middle)
                             .padding(.horizontal, 5)
                             .padding(.vertical, 1.5)
                             .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 4))

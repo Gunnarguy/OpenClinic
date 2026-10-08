@@ -43,9 +43,7 @@ struct PatientEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQuery
     
     private func loadAllPatients() -> [PatientEntity] {
         do {
-            let schema = Schema([PatientProfile.self, LocalClinicalRecord.self, LocalMedication.self, Appointment.self, ClinicalPhoto.self])
-            let config = ModelConfiguration(schema: schema)
-            let container = try ModelContainer(for: schema, configurations: [config])
+            let container = AppStore.shared.container
             let context = ModelContext(container)
             let descriptor = FetchDescriptor<PatientProfile>()
             let patients = try context.fetch(descriptor)
@@ -84,9 +82,7 @@ struct AskClinicalAssistantIntent: AppIntent {
         let ragService = await MainActor.run { ClinicalRAGService.shared }
         
         do {
-            let schema = Schema([PatientProfile.self, LocalClinicalRecord.self, LocalMedication.self, Appointment.self, ClinicalPhoto.self])
-            let config = ModelConfiguration(schema: schema)
-            let container = try ModelContainer(for: schema, configurations: [config])
+            let container = AppStore.shared.container
             let context = ModelContext(container)
             
             // Ensure RAG is indexed
@@ -141,9 +137,7 @@ struct SummarizePatientIntent: AppIntent {
         let ragService = await MainActor.run { ClinicalRAGService.shared }
         
         do {
-            let schema = Schema([PatientProfile.self, LocalClinicalRecord.self, LocalMedication.self, Appointment.self, ClinicalPhoto.self])
-            let config = ModelConfiguration(schema: schema)
-            let container = try ModelContainer(for: schema, configurations: [config])
+            let container = AppStore.shared.container
             let context = ModelContext(container)
             
             let indexedCount = await MainActor.run { ragService.indexedChunkCount }

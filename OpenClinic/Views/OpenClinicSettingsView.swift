@@ -7,6 +7,8 @@ struct OpenClinicSettingsView: View {
     @ObservedObject private var ragService = ClinicalRAGService.shared
     @StateObject private var intelligenceService = ClinicalIntelligenceService()
     @Query private var patients: [PatientProfile]
+    @State private var confirmsDemoReset = false
+    @State private var resetError: String?
 
     private var recordCount: Int {
         patients.reduce(0) { $0 + ($1.clinicalRecords?.count ?? 0) }
@@ -59,6 +61,10 @@ struct OpenClinicSettingsView: View {
                 }
 
                 Section("Connectivity") {
+                    NavigationLink(destination: SandboxImportView()) {
+                        Label("Import a Sandbox Patient", systemImage: "square.and.arrow.down.on.square")
+                    }
+
                     NavigationLink(destination: InteroperabilityWorkspaceView()) {
                         Label("Live SMART / EHR Import", systemImage: "network")
                     }
@@ -108,6 +114,32 @@ struct OpenClinicSettingsView: View {
                     }
                 }
 
+                Section("Data") {
+                    NavigationLink(destination: AuditLogView()) {
+                        Label("Access Log", systemImage: "list.bullet.clipboard")
+                    }
+
+                    Button("Reset Demo Data", role: .destructive) {
+                        confirmsDemoReset = true
+                    }
+                    .confirmationDialog(
+                        "Reset the demo panel?",
+                        isPresented: $confirmsDemoReset,
+                        titleVisibility: .visible
+                    ) {
+                        Button("Reset Demo Data", role: .destructive) { resetDemoData() }
+                        Button("Cancel", role: .cancel) {}
+                    } message: {
+                        Text("The ten demo patients return to their starting state, including notes written on them. Imported patients are not touched.")
+                    }
+
+                    if let resetError {
+                        Text(resetError)
+                            .font(.caption)
+                            .foregroundStyle(.red)
+                    }
+                }
+
                 Section("About") {
                     LabeledContent("App") {
                         Text("OpenClinic")
@@ -117,12 +149,28 @@ struct OpenClinicSettingsView: View {
                             .multilineTextAlignment(.trailing)
                             .clinicalFinePrint()
                     }
+                    Text("Synthetic data only. OpenClinic is a prototype and is not cleared for clinical use.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .clinicalFinePrint()
                 }
             }
             .navigationTitle("Settings")
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             #endif
+        }
+    }
+
+    private func resetDemoData() {
+        do {
+            try DemoDataSeeder.reset(context: modelContext)
+            modelContext.insert(AuditEvent(action: .demoDataReset, entityType: "DemoPanel"))
+            try modelContext.save()
+            resetError = nil
+            Task { await ragService.indexAllData(modelContext: modelContext) }
+        } catch {
+            resetError = "The demo panel could not be reset: \(error.localizedDescription)"
         }
     }
 }

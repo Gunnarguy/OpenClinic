@@ -235,7 +235,7 @@ private struct PatientRosterRow: View {
     }
 
     private var problemCount: Int {
-        (patient.clinicalRecords ?? []).groupedProblemSummaries().count
+        patient.openProblemCount
     }
 
     var body: some View {
@@ -243,10 +243,13 @@ private struct PatientRosterRow: View {
             HStack {
                 Text(patient.fullName)
                     .font(.subheadline.weight(.semibold))
+                    .layoutPriority(1)
                 Spacer()
                 Text("MRN \(patient.medicalRecordNumber)")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
                     .clinicalFinePrint()
             }
 
@@ -254,7 +257,7 @@ private struct PatientRosterRow: View {
                 Text("\(patient.age)y")
                 Text(patient.gender)
                 Text("\(activeMedicationCount) active Rx")
-                Text("\(problemCount) problems")
+                Text(problemCount == 1 ? "1 problem" : "\(problemCount) problems")
             }
             .font(.caption)
             .foregroundStyle(.secondary)

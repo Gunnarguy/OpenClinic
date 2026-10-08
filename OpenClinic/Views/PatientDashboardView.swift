@@ -91,7 +91,7 @@ private struct PatientListRow: View {
     }
 
     private var problemCount: Int {
-        (patient.clinicalRecords ?? []).groupedProblemSummaries().count
+        patient.openProblemCount
     }
 
     private var nextAppointment: Appointment? {
@@ -118,9 +118,10 @@ private struct PatientListRow: View {
                     Text(patient.fullName)
                         .font(.headline)
                         .foregroundColor(.primary)
-                    Text("MRN \(patient.medicalRecordNumber) • \(patient.age)y • \(patient.gender)")
+                    Text("\(patient.age)y • \(patient.gender) • MRN \(patient.medicalRecordNumber)")
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                        .lineLimit(1)
                 }
 
                 Spacer()
@@ -177,6 +178,7 @@ struct PatientChartPageView: View {
         case summary = "Summary"
         case visits = "Visits"
         case medications = "Meds"
+        case record = "Record"
         case imaging = "Imaging"
         case tools = "Tools"
 
@@ -187,8 +189,8 @@ struct PatientChartPageView: View {
         (patient.clinicalRecords ?? []).sorted { $0.dateRecorded > $1.dateRecorded }
     }
 
-    private var groupedProblems: [ClinicalProblemSummary] {
-        sortedRecords.groupedProblemSummaries()
+    private var problemList: [ProblemListEntry] {
+        patient.problemList
     }
 
     private var sortedAppointments: [Appointment] {
@@ -249,22 +251,6 @@ struct PatientChartPageView: View {
                 message: "Current smoker — consider cessation counseling and wound healing implications."
             ))
         }
-        let highRiskAllergies = patient.allergies.filter { a in
-            let lower = a.lowercased()
-            return lower.contains("penicillin") || lower.contains("sulfa") || lower.contains("latex") || lower.contains("nsaid")
-        }
-        if !highRiskAllergies.isEmpty {
-            alerts.append(ClinicalAlert(
-                icon: "allergens.fill", color: .yellow, title: "Allergy Alert",
-                message: "Documented allergies: \(highRiskAllergies.joined(separator: ", "))"
-            ))
-        }
-        if !patient.riskFlags.isEmpty {
-            alerts.append(ClinicalAlert(
-                icon: "flag.fill", color: .purple, title: "Risk Flags",
-                message: patient.riskFlags.joined(separator: " • ")
-            ))
-        }
         return alerts
     }
 
@@ -302,6 +288,8 @@ struct PatientChartPageView: View {
             visitsSection
         case .medications:
             medicationsSection
+        case .record:
+            ChartRecordSectionView(patient: patient)
         case .imaging:
             imagingSection
         case .tools:
@@ -311,7 +299,7 @@ struct PatientChartPageView: View {
 
     private var summarySection: some View {
         VStack(spacing: 16) {
-            // Safety Priority Stack (CDS Alerts + Allergies + Risk Flags) at the very top
+            // Safety first: alerts a rule raised, then allergies and risk flags, each shown once
             let cdsAlerts = clinicalAlerts(for: patient)
             if !cdsAlerts.isEmpty || !patient.allergies.isEmpty || !patient.riskFlags.isEmpty {
                 VStack(spacing: 8) {
@@ -324,14 +312,31 @@ struct PatientChartPageView: View {
                 }
             }
 
-            // Vitals Flowsheet Grid
-            ClinicalVitalsGrid(patient: patient)
+            // Vital signs from stored observations
+            VitalsFlowsheetView(patient: patient)
 
-            // Dynamic Metric Badges Row
-            metricsRow(patient)
-
-            // Encounter Workflow Action Lane
-            actionLaneCard
+            // Problem List Card
+            if !problemList.isEmpty {
+                infoCard(title: "Problem List", systemImage: "cross.case.fill", tint: .red) {
+                    VStack(spacing: 0) {
+                        ForEach(Array(problemList.prefix(6).enumerated()), id: \.element.id) { index, entry in
+                            problemPreviewRow(entry)
+                            if index < min(problemList.count, 6) - 1 {
+                                Divider().padding(.leading, 44)
+                            }
+                        }
+                        if problemList.count > 6 {
+                            Divider().padding(.leading, 44)
+                            Text("\(problemList.count - 6) more on the Record tab")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.leading, 40)
+                                .padding(.top, 8)
+                        }
+                    }
+                }
+            }
 
             // Inline Medication Reconciliation Widget
             ActiveMedsWorkspaceWidget(medications: activeMedications, reconciledMedIDs: $reconciledMedIDs)
@@ -339,19 +344,8 @@ struct PatientChartPageView: View {
                 .padding()
                 .background(chartPanelBackground)
 
-            // Problem List Card
-            if !groupedProblems.isEmpty {
-                infoCard(title: "Problem List", systemImage: "cross.case.fill", tint: .red) {
-                    VStack(spacing: 0) {
-                        ForEach(Array(groupedProblems.prefix(6).enumerated()), id: \.element.id) { index, summary in
-                            problemPreviewRow(summary)
-                            if index < min(groupedProblems.count, 6) - 1 {
-                                Divider().padding(.leading, 44)
-                            }
-                        }
-                    }
-                }
-            }
+            // What is left to do for this visit
+            actionLaneCard
 
             // Next Appointment Card
             if let appointment = nextAppointment {
@@ -381,23 +375,6 @@ struct PatientChartPageView: View {
             // Care Plan Card
             if let plan = patient.carePlanSummary, !plan.isEmpty {
                 carePlanCard(plan)
-            }
-
-            // Chart Navigation Menu Card
-            infoCard(title: "Chart Overview", systemImage: "list.bullet.rectangle", tint: .blue) {
-                VStack(spacing: 0) {
-                    NavigationLink(destination: VisitHistoryView(patient: patient)) {
-                        chartRow(label: "Visit Timeline", icon: "bed.double", color: .blue)
-                    }
-                    Divider().padding(.leading, 44)
-                    NavigationLink(destination: ChartNotesView(patient: patient)) {
-                        chartRow(label: "Structured Notes", icon: "folder", color: .indigo)
-                    }
-                    Divider().padding(.leading, 44)
-                    NavigationLink(destination: RxListView(patient: patient)) {
-                        chartRow(label: "Medication List", icon: "pills", color: .green)
-                    }
-                }
             }
         }
     }
@@ -545,14 +522,26 @@ struct PatientChartPageView: View {
     private func alertsCard(_ patient: PatientProfile) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             ForEach(patient.allergies, id: \.self) { allergy in
-                Label(allergy, systemImage: "exclamationmark.triangle.fill")
-                    .font(.subheadline)
-                    .foregroundColor(.orange)
+                // "No known drug allergies" is a charted negative, so it does not carry a warning.
+                if ClinicalLexicon.isNoKnownAllergyEntry(allergy) {
+                    Label(allergy, systemImage: "checkmark.circle")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                } else {
+                    Label(allergy, systemImage: "exclamationmark.triangle.fill")
+                        .font(.subheadline)
+                        .foregroundColor(.orange)
+                }
             }
+            // A risk flag is context for the visit, not an alarm: only the flag itself is colored.
             ForEach(patient.riskFlags, id: \.self) { flag in
-                Label(flag, systemImage: "flag.fill")
-                    .font(.subheadline)
-                    .foregroundColor(.red)
+                Label {
+                    Text(flag)
+                } icon: {
+                    Image(systemName: "flag.fill")
+                        .foregroundStyle(Color.clinicalAmber)
+                }
+                .font(.subheadline)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -560,18 +549,8 @@ struct PatientChartPageView: View {
         .background(warningPanelBackground)
     }
 
-    // MARK: - Metrics
-
-    private func metricsRow(_ patient: PatientProfile) -> some View {
-        HStack(spacing: 12) {
-            metricTile(label: "Problems", value: "\(groupedProblems.count)", icon: "cross.case", color: .blue)
-            metricTile(label: "Active Rx", value: "\(activeMedications.count)", icon: "pills", color: .green)
-            metricTile(label: "Appointments", value: "\(patient.appointments?.count ?? 0)", icon: "calendar", color: .purple)
-        }
-    }
-
     private var actionLaneCard: some View {
-        infoCard(title: "Encounter Workflow Lane", systemImage: "checklist", tint: .clinicalIndigo) {
+        infoCard(title: "Visit Checklist", systemImage: "checklist", tint: .clinicalIndigo) {
             VStack(spacing: 8) {
                 // Workflow step 1: Review Note
                 workflowStepRow(
@@ -725,37 +704,66 @@ struct PatientChartPageView: View {
         .padding(.vertical, 6)
     }
 
-    private func problemPreviewRow(_ summary: ClinicalProblemSummary) -> some View {
+    private func problemPreviewRow(_ entry: ProblemListEntry) -> some View {
         HStack(alignment: .top, spacing: 12) {
             Image(systemName: "cross.case.fill")
-                .foregroundStyle(.red)
+                .foregroundStyle(entry.isOpen ? Color.red : Color.secondary)
                 .frame(width: 28)
+                .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 4) {
                 HStack(alignment: .top) {
-                    Text(summary.title)
+                    Text(entry.title)
                         .font(.subheadline.weight(.semibold))
                     Spacer()
-                    if summary.occurrenceCount > 1 {
-                        Text("\(summary.occurrenceCount) entries")
+                    if let status = entry.statusLabel {
+                        Text(status)
                             .clinicalPillText(weight: .medium)
                             .padding(.horizontal, 6)
                             .padding(.vertical, 2)
-                            .background(Color.secondary.opacity(0.12), in: Capsule())
-                            .foregroundStyle(.secondary)
+                            .background((entry.isOpen ? Color.red : Color.secondary).opacity(0.12), in: Capsule())
+                            .foregroundStyle(entry.isOpen ? Color.red : Color.secondary)
                     }
                 }
-                Text("Last updated \(summary.latestDate.formatted(date: .abbreviated, time: .omitted))")
+                Text(problemDetailLine(entry))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .clinicalFinePrint()
                 HStack(spacing: 6) {
-                    DocumentationStatusBadge(status: summary.latestRecord.documentationLifecycle)
-                    ClinicalSourceBadge(descriptor: summary.latestRecord.sourceDescriptor)
+                    if entry.origin == .note {
+                        Text("From a note, not on the problem list")
+                            .clinicalPillText(weight: .medium)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(Color.clinicalAmber.opacity(0.14), in: Capsule())
+                            .foregroundStyle(Color.clinicalAmber)
+                        if let note = entry.latestNote {
+                            DocumentationStatusBadge(status: note.documentationLifecycle)
+                        }
+                    }
+                    ClinicalSourceBadge(descriptor: entry.source)
                 }
             }
             Spacer()
         }
         .padding(.vertical, 6)
+        .accessibilityElement(children: .combine)
+    }
+
+    /// "Onset Mar 30, 2018 · Code L40.0 · 2 notes" for a charted problem,
+    /// "Last note Oct 7, 2026 · Code D49.2" for a diagnosis only a note names.
+    private func problemDetailLine(_ entry: ProblemListEntry) -> String {
+        var parts: [String] = []
+        if let date = entry.date {
+            let label = entry.origin == .note ? "Last note" : "Onset"
+            parts.append("\(label) \(date.formatted(date: .abbreviated, time: .omitted))")
+        }
+        if let code = entry.code, !code.isEmpty {
+            parts.append("Code \(code)")
+        }
+        if entry.noteCount > 0 {
+            parts.append(entry.noteCount == 1 ? "1 note" : "\(entry.noteCount) notes")
+        }
+        return parts.isEmpty ? "No date recorded" : parts.joined(separator: " · ")
     }
 
     private func medicationPreviewRow(_ medication: LocalMedication) -> some View {
@@ -786,23 +794,6 @@ struct PatientChartPageView: View {
             Spacer()
         }
         .padding(.vertical, 6)
-    }
-
-    private func metricTile(label: String, value: String, icon: String, color: Color) -> some View {
-        VStack(spacing: 6) {
-            Image(systemName: icon)
-                .font(.title3)
-                .foregroundColor(color)
-            Text(value)
-                .font(.title2.bold().monospacedDigit())
-            Text(label)
-                .font(.caption)
-                .foregroundColor(.secondary)
-                .clinicalMicroLabel()
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 12)
-        .background(chartMetricBackground)
     }
 
     // MARK: - Care Plan
@@ -843,11 +834,6 @@ struct PatientChartPageView: View {
             .liquidGlassCard(cornerRadius: 12)
     }
 
-    private var chartMetricBackground: some View {
-        Color.clear
-            .liquidGlassCard(cornerRadius: 12, borderColor: Color.primary.opacity(0.04), shadowRadius: 3)
-    }
-
     private var alertPanelBackground: some View {
         Color.clear
             .liquidGlassCard(cornerRadius: 12, borderColor: Color.criticalRed.opacity(0.2), shadowRadius: 4, glowColor: Color.criticalRed)
@@ -863,113 +849,14 @@ struct PatientChartPageView: View {
     }
 }
 
-// MARK: - Clinical Vitals Flowsheet View
-private struct ClinicalVitalsGrid: View {
-    let patient: PatientProfile
-    
-    #if os(iOS)
-    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-    #endif
-    
-    // Compute stable simulated vitals based on patient UUID hash
-    private var vitals: (bp: String, hr: Int, temp: Double, spo2: Int, bpStatus: Color, hrStatus: Color, tempStatus: Color, spo2Status: Color) {
-        let hash = abs(patient.id.uuidString.hashValue)
-        
-        let hrBase = 65 + (hash % 20) // 65 - 85
-        let bpSys = 115 + (hash % 15) // 115 - 130
-        let bpDia = 75 + (hash % 10)  // 75 - 85
-        let tempBase = 98.2 + Double(hash % 8) / 10.0 // 98.2 - 99.0
-        let spo2Base = 97 + (hash % 3) // 97 - 99
-        
-        // Adjust for smoker status (higher heart rate, slightly lower SpO2)
-        let hr = patient.isSmoker ? hrBase + 8 : hrBase
-        let spo2 = patient.isSmoker ? max(spo2Base - 1, 95) : spo2Base
-        
-        // Status evaluation colors
-        let bpStatus: Color = (bpSys > 130 || bpDia > 85) ? .clinicalAmber : .clinicalTeal
-        let hrStatus: Color = (hr > 90) ? .clinicalAmber : .clinicalTeal
-        let tempStatus: Color = (tempBase > 99.1) ? .clinicalAmber : .clinicalTeal
-        let spo2Status: Color = (spo2 < 96) ? .criticalRed : .clinicalTeal
-        
-        return ("\(bpSys)/\(bpDia)", hr, tempBase, spo2, bpStatus, hrStatus, tempStatus, spo2Status)
-    }
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Label("Clinical Vitals Flowsheet", systemImage: "waveform.path.ecg")
-                .font(.subheadline.bold())
-                .foregroundColor(.clinicalIndigo)
-            
-            #if os(iOS)
-            if horizontalSizeClass == .compact {
-                LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)], spacing: 8) {
-                    vitalTile(label: "Blood Pressure", value: vitals.bp, unit: "mmHg", status: vitals.bpStatus, icon: "heart.text.square")
-                    vitalTile(label: "Heart Rate", value: "\(vitals.hr)", unit: "bpm", status: vitals.hrStatus, icon: "heart.fill")
-                    vitalTile(label: "Temperature", value: String(format: "%.1f", vitals.temp), unit: "°F", status: vitals.tempStatus, icon: "thermometer.medium")
-                    vitalTile(label: "Oxygen Sat", value: "\(vitals.spo2)", unit: "%", status: vitals.spo2Status, icon: "waveform.path.ecg")
-                }
-            } else {
-                HStack(spacing: 8) {
-                    vitalTile(label: "Blood Pressure", value: vitals.bp, unit: "mmHg", status: vitals.bpStatus, icon: "heart.text.square")
-                    vitalTile(label: "Heart Rate", value: "\(vitals.hr)", unit: "bpm", status: vitals.hrStatus, icon: "heart.fill")
-                    vitalTile(label: "Temperature", value: String(format: "%.1f", vitals.temp), unit: "°F", status: vitals.tempStatus, icon: "thermometer.medium")
-                    vitalTile(label: "Oxygen Sat", value: "\(vitals.spo2)", unit: "%", status: vitals.spo2Status, icon: "waveform.path.ecg")
-                }
-            }
-            #else
-            HStack(spacing: 8) {
-                vitalTile(label: "Blood Pressure", value: vitals.bp, unit: "mmHg", status: vitals.bpStatus, icon: "heart.text.square")
-                vitalTile(label: "Heart Rate", value: "\(vitals.hr)", unit: "bpm", status: vitals.hrStatus, icon: "heart.fill")
-                vitalTile(label: "Temperature", value: String(format: "%.1f", vitals.temp), unit: "°F", status: vitals.tempStatus, icon: "thermometer.medium")
-                vitalTile(label: "Oxygen Sat", value: "\(vitals.spo2)", unit: "%", status: vitals.spo2Status, icon: "waveform.path.ecg")
-            }
-            #endif
-        }
-    }
-    
-    private func vitalTile(label: String, value: String, unit: String, status: Color, icon: String) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack {
-                Image(systemName: icon)
-                    .font(.caption2)
-                    .foregroundColor(status)
-                Spacer()
-                Circle()
-                    .fill(status)
-                    .frame(width: 6, height: 6)
-            }
-            Text(value)
-                .font(.system(.title3, design: .rounded).bold())
-                .minimumScaleFactor(0.8)
-                .lineLimit(1)
-            HStack(alignment: .firstTextBaseline, spacing: 2) {
-                Text(label)
-                    .font(.system(size: 8, weight: .semibold))
-                    .foregroundColor(.secondary)
-                    .lineLimit(1)
-                Text(unit)
-                    .font(.system(size: 7))
-                    .foregroundColor(.secondary.opacity(0.7))
-            }
-        }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 8)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            Color.clear
-                .liquidGlassCard(cornerRadius: 12, borderColor: status.opacity(0.12), shadowRadius: 3, glowColor: status)
-        )
-    }
-}
-
-// MARK: - Active Medications Workspace Widget
+// MARK: - Active medications with reconcile checkboxes
 private struct ActiveMedsWorkspaceWidget: View {
     let medications: [LocalMedication]
     @Binding var reconciledMedIDs: Set<String>
     
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Label("Active Medications Workspace", systemImage: "pills.fill")
+            Label("Active Medications", systemImage: "pills.fill")
                 .font(.subheadline.bold())
                 .foregroundColor(.clinicalTeal)
             

@@ -24,16 +24,24 @@ private struct VectorEntry: Codable {
 actor ClinicalVectorStore {
     private var entries: [UUID: VectorEntry] = [:]
     private let persistenceURL: URL
+    /// True once anything has been inserted, deleted or cleared. A load from disk that lands after
+    /// that would bring back vectors the index has already replaced, so it is skipped.
+    private var hasBeenWritten = false
 
     /// Number of stored vectors.
     var count: Int { entries.count }
 
-    init() {
-        let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
-            ?? URL.temporaryDirectory
-        let dir = appSupport.appendingPathComponent("OpenClinic/RAG", isDirectory: true)
-        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        persistenceURL = dir.appendingPathComponent("vectors.bin")
+    /// `persistenceURL` is for tests; the app uses the file under Application Support.
+    init(persistenceURL: URL? = nil) {
+        if let persistenceURL {
+            self.persistenceURL = persistenceURL
+        } else {
+            let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
+                ?? URL.temporaryDirectory
+            let dir = appSupport.appendingPathComponent("OpenClinic/RAG", isDirectory: true)
+            try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+            self.persistenceURL = dir.appendingPathComponent("vectors.bin")
+        }
         // loadFromDisk() is called by the service after init
     }
 
@@ -41,12 +49,14 @@ actor ClinicalVectorStore {
 
     /// Store a chunk with its embedding vector.
     func insert(chunk: ClinicalChunk, embedding: [Float]) {
+        hasBeenWritten = true
         entries[chunk.id] = VectorEntry(chunk: chunk, embedding: embedding)
     }
 
     /// Batch insert multiple chunks + embeddings.
     func insertBatch(chunks: [ClinicalChunk], embeddings: [[Float]]) {
         precondition(chunks.count == embeddings.count)
+        hasBeenWritten = true
         for (chunk, embedding) in zip(chunks, embeddings) {
             entries[chunk.id] = VectorEntry(chunk: chunk, embedding: embedding)
         }
@@ -103,11 +113,13 @@ actor ClinicalVectorStore {
 
     /// Remove all chunks for a patient.
     func deleteByPatient(_ patientId: UUID) {
+        hasBeenWritten = true
         entries = entries.filter { $0.value.chunk.patientId != patientId }
     }
 
     /// Clear all stored vectors.
     func clear() {
+        hasBeenWritten = true
         entries.removeAll()
     }
 
@@ -124,8 +136,14 @@ actor ClinicalVectorStore {
         }
     }
 
-    /// Load from binary file.
+    /// Load from binary file. Does nothing once the store has been written to: on 2026-10-07 the
+    /// launch load finished 2.6 s after the launch reindex had cleared the store, and the index
+    /// was saved with every chunk twice (1,136 vectors for 568 chunks).
     func loadFromDisk() {
+        guard !hasBeenWritten else {
+            AppLogger.ai.info("📂 VectorStore load skipped: the index was rebuilt first")
+            return
+        }
         guard FileManager.default.fileExists(atPath: persistenceURL.path) else { return }
         do {
             let data = try Data(contentsOf: self.persistenceURL)

@@ -25,6 +25,8 @@ final class LocalMedication {
     var sourceRecordIdentifier: String?
     var sourceLastSyncedAt: Date?
     var sourceOfTruth: Bool
+    /// True when a later sync no longer returned this row. Kept, and shown as such, instead of deleted.
+    var isRemovedAtSource: Bool = false
     var patient: PatientProfile?
 
     init(

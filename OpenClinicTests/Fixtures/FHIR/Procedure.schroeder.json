@@ -1,0 +1,299 @@
+{
+  "resourceType": "Bundle",
+  "id": "d0ef8f4c-d117-4260-a2b0-7259b05f0d71",
+  "meta": {
+    "lastUpdated": "2026-10-07T21:30:26.902-04:00"
+  },
+  "type": "searchset",
+  "total": 6,
+  "link": [
+    {
+      "relation": "self",
+      "url": "https://r4.smarthealthit.org/Procedure?_count=100&patient=b8c71d92-a06b-4044-b053-64664e82f851"
+    }
+  ],
+  "entry": [
+    {
+      "fullUrl": "https://r4.smarthealthit.org/Procedure/97da6a56-1cc6-400d-b5f7-78dcda581799",
+      "resource": {
+        "resourceType": "Procedure",
+        "id": "97da6a56-1cc6-400d-b5f7-78dcda581799",
+        "meta": {
+          "versionId": "4",
+          "lastUpdated": "2021-04-06T03:14:17.033-04:00",
+          "tag": [
+            {
+              "system": "https://smarthealthit.org/tags",
+              "code": "synthea-5-2019"
+            }
+          ]
+        },
+        "status": "completed",
+        "code": {
+          "coding": [
+            {
+              "system": "http://snomed.info/sct",
+              "code": "428191000124101",
+              "display": "Documentation of current medications"
+            }
+          ],
+          "text": "Documentation of current medications"
+        },
+        "subject": {
+          "reference": "Patient/b8c71d92-a06b-4044-b053-64664e82f851"
+        },
+        "encounter": {
+          "reference": "Encounter/97c24cc8-b9be-4b45-8991-03e04e822db1"
+        },
+        "performedPeriod": {
+          "start": "2016-11-13T00:52:41+00:00",
+          "end": "2016-11-13T01:07:41+00:00"
+        }
+      },
+      "search": {
+        "mode": "match"
+      },
+      "response": {
+        "status": "200 OK",
+        "etag": "W/\"4\""
+      }
+    },
+    {
+      "fullUrl": "https://r4.smarthealthit.org/Procedure/6fd21c8a-7ae7-43cc-a0f8-12c6a9940272",
+      "resource": {
+        "resourceType": "Procedure",
+        "id": "6fd21c8a-7ae7-43cc-a0f8-12c6a9940272",
+        "meta": {
+          "versionId": "4",
+          "lastUpdated": "2021-04-06T03:14:06.360-04:00",
+          "tag": [
+            {
+              "system": "https://smarthealthit.org/tags",
+              "code": "synthea-5-2019"
+            }
+          ]
+        },
+        "status": "completed",
+        "code": {
+          "coding": [
+            {
+              "system": "http://snomed.info/sct",
+              "code": "428191000124101",
+              "display": "Documentation of current medications"
+            }
+          ],
+          "text": "Documentation of current medications"
+        },
+        "subject": {
+          "reference": "Patient/b8c71d92-a06b-4044-b053-64664e82f851"
+        },
+        "encounter": {
+          "reference": "Encounter/81a1e9a0-c0fc-40b5-948e-dbe0de859297"
+        },
+        "performedPeriod": {
+          "start": "2019-12-01T00:52:41+00:00",
+          "end": "2019-12-01T01:07:41+00:00"
+        }
+      },
+      "search": {
+        "mode": "match"
+      },
+      "response": {
+        "status": "200 OK",
+        "etag": "W/\"4\""
+      }
+    },
+    {
+      "fullUrl": "https://r4.smarthealthit.org/Procedure/4de0425f-fa8e-481f-abeb-34013eccd4a1",
+      "resource": {
+        "resourceType": "Procedure",
+        "id": "4de0425f-fa8e-481f-abeb-34013eccd4a1",
+        "meta": {
+          "versionId": "4",
+          "lastUpdated": "2021-04-06T03:10:06.591-04:00",
+          "tag": [
+            {
+              "system": "https://smarthealthit.org/tags",
+              "code": "synthea-5-2019"
+            }
+          ]
+        },
+        "status": "completed",
+        "code": {
+          "coding": [
+            {
+              "system": "http://snomed.info/sct",
+              "code": "428191000124101",
+              "display": "Documentation of current medications"
+            }
+          ],
+          "text": "Documentation of current medications"
+        },
+        "subject": {
+          "reference": "Patient/b8c71d92-a06b-4044-b053-64664e82f851"
+        },
+        "encounter": {
+          "reference": "Encounter/9a45ef9c-28f8-410e-beb0-108df06683eb"
+        },
+        "performedPeriod": {
+          "start": "2018-11-25T00:52:41+00:00",
+          "end": "2018-11-25T01:07:41+00:00"
+        }
+      },
+      "search": {
+        "mode": "match"
+      },
+      "response": {
+        "status": "200 OK",
+        "etag": "W/\"4\""
+      }
+    },
+    {
+      "fullUrl": "https://r4.smarthealthit.org/Procedure/06bed019-7f40-4521-a7b0-56be4074ff49",
+      "resource": {
+        "resourceType": "Procedure",
+        "id": "06bed019-7f40-4521-a7b0-56be4074ff49",
+        "meta": {
+          "versionId": "4",
+          "lastUpdated": "2021-04-06T03:07:34.162-04:00",
+          "tag": [
+            {
+              "system": "https://smarthealthit.org/tags",
+              "code": "synthea-5-2019"
+            }
+          ]
+        },
+        "status": "completed",
+        "code": {
+          "coding": [
+            {
+              "system": "http://snomed.info/sct",
+              "code": "117015009",
+              "display": "Throat culture (procedure)"
+            }
+          ],
+          "text": "Throat culture (procedure)"
+        },
+        "subject": {
+          "reference": "Patient/b8c71d92-a06b-4044-b053-64664e82f851"
+        },
+        "encounter": {
+          "reference": "Encounter/953db820-6c9f-4685-a914-042c9fa42024"
+        },
+        "performedPeriod": {
+          "start": "2010-04-15T00:52:41+00:00",
+          "end": "2010-04-15T01:07:41+00:00"
+        },
+        "reasonReference": [
+          {
+            "reference": "Condition/d314739a-9407-426e-be08-71580068c5a3",
+            "display": "Streptococcal sore throat (disorder)"
+          }
+        ]
+      },
+      "search": {
+        "mode": "match"
+      },
+      "response": {
+        "status": "200 OK",
+        "etag": "W/\"4\""
+      }
+    },
+    {
+      "fullUrl": "https://r4.smarthealthit.org/Procedure/146c3eef-b22e-4b6c-9df5-a5e4b164c075",
+      "resource": {
+        "resourceType": "Procedure",
+        "id": "146c3eef-b22e-4b6c-9df5-a5e4b164c075",
+        "meta": {
+          "versionId": "4",
+          "lastUpdated": "2021-04-06T03:03:50.791-04:00",
+          "tag": [
+            {
+              "system": "https://smarthealthit.org/tags",
+              "code": "synthea-5-2019"
+            }
+          ]
+        },
+        "status": "completed",
+        "code": {
+          "coding": [
+            {
+              "system": "http://snomed.info/sct",
+              "code": "428191000124101",
+              "display": "Documentation of current medications"
+            }
+          ],
+          "text": "Documentation of current medications"
+        },
+        "subject": {
+          "reference": "Patient/b8c71d92-a06b-4044-b053-64664e82f851"
+        },
+        "encounter": {
+          "reference": "Encounter/1938e31a-cf3b-4d3e-b44a-988bb99abcb7"
+        },
+        "performedPeriod": {
+          "start": "2017-11-19T00:52:41+00:00",
+          "end": "2017-11-19T01:07:41+00:00"
+        }
+      },
+      "search": {
+        "mode": "match"
+      },
+      "response": {
+        "status": "200 OK",
+        "etag": "W/\"4\""
+      }
+    },
+    {
+      "fullUrl": "https://r4.smarthealthit.org/Procedure/597519dd-a7bf-4628-97ff-d4e0018072c6",
+      "resource": {
+        "resourceType": "Procedure",
+        "id": "597519dd-a7bf-4628-97ff-d4e0018072c6",
+        "meta": {
+          "versionId": "4",
+          "lastUpdated": "2021-04-06T03:03:48.637-04:00",
+          "tag": [
+            {
+              "system": "https://smarthealthit.org/tags",
+              "code": "synthea-5-2019"
+            }
+          ]
+        },
+        "status": "completed",
+        "code": {
+          "coding": [
+            {
+              "system": "http://snomed.info/sct",
+              "code": "433112001",
+              "display": "Percutaneous mechanical thrombectomy of portal vein using fluoroscopic guidance"
+            }
+          ],
+          "text": "Percutaneous mechanical thrombectomy of portal vein using fluoroscopic guidance"
+        },
+        "subject": {
+          "reference": "Patient/b8c71d92-a06b-4044-b053-64664e82f851"
+        },
+        "encounter": {
+          "reference": "Encounter/81a1e9a0-c0fc-40b5-948e-dbe0de859297"
+        },
+        "performedPeriod": {
+          "start": "2020-01-19T00:52:41+00:00",
+          "end": "2020-01-19T01:07:41+00:00"
+        },
+        "reasonReference": [
+          {
+            "reference": "Condition/98a60f67-7888-432f-be02-875f00e418f6",
+            "display": "Stroke"
+          }
+        ]
+      },
+      "search": {
+        "mode": "match"
+      },
+      "response": {
+        "status": "200 OK",
+        "etag": "W/\"4\""
+      }
+    }
+  ]
+}

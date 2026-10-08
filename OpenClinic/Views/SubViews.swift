@@ -736,35 +736,22 @@ struct InboxView: View {
         }
     }
 
-    static let sampleMessages: [IntraMailMessage] = [
-        IntraMailMessage(sender: "Dr. Smith", subject: "Lab Results - Catherine Hartley",
-                         preview: "Lipid panel results are back. Simvastatin appears effective, LDL down 22%.",
-                         date: Date().addingTimeInterval(-3600), isRead: false, category: .lab),
-        IntraMailMessage(sender: "Front Desk", subject: "Schedule Change - March 24",
-                         preview: "Maria Santos rescheduled her follow-up to 3:00 PM on the 24th.",
-                         date: Date().addingTimeInterval(-7200), isRead: false, category: .scheduling),
-        IntraMailMessage(sender: "Dr. Jones", subject: "Referral: Mohs Surgery consult",
-                         preview: "Referring Catherine Hartley for Mohs surgery evaluation on the BCC lesion, right upper extremity.",
-                         date: Date().addingTimeInterval(-86400), isRead: false, category: .clinical),
-        IntraMailMessage(sender: "Lab", subject: "Pathology Report Available",
-                         preview: "Biopsy results for specimen #2024-0847 are ready for review.",
-                         date: Date().addingTimeInterval(-86400 * 2), isRead: true, category: .lab),
-        IntraMailMessage(sender: "Admin", subject: "Compliance Training Due",
-                         preview: "Annual HIPAA compliance training is due by end of month.",
-                         date: Date().addingTimeInterval(-86400 * 3), isRead: true, category: .admin),
-        IntraMailMessage(sender: "Dr. Patel", subject: "Re: Patient Transfer",
-                         preview: "Confirmed receipt of transfer records. Will review and schedule intake.",
-                         date: Date().addingTimeInterval(-86400 * 4), isRead: true, category: .clinical),
-        IntraMailMessage(sender: "Pharmacy", subject: "Prior Auth Required",
-                         preview: "Prior authorization needed for cyclosporine 0.09% - insurance denied initial claim.",
-                         date: Date().addingTimeInterval(-86400 * 5), isRead: true, category: .pharmacy),
-        IntraMailMessage(sender: "System", subject: "Chart Note Reminder",
-                         preview: "You have 2 unsigned chart notes from last week's appointments.",
-                         date: Date().addingTimeInterval(-86400 * 6), isRead: true, category: .admin),
-        IntraMailMessage(sender: "Dr. Williams", subject: "Conference: Derm Grand Rounds",
-                         preview: "Reminder: Grand Rounds presentation on advanced BCC management this Thursday.",
-                         date: Date().addingTimeInterval(-86400 * 7), isRead: true, category: .clinical),
-    ]
+    /// The inbox starts from the demo fixture, so every message matches the seeded panel.
+    /// It is empty if the fixture cannot be decoded.
+    static let sampleMessages: [IntraMailMessage] = {
+        guard let panel = try? DemoDataSeeder.loadPanel() else { return [] }
+        let now = Date()
+        return panel.messages.map { message in
+            IntraMailMessage(
+                sender: message.sender,
+                subject: message.subject,
+                preview: message.preview,
+                date: now.addingTimeInterval(-message.hoursAgo * 3600),
+                isRead: message.isRead,
+                category: MessageCategory(rawValue: message.category) ?? .admin
+            )
+        }
+    }()
 }
 
 // MARK: - Inbox Message Row

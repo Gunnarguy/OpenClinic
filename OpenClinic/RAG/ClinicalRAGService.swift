@@ -125,6 +125,40 @@ final class ClinicalRAGService: ObservableObject {
         isIndexing = false
     }
 
+    /// Re-indexes one patient's chart and leaves every other patient's chunks in place.
+    /// A record import uses this, so importing one chart does not re-embed the whole panel.
+    func indexPatient(_ patient: PatientProfile) async {
+        // A full reindex that began before this patient was saved read the store without the new rows.
+        while isIndexing {
+            if Task.isCancelled { return }
+            try? await Task.sleep(for: .milliseconds(200))
+        }
+
+        isIndexing = true
+        defer { isIndexing = false }
+        let startTime = CFAbsoluteTimeGetCurrent()
+        let patientID = patient.id
+        let chunks = ClinicalChunker.chunkAllData(for: patient)
+
+        do {
+            // Embed first: if that fails, the chunks already indexed for this patient stay as they were.
+            let embeddings = try await embeddingService.embedBatch(texts: chunks.map(\.embeddableText))
+
+            await vectorStore.deleteByPatient(patientID)
+            await ftsService.deleteByPatient(patientID)
+            await vectorStore.insertBatch(chunks: chunks, embeddings: embeddings)
+            await ftsService.insertBatch(chunks: chunks)
+            await vectorStore.saveToDisk()
+
+            indexedChunkCount = await vectorStore.count
+            lastIndexTime = Date()
+            let elapsed = (CFAbsoluteTimeGetCurrent() - startTime) * 1000
+            AppLogger.ai.info("📊 Patient reindex complete: \(chunks.count) chunks, \(self.indexedChunkCount) in the index, \(String(format: "%.0f", elapsed))ms")
+        } catch {
+            AppLogger.ai.error("❌ Patient reindex failed: \(error.localizedDescription)")
+        }
+    }
+
     // MARK: - Query
 
     /// Standard RAG query: hybrid search → rerank → assemble context.
@@ -176,7 +210,7 @@ final class ClinicalRAGService: ObservableObject {
         let (context, usedChunks) = await ragEngine.processChunks(query: text, candidates: candidates)
         addStep(.mmrDiversity, "\(usedChunks.count) chunks selected", "MMR \u{03BB}=0.7 diversity + token budget + Lost-in-Middle reorder", icon: "square.grid.3x3")
 
-        addStep(.verification, "Running 9 verification gates", "Retrieval \u{00B7} Evidence \u{00B7} Numeric \u{00B7} Contradiction \u{00B7} Semantic \u{00B7} Faithfulness \u{00B7} Quality \u{00B7} Completeness \u{00B7} Isolation", icon: "checkmark.shield")
+        addStep(.verification, "Scoring retrieved context (9 checks)", "Retrieval \u{00B7} Evidence \u{00B7} Numeric \u{00B7} Contradiction \u{00B7} Semantic \u{00B7} Faithfulness \u{00B7} Quality \u{00B7} Completeness \u{00B7} Isolation", icon: "checkmark.shield")
         let verification = await verificationGates.verify(query: text, responseText: context, retrievedChunks: usedChunks)
 
         let passedCount = verification.gateResults.values.filter { $0 }.count
@@ -246,7 +280,7 @@ final class ClinicalRAGService: ObservableObject {
         addStep(.mmrDiversity, "\(usedChunks.count) chunks selected", "MMR diversity + token budget + Lost-in-Middle reorder", icon: "square.grid.3x3")
 
         // Verify
-        addStep(.verification, "Running 9 verification gates", "Full clinical verification pipeline", icon: "checkmark.shield")
+        addStep(.verification, "Scoring retrieved context (9 checks)", "Retrieval checks on the assembled context", icon: "checkmark.shield")
         let verification = await verificationGates.verify(
             query: text,
             responseText: context,

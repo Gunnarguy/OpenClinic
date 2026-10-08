@@ -11,14 +11,29 @@ private struct ChatMessage: Identifiable {
     let metadata: ResponseMetadata?
     let thinkingSteps: [ThinkingStep]
     let sourceDescriptor: ClinicalSourceDescriptor?
+    /// Set when the answer was computed from chart data instead of generated.
+    let cohort: CohortResult?
+    /// True for language-model text that was not checked against the chart.
+    let isUnverifiedGeneration: Bool
 
-    init(id: UUID = UUID(), isUser: Bool, text: String, metadata: ResponseMetadata? = nil, thinkingSteps: [ThinkingStep] = [], sourceDescriptor: ClinicalSourceDescriptor? = nil) {
+    init(
+        id: UUID = UUID(),
+        isUser: Bool,
+        text: String,
+        metadata: ResponseMetadata? = nil,
+        thinkingSteps: [ThinkingStep] = [],
+        sourceDescriptor: ClinicalSourceDescriptor? = nil,
+        cohort: CohortResult? = nil,
+        isUnverifiedGeneration: Bool = false
+    ) {
         self.id = id
         self.isUser = isUser
         self.text = text
         self.metadata = metadata
         self.thinkingSteps = thinkingSteps
         self.sourceDescriptor = sourceDescriptor
+        self.cohort = cohort
+        self.isUnverifiedGeneration = isUnverifiedGeneration
     }
 }
 
@@ -104,6 +119,12 @@ struct ClinicIntelligenceView: View {
             authoritative: false,
             lastSyncedAt: currentChartSourceDescriptor.lastSyncedAt
         )
+    }
+
+    /// Computed answers come straight from the chart, so they carry the
+    /// chart's source and not the local-AI badge.
+    private var computedSourceDescriptor: ClinicalSourceDescriptor {
+        currentChartSourceDescriptor
     }
 
     var body: some View {
@@ -372,26 +393,45 @@ struct ClinicIntelligenceView: View {
 
         Task {
             do {
-                let response: String
                 if let patient = selectedPatient {
-                    response = try await intelligenceService.executeToolQuery(query: q, modelContext: modelContext, patient: patient)
+                    let response = try await intelligenceService.executeToolQuery(query: q, modelContext: modelContext, patient: patient)
+                    AppLogger.intel.info("✅ Response: \(response.count) chars")
+                    appendGenerated(response)
                 } else {
-                    response = try await intelligenceService.executePanelQuery(query: q, modelContext: modelContext)
+                    switch try await intelligenceService.answerPanelQuestion(q, modelContext: modelContext) {
+                    case .computed(let result):
+                        AppLogger.intel.info("✅ Computed panel answer: \(result.matches.count) of \(result.panelSize) patients")
+                        chatHistory.append(ChatMessage(
+                            isUser: false,
+                            text: CohortAnswerFormatter.text(for: result),
+                            sourceDescriptor: computedSourceDescriptor,
+                            cohort: result
+                        ))
+                    case .generated(let response):
+                        AppLogger.intel.info("✅ Generated panel answer: \(response.count) chars")
+                        appendGenerated(response)
+                    }
                 }
-                AppLogger.intel.info("✅ Response: \(response.count) chars")
-                chatHistory.append(ChatMessage(
-                    isUser: false,
-                    text: response,
-                    metadata: intelligenceService.ragMetadata,
-                    thinkingSteps: ragService.thinkingSteps,
-                    sourceDescriptor: intelligenceSourceDescriptor
-                ))
             } catch {
                 AppLogger.intel.error("❌ Query failed: \(error.localizedDescription)")
                 chatHistory.append(ChatMessage(isUser: false, text: "Error: \(error.localizedDescription)", sourceDescriptor: intelligenceSourceDescriptor))
             }
             isProcessing = false
         }
+    }
+
+    /// Adds a language-model answer. The retrieval checks run before the
+    /// model writes, so they score the retrieved chart context and never see
+    /// this text. The bubble says so.
+    private func appendGenerated(_ response: String) {
+        chatHistory.append(ChatMessage(
+            isUser: false,
+            text: response,
+            metadata: intelligenceService.ragMetadata,
+            thinkingSteps: ragService.thinkingSteps,
+            sourceDescriptor: intelligenceSourceDescriptor,
+            isUnverifiedGeneration: true
+        ))
     }
 }
 
@@ -490,17 +530,35 @@ private struct AIResponseView: View {
                     }
                 }
 
-                ChatFormattedText(text: message.text)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 14)
-                    .background(
-                        Color.clear
-                            .liquidGlassCard(
-                                cornerRadius: 18,
-                                shadowRadius: 4,
-                                glowColor: message.metadata.map { confidenceColor($0.verification?.confidence ?? .high) } ?? Color.clinicalIndigo
-                            )
+                Group {
+                    if let cohort = message.cohort {
+                        CohortResultView(result: cohort)
+                    } else {
+                        ChatFormattedText(text: message.text)
+                    }
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 14)
+                .background(
+                    Color.clear
+                        .liquidGlassCard(
+                            cornerRadius: 18,
+                            shadowRadius: 4,
+                            glowColor: bubbleGlow
+                        )
+                )
+
+                if message.isUnverifiedGeneration {
+                    Label(
+                        message.metadata?.verification == nil
+                            ? "Written by the on-device model. This text has not been checked against the chart."
+                            : "Written by the on-device model. The checks below score the retrieved chart context, not this text.",
+                        systemImage: "exclamationmark.triangle"
                     )
+                        .font(.caption)
+                        .foregroundStyle(Color.clinicalAmber)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
 
                 if let meta = message.metadata {
                     DisclosureGroup(isExpanded: $isExpanded) {
@@ -512,10 +570,10 @@ private struct AIResponseView: View {
                                         .font(.subheadline)
                                         .foregroundStyle(confidenceColor(verif.confidence))
                                     VStack(alignment: .leading, spacing: 2) {
-                                        Text("Clinical Safety: \(verif.confidence.rawValue.capitalized) Confidence")
+                                        Text("Retrieval quality: \(verif.confidence.rawValue.capitalized)")
                                             .font(.caption.bold())
                                             .clinicalFinePrint(weight: .bold)
-                                        Text("All safety gates passed, including patient isolation and numeric sanity checks.")
+                                        Text(gateSummary(verif))
                                             .font(.caption2)
                                             .foregroundStyle(.secondary)
                                             .clinicalFinePrint()
@@ -539,7 +597,7 @@ private struct AIResponseView: View {
                             // Section 3: Verification Gates Grid
                             if let verif = meta.verification {
                                 VStack(alignment: .leading, spacing: 6) {
-                                    Text("Clinical Verification Checks")
+                                    Text("Retrieval Checks")
                                         .font(.caption.bold())
                                         .foregroundStyle(.secondary)
                                         .clinicalFinePrint(weight: .bold)
@@ -588,7 +646,7 @@ private struct AIResponseView: View {
                                 .font(.caption)
                                 .foregroundStyle(meta.verification != nil ? confidenceColor(meta.verification!.confidence) : .clinicalIndigo)
                             
-                            Text("Evidence & Verification")
+                            Text("Retrieved Evidence")
                                 .font(.caption.bold())
                                 .clinicalFinePrint(weight: .bold)
                             
@@ -620,6 +678,22 @@ private struct AIResponseView: View {
             Spacer(minLength: 40)
         }
         .padding(.horizontal)
+    }
+
+    /// A computed answer glows teal and a generated one amber.
+    private var bubbleGlow: Color {
+        if message.cohort != nil { return .clinicalTeal }
+        if message.isUnverifiedGeneration { return .clinicalAmber }
+        return .clinicalIndigo
+    }
+
+    private func gateSummary(_ verification: VerificationResult) -> String {
+        let total = verification.gateResults.count
+        let passed = verification.gateResults.values.filter { $0 }.count
+        if passed == total {
+            return "All \(total) retrieval checks passed."
+        }
+        return "\(passed) of \(total) retrieval checks passed. See the failed checks below."
     }
 
     private func confidenceIcon(_ tier: ConfidenceTier) -> String {

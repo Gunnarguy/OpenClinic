@@ -11,17 +11,25 @@ import Foundation
 // MARK: - Source Type
 
 /// Identifies the origin of a clinical chunk.
-enum ClinicalSourceType: String, Codable, Sendable {
+nonisolated enum ClinicalSourceType: String, Codable, Sendable {
     case patientProfile
     case clinicalRecord
     case medication
     case appointment
+    case problem
+    case allergy
+    case observation
+    case encounter
+    case procedure
+    case immunization
+    case diagnosticReport
+    case document
 }
 
 // MARK: - Clinical Category
 
 /// Broad clinical category for filtering and boost scoring.
-enum ClinicalCategory: String, Codable, Sendable {
+nonisolated enum ClinicalCategory: String, Codable, Sendable {
     case demographics
     case allergiesAndRisks
     case carePlan
@@ -35,12 +43,21 @@ enum ClinicalCategory: String, Codable, Sendable {
     case medication
     case appointment
     case fullRecord
+    case problemList
+    case vitalSigns
+    case laboratory
+    case socialHistory
+    case encounterHistory
+    case procedures
+    case immunizations
+    case reports
+    case documents
 }
 
 // MARK: - Chunk Metadata
 
 /// Rich metadata attached to every indexed chunk.
-struct ChunkMetadata: Codable, Sendable {
+nonisolated struct ChunkMetadata: Codable, Sendable {
     let chunkIndex: Int
     let sourceType: ClinicalSourceType
     let sectionTitle: String
@@ -53,7 +70,7 @@ struct ChunkMetadata: Codable, Sendable {
 // MARK: - Clinical Chunk
 
 /// A segment of clinical text ready for embedding and indexing.
-struct ClinicalChunk: Identifiable, Codable, Sendable {
+nonisolated struct ClinicalChunk: Identifiable, Codable, Sendable {
     let id: UUID
     let patientId: UUID
     let content: String
@@ -83,7 +100,7 @@ struct ClinicalChunk: Identifiable, Codable, Sendable {
 // MARK: - RAG Query
 
 /// Encapsulates a RAG search request.
-struct RAGQuery: Sendable {
+nonisolated struct RAGQuery: Sendable {
     let text: String
     let patientScope: UUID?
     let topK: Int
@@ -108,7 +125,7 @@ struct RAGQuery: Sendable {
 // MARK: - Retrieved Chunk
 
 /// A chunk returned by hybrid search with its fusion score.
-struct RetrievedChunk: Sendable {
+nonisolated struct RetrievedChunk: Sendable {
     let chunk: ClinicalChunk
     var score: Double
     let vectorRank: Int?
@@ -117,7 +134,7 @@ struct RetrievedChunk: Sendable {
 
 // MARK: - Confidence Tier
 
-enum ConfidenceTier: String, Codable, Sendable {
+nonisolated enum ConfidenceTier: String, Codable, Sendable {
     case high
     case medium
     case low
@@ -126,7 +143,7 @@ enum ConfidenceTier: String, Codable, Sendable {
 // MARK: - Verification Result
 
 /// Output from the verification gates.
-struct VerificationResult: Sendable {
+nonisolated struct VerificationResult: Sendable {
     let confidence: ConfidenceTier
     let overallScore: Double
     let gateResults: [String: Bool]
@@ -136,7 +153,7 @@ struct VerificationResult: Sendable {
 // MARK: - Thinking Phase
 
 /// Phases of the RAG pipeline for thinking visualization.
-enum ThinkingPhase: String, Sendable {
+nonisolated enum ThinkingPhase: String, Sendable {
     case queryAnalysis
     case embedding
     case vectorSearch
@@ -157,7 +174,7 @@ enum ThinkingPhase: String, Sendable {
 // MARK: - Thinking Step
 
 /// A single step in the RAG pipeline's thinking process.
-struct ThinkingStep: Identifiable, Sendable {
+nonisolated struct ThinkingStep: Identifiable, Sendable {
     let id: UUID
     let phase: ThinkingPhase
     let title: String
@@ -180,7 +197,7 @@ struct ThinkingStep: Identifiable, Sendable {
 // MARK: - Chunk Summary
 
 /// Lightweight UI-friendly summary of a retrieved chunk.
-struct ChunkSummary: Identifiable, Sendable {
+nonisolated struct ChunkSummary: Identifiable, Sendable {
     let id: UUID
     let patientName: String
     let sectionTitle: String
@@ -207,7 +224,7 @@ struct ChunkSummary: Identifiable, Sendable {
 // MARK: - Response Metadata
 
 /// Metadata about the RAG response generation.
-struct ResponseMetadata: Sendable {
+nonisolated struct ResponseMetadata: Sendable {
     let retrievedChunkCount: Int
     let usedChunkCount: Int
     let embeddingTimeMs: Double
@@ -244,7 +261,7 @@ struct ResponseMetadata: Sendable {
 // MARK: - RAG Response
 
 /// Complete response from the RAG pipeline.
-struct RAGResponse: Sendable {
+nonisolated struct RAGResponse: Sendable {
     let context: String
     let retrievedChunks: [RetrievedChunk]
     let metadata: ResponseMetadata

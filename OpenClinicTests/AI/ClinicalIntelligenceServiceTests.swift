@@ -20,6 +20,10 @@ final class ClinicalIntelligenceServiceTests: XCTestCase {
         container = try ModelContainer(for: schema, configurations: [config])
         context = ModelContext(container)
         service = ClinicalIntelligenceService()
+        // These tests cover the answers built from chart rows. With the model on, a Mac that has
+        // Apple Intelligence would generate the reply instead: 25 seconds, and different each run.
+        service.languageModelEnabled = false
+        service.ragEnabled = false
     }
 
     override func tearDown() {
@@ -60,7 +64,6 @@ final class ClinicalIntelligenceServiceTests: XCTestCase {
         try context.save()
 
         let response = try await service.executeToolQuery(query: "What is patient's prescription refill history?", modelContext: context, patient: patient)
-        print("DEBUG RESPONSE: \(response)")
         XCTAssertTrue(response.contains("Lisinopril"), "Response was: \(response)")
         XCTAssertTrue(response.contains("10mg"))
         XCTAssertTrue(response.contains("daily"))

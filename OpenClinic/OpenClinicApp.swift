@@ -12,51 +12,14 @@ import os
 @main
 struct OpenClinicApp: App {
     @StateObject private var smartConnectionController = SMARTConnectionController()
-    let container: ModelContainer
+    private let container: ModelContainer
+    /// Set when the saved store could not be used at launch.
+    @State private var storeIssue: String?
 
     init() {
-        AppLogger.app.info("⚡ OpenClinicApp init — building SwiftData schema")
-        let schema = Schema([
-            PatientProfile.self,
-            LocalClinicalRecord.self,
-            LocalMedication.self,
-            Appointment.self,
-            ClinicalPhoto.self
-        ])
-        let config = ModelConfiguration(schema: schema)
-
-        // Force a one-time wipe to eradicate legacy HealthKit duplicates that persisted
-        // in developers' simulators from older versions.
-        let ud = UserDefaults.standard
-        if !ud.bool(forKey: "didClearLegacyDataV1") {
-            AppLogger.app.info("🧹 Performing one-time wipe of legacy SwiftData store to clear HealthKit duplicates...")
-            let url = config.url
-            let fm = FileManager.default
-            for suffix in ["", "-wal", "-shm"] {
-                try? fm.removeItem(at: suffix.isEmpty ? url : URL(fileURLWithPath: url.path + suffix))
-            }
-            ud.set(true, forKey: "didClearLegacyDataV1")
-            AppLogger.app.info("✅ Legacy store wiped. Fresh DB will be created.")
-        }
-
-        do {
-            container = try ModelContainer(for: schema, configurations: [config])
-            AppLogger.app.info("✅ ModelContainer created successfully")
-        } catch {
-            AppLogger.app.error("❌ Schema migration failed: \(error.localizedDescription) — resetting database")
-            let url = config.url
-            let fm = FileManager.default
-            for suffix in ["", "-wal", "-shm"] {
-                try? fm.removeItem(at: suffix.isEmpty ? url : URL(fileURLWithPath: url.path + suffix))
-            }
-            do {
-                container = try ModelContainer(for: schema, configurations: [config])
-                AppLogger.app.info("✅ ModelContainer recreated after reset")
-            } catch {
-                AppLogger.app.fault("💥 FATAL: Could not create ModelContainer after reset: \(error.localizedDescription)")
-                fatalError("Could not create ModelContainer after reset: \(error)")
-            }
-        }
+        let store = AppStore.shared
+        container = store.container
+        _storeIssue = State(initialValue: store.issue)
     }
 
     var body: some Scene {
@@ -68,14 +31,22 @@ struct OpenClinicApp: App {
                         await smartConnectionController.handleOpenURL(url)
                     }
                 }
+                .alert("Chart store", isPresented: Binding(get: { storeIssue != nil }, set: { if !$0 { storeIssue = nil } })) {
+                    Button("OK", role: .cancel) { storeIssue = nil }
+                } message: {
+                    Text(storeIssue ?? "")
+                }
                 .task {
-                    // Reindex RAG pipeline on every launch
+                    // The demo panel is seeded before indexing, so the first
+                    // launch indexes a full chart set and not an empty store.
+                    do {
+                        try DemoDataSeeder.prepare(context: container.mainContext)
+                    } catch {
+                        AppLogger.data.error("Demo panel could not be prepared: \(error.localizedDescription)")
+                    }
                     AppLogger.app.info("🔄 Triggering RAG reindex on launch")
                     await ClinicalRAGService.shared.indexAllData(modelContext: container.mainContext)
                 }
-                // HealthKit FHIR sync removed — this is an HCP app.
-                // HealthKit only surfaces the *device owner's* records, not the patient's.
-                // Patient data comes from EHR integrations / FHIR server, not the clinician's Apple Health.
         }
         .modelContainer(container)
     }
