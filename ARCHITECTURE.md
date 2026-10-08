@@ -36,7 +36,7 @@ flowchart TD
     end
 
     subgraph DataService ["Ingestion & Transformation Services"]
-        FHIRSvc[FHIRImportService]
+        FHIRSvc["FHIR R4 import (fetcher, mapper, applier)"]
         Chunker[ClinicalChunker]
         EmbedSvc[ClinicalEmbeddingService]
         FTSSvc[ClinicalFTSService]
@@ -92,7 +92,7 @@ Orchestrators are implemented as `@MainActor` singletons or state objects that b
 
 ### Ingestion & Processing Layer
 This layer handles the parsing, transformation, and vector indexing of clinical resources.
-* **`FHIRImportService`:** Pulls raw JSON data for Patient, Condition, MedicationRequest, and Appointment resources from external servers and updates the SwiftData context.
+* **`FHIRR4Client`, `FHIRR4ChartFetcher`, `FHIRR4ChartMapper`, `ChartImportApplier`:** Read a patient's record from a FHIR R4 server, map it to plain values, and apply it to the SwiftData context. Section 6 describes the split.
 * **`ClinicalChunker`:** Segregates patient profiles, clinical histories, and medications into standardized text chunks, enriching each chunk with metadata.
 * **`ClinicalEmbeddingService`:** Houses the natural language tokenizer vocabulary and Core ML models to generate high-dimensional vectors on-device. Portions of this stack are explicitly adapted from OpenIntelligence's embedding pipeline.
 
@@ -147,6 +147,11 @@ The primary SwiftData models are configured in `OpenClinic/Models/`:
 * **`LocalMedication`:** Maps medication requests, dosages, routes, refill counts, and prescription status.
 * **`Appointment`:** Represents scheduled slots, reasons for visit, and clinical workflow status (`Scheduled`, `Checked In`, `In Exam`, `Ready for Checkout`, `Completed`).
 * **`ClinicalPhoto`:** Stores clinical images, lesion tracking logs, and coordinates mapping to the 3D body grid.
+* **`ChartProblem`, `ChartAllergy`, `ChartObservation`, `ChartEncounter`, `ChartProcedure`, `ChartImmunization`, `ChartDiagnosticReport`, `ChartDocument`:** The structured chart, one model per FHIR resource type it mirrors. Vital signs and laboratory results are `ChartObservation` rows; a value on screen always comes from one. Each row has `isRemovedAtSource`, set when a later import no longer returns it.
+* **`FHIRResourceRecord`:** Each imported resource exactly as the server sent it, keyed the same way as the chart row mapped from it, so any imported value can be traced to its source JSON.
+* **`AuditEvent`:** The access log. It records the action and the identifier of the record touched, never clinical content.
+
+`OpenClinicSchema` lists every model once. The app, the App Intents, and the tests all build their container from it, and `StoreBootstrap` moves an unreadable store aside instead of deleting it.
 
 All clinical models inherit a standardized **Provenance Model** structure:
 * `sourceKind`: Enum mapping data origin (e.g. `smartOnFhir`, `clinicianCaptured`, `localAI`).
@@ -167,7 +172,7 @@ sequenceDiagram
     participant UI as SMARTConnectionController
     participant Auth as ASWebAuthenticationSession
     participant Server as FHIR Authorization Server
-    participant Sync as FHIRImportService
+    participant Sync as FHIR R4 import
     participant DB as SwiftData Context
 
     UI->>Server: Discover well-known endpoints & CapabilityStatement
@@ -180,18 +185,21 @@ sequenceDiagram
     Server-->>UI: Return Access Token & Patient Context JWT
     Note over UI: Save access token in Keychain & patientID in UserDefaults
     
-    UI->>Sync: importPatientContext(patientID)
+    UI->>Sync: fetchChart(patientID)
     Sync->>Server: GET /Patient/{id}
     Server-->>Sync: Return Patient JSON
-    Sync->>Server: GET /Condition?patient={id}
-    Sync->>Server: GET /MedicationRequest?patient={id}
-    Sync->>Server: GET /Appointment?actor=Patient/{id}
-    Server-->>Sync: Return FHIR Search Bundle resources
-    Sync->>DB: Upsert Patient & map relationships
-    Sync->>DB: Sync Conditions, Medications, and Appointments
-    Note over DB: Save context
-    Sync-->>UI: Complete import with sync summary
+    Sync->>Server: GET /{type}?patient={id}&_count=100 for 10 resource types, 3 at a time
+    Server-->>Sync: Return search Bundles, following each next link on the same host
+    Note over Sync: Map resources to plain values, leaving out entered-in-error
+    Sync->>DB: Upsert chart rows, mark rows the server no longer returns
+    Sync->>DB: Store each source resource as received, write an access-log entry
+    Note over DB: One save. Any error rolls everything back.
+    Sync-->>UI: Summary by kind of record, with warnings
 ```
+
+In this diagram `Sync` is three types. `FHIRR4Client` is the HTTP layer: paging, one retry with a fresh token after a 401, backoff on 429 and 5xx with `Retry-After`, and a refusal to follow a paging link to another host so a bearer token is never sent off the server it was issued for. `FHIRR4ChartMapper` is pure: it turns raw resources into `ImportedChart` values and reports what it left out. `ChartImportApplier` writes those values to SwiftData. A resource type whose search failed or hit the page limit is recorded in `failedTypes` or `truncatedTypes`, and the applier leaves that type's existing rows exactly as they were.
+
+The ten types read for a patient are Condition, MedicationRequest, AllergyIntolerance, Observation, Encounter, Procedure, Immunization, DiagnosticReport, DocumentReference, and Appointment. The open SMART Health IT sandbox (`https://r4.smarthealthit.org`) needs no token, so `SandboxImportView` can import a synthetic patient without the OAuth flow.
 
 ---
 
@@ -238,7 +246,10 @@ flowchart TD
 2. **Indexing:** Chunks are concurrently stored in an FTS5 full-text index for lexical recall and compiled into 384-dimensional embeddings (MiniLM-L6-v2) via Core ML for vector similarity.
 3. **Retrieval & Fusion:** The query is routed to FTS5 and the Core ML embedding evaluator. The search rankings are combined via Reciprocal Rank Fusion ($k=60$).
 4. **Reranking:** The `ClinicalRAGEngine` runs candidate lists through a cross-encoder and filters redundancies via MMR before reordering context elements to avoid attention degradation.
-5. **9-Gate Verification:** Runs checks evaluating retrieval confidence, coverage, number grounding, contradictions, and patient scope boundaries.
+5. **Retrieval Checks:** Nine checks score the assembled context for retrieval confidence, contradictions, and patient scope boundaries. As built they run before generation and do not read the model's answer; the app labels model-written answers as unchecked.
+
+### Computed Panel Answers
+A set question ("which patients have melanoma history", "who is on biologics or immunosuppressants") has one correct answer, so it does not go through the pipeline above. `CohortQueryParser` turns the question into a structured query against a lexicon of diagnosis concepts (name terms and ICD-10 prefixes), drug classes, risk concepts, and the medications and allergens charted in the panel. `CohortEngine` evaluates the query over a `PanelSnapshot`, a value copy of the chart facts, and returns each matching patient with the record, prescription, or appointment that matched. The parser is strict: a negation or any content word it does not understand makes it return nil, and the question falls through to retrieval and the model.
 
 ---
 
@@ -246,7 +257,7 @@ flowchart TD
 
 OpenClinic enforces strict actor isolation and asynchronous task scheduling to maintain a 120 FPS UI target:
 * **`@MainActor` Isolation:** Applied to all views, UI state controllers (`SMARTConnectionController`), and the `ClinicalIntelligenceService` to ensure UI state modifications occur strictly on the main thread.
-* **Global Actor Isolation:** Subsystem indices (such as vector database search and SQLite index inserts) are separated using task context switches. Embedding batches are compiled on background threads before being packaged.
+* **Global Actor Isolation:** Subsystem indices (such as vector database search and SQLite index inserts) are separated using task context switches. Tokenization and pooling for an embedding run on the main actor, which is the target's default isolation; the Core ML prediction between them is awaited off it. In an 8 second sample taken during a reindex in the iOS 27.0 Simulator on 2026-10-07, the main thread was busy 2.3% of the time.
 * **Structured Tasks:** RAG reindexing and SMART sync operations are wrapped in Structured Concurrency scopes (`Task { ... }`). The main app loop listens for URL callbacks and handles them on task-isolated threads.
 
 ## 8.5. Product Boundary
@@ -259,7 +270,7 @@ OpenClinic should be described as a clinical workspace prototype, not a producti
 
 The application follows a structured, type-safe error management approach:
 * **`SMARTConnectionControllerError`:** Standardizes connectivity errors (such as state mismatch, missing credentials, or discovery failure) and provides localized user-facing alerts.
-* **Resilient Sync Pipelines:** During SMART sync, the import parser uses a `resilientBundleFetch` wrapper. If one FHIR resource fetch fails (e.g., a server does not support `AllergyIntolerance`), the system logs a warning, skips the resource, and continues parsing the remaining data categories, avoiding complete sync failures.
+* **Resilient Sync Pipelines:** If one resource type's search fails (for example a server that does not support `AllergyIntolerance`), the fetcher records the type in `failedTypes`, adds a warning the clinician sees, and continues with the other types. Only a failed Patient read stops the import.
 * **RAG Fallback Path:** If Apple Intelligence or Core ML indexing fails, the RAG query pipeline automatically switches to a localized heuristic lookup wrapper, extracting text fragments based on static category filters without crashing the UI.
 
 ---
@@ -280,8 +291,8 @@ Log statements carry no privacy annotations; interpolated strings such as patien
 
 ## 11. Architectural Tradeoffs
 
-1. **Launch-time RAG Reindexing:** The application reindexes all patient files on every app launch. While fast for prototype scopes (~200 chunks take less than 1.5 seconds), a production EHR environment will require delta-based background indexing.
-2. **Import-Only FHIR Pipeline:** The current FHIR service is import-only. Outbound changes (like newly signed notes or updated medication requests) stay local and are not written back to the EHR server, leaving writeback as a future capability.
+1. **Launch-time RAG Reindexing:** The application reindexes all patient files on every app launch. Measured in the iOS 27.0 Simulator on 2026-10-07: 291 chunks in 55 s and 568 chunks in 71 s; it has not been timed on a device. A record import re-indexes only the imported patient (47 chunks in 7.2 s in the same simulator). A production EHR environment will require delta-based background indexing for edits as well.
+2. **Import-Only FHIR Pipeline:** The FHIR layer is import-only. Outbound changes (like newly signed notes or updated medication requests) stay local and are not written back to the EHR server, leaving writeback as a future capability.
 3. **Flat Vector Index:** The vector store uses a flat array-based linear scan for cosine similarity. This keeps dependencies minimal, but must be migrated to an HNSW or SQLite-based vector extension for panel databases exceeding 10,000 chunks.
 
 ---
@@ -289,5 +300,5 @@ Log statements carry no privacy annotations; interpolated strings such as patien
 ## 12. Extension Points
 
 * **Spatial visionOS Views:** The views under `OpenClinic/Views/AnatomicalRealityView.swift` are designed to display 2D body maps. These can be extended to use native visionOS RealityKit anchors for interactive 3D anatomy tracking.
-* **Outbound Sync Handlers:** `FHIRImportService` can be extended with `FHIRExportService` to submit POST requests containing signed clinical documents formatted as FHIR `DocumentReference` resources.
+* **Outbound Sync Handlers:** `FHIRR4Client` reads only. Writing a signed note back as a FHIR `DocumentReference` needs a create method on the client and a mapper in the other direction.
 * **Custom LLM Connectors:** The general `SystemLanguageModel` implementation inside `ClinicalIntelligenceService` can be adapted to plug in remote endpoints (e.g., self-hosted HIPAA-compliant private servers) when local devices lack Apple Intelligence hardware.

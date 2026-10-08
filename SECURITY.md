@@ -45,7 +45,7 @@ All patient records are kept strictly in the local application sandbox:
 
 ## 5. Network Boundary & Transmission Security
 
-* **HTTPS Enforcement:** The network client (`FHIRClient`) enforces App Transport Security (ATS) rules. All connections to FHIR server endpoints must utilize HTTPS under default App Transport Security.
+* **HTTPS Enforcement:** The network client (`FHIRR4Client`) enforces App Transport Security (ATS) rules. All connections to FHIR server endpoints must utilize HTTPS under default App Transport Security.
 * **Authentication Sessions:** Interactive OAuth login uses `ASWebAuthenticationSession`. This presents the sign-in prompt within a system-controlled sandboxed web view, isolating credentials from the main application thread.
 * **Callback Protection:** The app callback scheme (`medmod://smart-callback`) is registered in Info.plist to prevent hijack attacks by other local apps.
 

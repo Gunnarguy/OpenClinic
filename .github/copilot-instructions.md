@@ -31,7 +31,7 @@ OpenClinic is a native Swift/iOS clinical workspace built with SwiftUI and Swift
 * **RAG Orchestrator:** [ClinicalRAGService.swift](OpenClinic/RAG/ClinicalRAGService.swift)
 * **On-Device LLM Handler:** [ClinicalIntelligenceService.swift](OpenClinic/AI/ClinicalIntelligenceService.swift)
 * **Safety Evaluation:** [VerificationGates.swift](OpenClinic/RAG/VerificationGates.swift)
-* **FHIR Ingestion:** [FHIRImportService.swift](OpenClinic/Interop/FHIR/FHIRImportService.swift)
+* **FHIR Ingestion:** [FHIRR4ChartFetcher.swift](OpenClinic/Interop/FHIR/R4/FHIRR4ChartFetcher.swift), [ChartImportApplier.swift](OpenClinic/Interop/Import/ChartImportApplier.swift)
 * **OAuth Controller:** [SMARTConnectionController.swift](OpenClinic/Interop/SMART/SMARTConnectionController.swift)
 
 ---
@@ -43,7 +43,10 @@ To build the iOS target locally via command line:
 xcodebuild -project OpenClinic.xcodeproj -scheme OpenClinic -sdk iphonesimulator build
 ```
 
-*Note: The project does not currently contain automated unit test targets. All functional validations must be executed via manual simulator flows.*
+To run the unit tests and the iOS Simulator build in one command:
+```bash
+./Scripts/verify.sh
+```
 
 ---
 

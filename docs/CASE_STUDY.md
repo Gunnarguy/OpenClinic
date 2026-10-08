@@ -107,6 +107,8 @@ A dedicated validator ([VerificationGates.swift](OpenClinic/RAG/VerificationGate
 8. **Gate H (Answer Completeness):** Validates that comparison or enumeration queries mention all relevant patient targets.
 9. **Gate I (Patient Isolation):** A HIPAA safety check. If the RAG engine retrieves chunks belonging to multiple different patient UUIDs, it flags a violation. Isolation itself is enforced by the `patientScope` filter for patient-scoped queries; `gatePatientIsolation` reports any mixture.
 
+Since 2026-10-07 a set question such as "Which patients have melanoma history?" does not go to the model at all: `CohortEngine` computes it from chart facts and shows the source record behind every match. Model-written answers are labeled as unchecked in the app.
+
 ---
 
 ## 5. Architectural Tradeoffs
